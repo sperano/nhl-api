@@ -1,16 +1,14 @@
 use std::sync::Arc;
 use crate::config::ClientConfig;
 use anyhow::{Result, Context};
-use crate::http_client::{Endpoint, HttpClient};
-use crate::types::{Team, StandingsResponse};
 use crate::date::GameDate;
+use crate::error::NHLApiError;
+use crate::http_client::{Endpoint, HttpClient};
+use crate::ids::GameId;
+use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing};
 
 pub struct Client {
     client: HttpClient,
-    // pub teams: Teams,
-    // pub standings: Standings,
-    // pub schedule: Schedule,
-    // pub game_center: GameCenter,
 }
 
 impl Client {
@@ -24,10 +22,6 @@ impl Client {
         //let http_client = Arc::new(HttpClient::new(config));
         Ok(Self {
             client: HttpClient::new(config)?,
-            // teams: Teams::new(Arc::clone(&http_client)),
-            // standings: Standings::new(Arc::clone(&http_client)),
-            // schedule: Schedule::new(Arc::clone(&http_client)),
-            // game_center: GameCenter::new(Arc::clone(&http_client)),
         })
     }
 
@@ -52,6 +46,45 @@ impl Client {
     async fn fetch_standings_data(&self, date: &str) -> Result<StandingsResponse> {
         self.client
             .get_json(Endpoint::ApiWebV1, &format!("standings/{}", date), None)
+            .await
+    }
+
+    pub async fn current_league_standings(&self) -> Result<Vec<Standing>> {
+        self.league_standings_for_date(&GameDate::default()).await
+    }
+
+    pub async fn league_standings_for_date(&self, date: &GameDate) -> Result<Vec<Standing>> {
+        Ok(self.fetch_standings_data(&date.to_api_string()).await?.standings)
+    }
+
+    pub async fn league_standings_for_season(&self, season_id: i64) -> Result<Vec<Standing>> {
+        let seasons = self.season_standing_manifest().await?;
+        let season_data = seasons
+            .iter()
+            .find(|s| s.id == season_id)
+            .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season_id)))?;
+        let date = season_data.standings_end.clone();
+        Ok(self.fetch_standings_data(date.as_str()).await?.standings)
+    }
+
+    /// Gets metadata for all NHL seasons.
+    ///
+    /// Returns information about every season including start date, end date, etc.
+    pub async fn season_standing_manifest(&self) -> Result<Vec<SeasonInfo>> {
+        let response: SeasonsResponse = self
+            .client
+            .get_json(Endpoint::ApiWebV1, "standings-season", None)
+            .await?;
+        Ok(response.seasons)
+    }
+
+    pub async fn boxscore(&self, game_id: &GameId) -> Result<Boxscore> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("gamecenter/{}/boxscore", game_id),
+                None,
+            )
             .await
     }
 
