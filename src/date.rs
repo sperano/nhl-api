@@ -209,4 +209,120 @@ mod tests {
         // Just verify it returns a valid season
         assert!(season.start_year >= 2024);
     }
+
+    #[test]
+    fn test_game_date_from_date() {
+        let naive_date = NaiveDate::from_ymd_opt(2024, 3, 15).unwrap();
+        let game_date = GameDate::from_date(naive_date);
+        assert_eq!(game_date.to_api_string(), "2024-03-15");
+    }
+
+    #[test]
+    fn test_game_date_default() {
+        let default_date = GameDate::default();
+        assert_eq!(default_date, GameDate::Now);
+        assert_eq!(default_date.to_api_string(), "now");
+    }
+
+    #[test]
+    fn test_game_date_from_naive_date() {
+        let naive_date = NaiveDate::from_ymd_opt(2024, 12, 25).unwrap();
+        let game_date: GameDate = naive_date.into();
+        assert_eq!(game_date.to_api_string(), "2024-12-25");
+    }
+
+    #[test]
+    fn test_game_date_display() {
+        let now = GameDate::Now;
+        assert_eq!(format!("{}", now), "now");
+
+        // Use different month and day values to verify correct ordering (YYYY-MM-DD)
+        let date = GameDate::from_ymd(2024, 3, 15).unwrap();
+        assert_eq!(format!("{}", date), "2024-03-15");
+    }
+
+    #[test]
+    fn test_game_date_from_ymd_invalid() {
+        // Invalid month
+        assert!(GameDate::from_ymd(2024, 13, 1).is_none());
+
+        // Invalid day
+        assert!(GameDate::from_ymd(2024, 2, 30).is_none());
+
+        // Invalid day for month
+        assert!(GameDate::from_ymd(2024, 4, 31).is_none());
+
+        // Day 0
+        assert!(GameDate::from_ymd(2024, 1, 0).is_none());
+
+        // Month 0
+        assert!(GameDate::from_ymd(2024, 0, 1).is_none());
+    }
+
+    #[test]
+    fn test_game_date_from_str_invalid() {
+        // Invalid format
+        assert!(GameDate::from_str("2024/10/19").is_err());
+        assert!(GameDate::from_str("10-19-2024").is_err());
+        assert!(GameDate::from_str("2024-10").is_err());
+        assert!(GameDate::from_str("").is_err());
+        assert!(GameDate::from_str("not-a-date").is_err());
+
+        // Invalid date values
+        assert!(GameDate::from_str("2024-13-01").is_err());
+        assert!(GameDate::from_str("2024-02-30").is_err());
+    }
+
+    #[test]
+    fn test_game_date_equality() {
+        let date1 = GameDate::from_ymd(2024, 10, 19).unwrap();
+        let date2 = GameDate::from_ymd(2024, 10, 19).unwrap();
+        let date3 = GameDate::from_ymd(2024, 10, 20).unwrap();
+
+        assert_eq!(date1, date2);
+        assert_ne!(date1, date3);
+        assert_ne!(date1, GameDate::Now);
+
+        let now1 = GameDate::Now;
+        let now2 = GameDate::Now;
+        assert_eq!(now1, now2);
+    }
+
+    #[test]
+    fn test_season_display() {
+        let season = Season::new(2023);
+        assert_eq!(format!("{}", season), "20232024");
+
+        let season2 = Season::new(2019);
+        assert_eq!(format!("{}", season2), "20192020");
+    }
+
+    #[test]
+    fn test_season_from_str_edge_cases() {
+        // Empty string
+        assert!(Season::from_str("").is_none());
+
+        // Too short
+        assert!(Season::from_str("2023").is_none());
+        assert!(Season::from_str("202324").is_none());
+
+        // Too long
+        assert!(Season::from_str("202320240").is_none());
+
+        // Non-numeric characters
+        assert!(Season::from_str("abcd efgh").is_none());
+        assert!(Season::from_str("2023abcd").is_none());
+
+        // Years not consecutive
+        assert!(Season::from_str("20232025").is_none());
+        assert!(Season::from_str("20232023").is_none());
+        assert!(Season::from_str("20242023").is_none());
+
+        // Valid edge cases
+        let season = Season::from_str("19992000").unwrap();
+        assert_eq!(season.start_year, 1999);
+
+        let season = Season::from_str("20502051").unwrap();
+        assert_eq!(season.start_year, 2050);
+    }
 }

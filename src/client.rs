@@ -25,10 +25,12 @@ impl Client {
         })
     }
 
+    // TODO
     // /// Create a new NHL client with debug logging enabled
     // pub fn with_debug() -> Self {
     //     Self::with_config(ClientConfig::builder().debug(true).build())
     // }
+
     pub async fn teams(&self /*, date: Option<&GameDate>*/) -> Result<Vec<Team>> {
         //let date = date.cloned().unwrap_or_default();
         let date = GameDate::default();
@@ -87,7 +89,6 @@ impl Client {
             )
             .await
     }
-
 
 }
 

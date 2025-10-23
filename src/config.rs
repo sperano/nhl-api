@@ -24,3 +24,18 @@ impl Default for ClientConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_client_config_default() {
+        let config = ClientConfig::default();
+        assert!(!config.debug);
+        assert_eq!(config.timeout, Duration::from_secs(10));
+        assert!(config.ssl_verify);
+        assert!(config.follow_redirects);
+    }
+}
+
