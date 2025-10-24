@@ -6,10 +6,10 @@ use super::common::{Conference, Division, LocalizedString, Team};
 /// Standing entry for a team
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Standing {
-    #[serde(rename = "conferenceAbbrev")]
-    pub conference_abbrev: String,
-    #[serde(rename = "conferenceName")]
-    pub conference_name: String,
+    #[serde(rename = "conferenceAbbrev", skip_serializing_if = "Option::is_none")]
+    pub conference_abbrev: Option<String>,
+    #[serde(rename = "conferenceName", skip_serializing_if = "Option::is_none")]
+    pub conference_name: Option<String>,
     #[serde(rename = "divisionAbbrev")]
     pub division_abbrev: String,
     #[serde(rename = "divisionName")]
@@ -41,8 +41,8 @@ impl Standing {
             abbr: self.team_abbrev.default.clone(),
             logo: self.team_logo.clone(),
             conference: Conference {
-                abbr: self.conference_abbrev.clone(),
-                name: self.conference_name.clone(),
+                abbr: self.conference_abbrev.clone().unwrap_or_else(|| "UNK".to_string()),
+                name: self.conference_name.clone().unwrap_or_else(|| "Unknown".to_string()),
             },
             division: Division {
                 abbr: self.division_abbrev.clone(),
@@ -120,8 +120,8 @@ mod tests {
     #[test]
     fn test_standing_to_team_conversion() {
         let standing = Standing {
-            conference_abbrev: "W".to_string(),
-            conference_name: "Western".to_string(),
+            conference_abbrev: Some("W".to_string()),
+            conference_name: Some("Western".to_string()),
             division_abbrev: "PAC".to_string(),
             division_name: "Pacific".to_string(),
             team_name: LocalizedString {
@@ -156,8 +156,8 @@ mod tests {
     #[test]
     fn test_standing_display() {
         let standing = Standing {
-            conference_abbrev: "E".to_string(),
-            conference_name: "Eastern".to_string(),
+            conference_abbrev: Some("E".to_string()),
+            conference_name: Some("Eastern".to_string()),
             division_abbrev: "ATL".to_string(),
             division_name: "Atlantic".to_string(),
             team_name: LocalizedString {
@@ -177,5 +177,112 @@ mod tests {
         };
 
         assert_eq!(standing.to_string(), "BOS: 31 pts (15-2-1)");
+    }
+
+    #[test]
+    fn test_standings_response_with_extra_fields() {
+        // Test that deserialization works even with extra API fields
+        let json = r#"{
+            "wildCardIndicator": true,
+            "standingsDateTimeUtc": "2024-01-15T12:00:00Z",
+            "standings": [
+                {
+                    "conferenceAbbrev": "E",
+                    "conferenceName": "Eastern",
+                    "divisionAbbrev": "ATL",
+                    "divisionName": "Atlantic",
+                    "teamName": {"default": "Buffalo Sabres"},
+                    "teamCommonName": {"default": "Sabres"},
+                    "teamAbbrev": {"default": "BUF"},
+                    "teamLogo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg",
+                    "wins": 10,
+                    "losses": 5,
+                    "otLosses": 2,
+                    "points": 22
+                }
+            ]
+        }"#;
+
+        let response: StandingsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.standings.len(), 1);
+        assert_eq!(response.standings[0].team_abbrev.default, "BUF");
+    }
+
+    #[test]
+    fn test_standings_response_empty() {
+        // Test that empty standings array works (like for dates before NHL existed)
+        let json = r#"{
+            "wildCardIndicator": true,
+            "standings": []
+        }"#;
+
+        let response: StandingsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.standings.len(), 0);
+    }
+
+    #[test]
+    fn test_standings_without_conference_fields() {
+        // Test deserialization of historical data without conference fields (pre-1975)
+        let json = r#"{
+            "standings": [
+                {
+                    "divisionAbbrev": "EAST",
+                    "divisionName": "East",
+                    "teamName": {"default": "Boston Bruins"},
+                    "teamCommonName": {"default": "Bruins"},
+                    "teamAbbrev": {"default": "BOS"},
+                    "teamLogo": "https://assets.nhle.com/logos/nhl/svg/BOS_light.svg",
+                    "wins": 20,
+                    "losses": 10,
+                    "otLosses": 5,
+                    "points": 45
+                }
+            ]
+        }"#;
+
+        let response: StandingsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.standings.len(), 1);
+
+        let standing = &response.standings[0];
+        assert_eq!(standing.conference_abbrev, None);
+        assert_eq!(standing.conference_name, None);
+        assert_eq!(standing.division_abbrev, "EAST");
+        assert_eq!(standing.team_abbrev.default, "BOS");
+        assert_eq!(standing.wins, 20);
+    }
+
+    #[test]
+    fn test_standing_to_team_without_conference() {
+        // Test that to_team() works with None conference values
+        let standing = Standing {
+            conference_abbrev: None,
+            conference_name: None,
+            division_abbrev: "EAST".to_string(),
+            division_name: "East".to_string(),
+            team_name: LocalizedString {
+                default: "Montreal Canadiens".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Canadiens".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "MTL".to_string(),
+            },
+            team_logo: "https://assets.nhle.com/logos/nhl/svg/MTL_light.svg".to_string(),
+            wins: 25,
+            losses: 8,
+            ot_losses: 3,
+            points: 53,
+        };
+
+        let team = standing.to_team();
+
+        assert_eq!(team.name, "Montreal Canadiens");
+        assert_eq!(team.common_name, "Canadiens");
+        assert_eq!(team.abbr, "MTL");
+        assert_eq!(team.conference.abbr, "UNK");
+        assert_eq!(team.conference.name, "Unknown");
+        assert_eq!(team.division.abbr, "EAST");
+        assert_eq!(team.division.name, "East");
     }
 }

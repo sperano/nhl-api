@@ -9,8 +9,8 @@ pub struct ScheduleGame {
     pub id: i64,
     #[serde(rename = "gameType")]
     pub game_type: i32,
-    #[serde(rename = "gameDate")]
-    pub game_date: String,
+    #[serde(rename = "gameDate", skip_serializing_if = "Option::is_none")]
+    pub game_date: Option<String>,
     #[serde(rename = "startTimeUTC")]
     pub start_time_utc: String,
     #[serde(rename = "awayTeam")]
@@ -23,11 +23,19 @@ pub struct ScheduleGame {
 
 impl fmt::Display for ScheduleGame {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} @ {} on {} [{}]",
-            self.away_team.abbrev, self.home_team.abbrev, self.game_date, self.game_state
-        )
+        if let Some(ref date) = self.game_date {
+            write!(
+                f,
+                "{} @ {} on {} [{}]",
+                self.away_team.abbrev, self.home_team.abbrev, date, self.game_state
+            )
+        } else {
+            write!(
+                f,
+                "{} @ {} [{}]",
+                self.away_team.abbrev, self.home_team.abbrev, self.game_state
+            )
+        }
     }
 }
 
@@ -157,7 +165,7 @@ mod tests {
         let game = ScheduleGame {
             id: 2023020001,
             game_type: 2,
-            game_date: "2023-10-10".to_string(),
+            game_date: Some("2023-10-10".to_string()),
             start_time_utc: "23:00:00Z".to_string(),
             away_team: ScheduleTeam {
                 id: 7,
@@ -177,6 +185,59 @@ mod tests {
         };
 
         assert_eq!(game.to_string(), "BUF @ TOR on 2023-10-10 [FUT]");
+    }
+
+    #[test]
+    fn test_schedule_game_display_without_date() {
+        let game = ScheduleGame {
+            id: 2023020001,
+            game_type: 2,
+            game_date: None,
+            start_time_utc: "23:00:00Z".to_string(),
+            away_team: ScheduleTeam {
+                id: 7,
+                abbrev: "BUF".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
+                score: None,
+            },
+            home_team: ScheduleTeam {
+                id: 10,
+                abbrev: "TOR".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
+                score: None,
+            },
+            game_state: "FUT".to_string(),
+        };
+
+        assert_eq!(game.to_string(), "BUF @ TOR [FUT]");
+    }
+
+    #[test]
+    fn test_schedule_game_deserialization_without_game_date() {
+        let json = r#"{
+            "id": 2024020001,
+            "gameType": 2,
+            "startTimeUTC": "23:00:00Z",
+            "awayTeam": {
+                "id": 7,
+                "abbrev": "BUF",
+                "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"
+            },
+            "homeTeam": {
+                "id": 10,
+                "abbrev": "TOR",
+                "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
+            },
+            "gameState": "FUT"
+        }"#;
+
+        let game: ScheduleGame = serde_json::from_str(json).unwrap();
+        assert_eq!(game.id, 2024020001);
+        assert_eq!(game.game_date, None);
+        assert_eq!(game.away_team.abbrev, "BUF");
+        assert_eq!(game.home_team.abbrev, "TOR");
     }
 
     #[test]

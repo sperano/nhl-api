@@ -25,6 +25,14 @@ impl Default for ClientConfig {
     }
 }
 
+impl ClientConfig {
+    /// Create a new ClientConfig with debug mode enabled
+    pub fn with_debug(mut self) -> Self {
+        self.debug = true;
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

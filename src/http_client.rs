@@ -105,3 +105,114 @@ impl HttpClient {
     }
 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_endpoint_base_url_api_web_v1() {
+        let endpoint = Endpoint::ApiWebV1;
+        assert_eq!(endpoint.base_url(), "https://api-web.nhle.com/v1/");
+    }
+
+    #[test]
+    fn test_endpoint_base_url_api_core() {
+        let endpoint = Endpoint::ApiCore;
+        assert_eq!(endpoint.base_url(), "https://api.nhle.com/");
+    }
+
+    #[test]
+    fn test_endpoint_base_url_api_stats() {
+        let endpoint = Endpoint::ApiStats;
+        assert_eq!(endpoint.base_url(), "https://api.nhle.com/stats/rest/");
+    }
+
+    #[test]
+    fn test_endpoint_clone() {
+        let endpoint1 = Endpoint::ApiWebV1;
+        let endpoint2 = endpoint1.clone();
+        assert_eq!(endpoint1.base_url(), endpoint2.base_url());
+    }
+
+    #[test]
+    fn test_http_client_new_default_config() {
+        let config = ClientConfig::default();
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_custom_timeout() {
+        let config = ClientConfig {
+            timeout: Duration::from_secs(60),
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_redirects_disabled() {
+        let config = ClientConfig {
+            follow_redirects: false,
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_ssl_verify_disabled() {
+        let config = ClientConfig {
+            ssl_verify: false,
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_debug() {
+        let config = ClientConfig {
+            debug: true,
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_all_options() {
+        let config = ClientConfig {
+            timeout: Duration::from_secs(120),
+            follow_redirects: false,
+            ssl_verify: false,
+            debug: true,
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_very_short_timeout() {
+        let config = ClientConfig {
+            timeout: Duration::from_millis(100),
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        assert!(client.is_ok());
+    }
+
+    #[test]
+    fn test_http_client_new_with_zero_timeout() {
+        let config = ClientConfig {
+            timeout: Duration::from_secs(0),
+            ..Default::default()
+        };
+        let client = HttpClient::new(config);
+        // Should still create successfully, though this might cause issues in practice
+        assert!(client.is_ok());
+    }
+}

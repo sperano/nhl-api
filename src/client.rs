@@ -5,7 +5,7 @@ use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
-use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing};
+use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing, DailySchedule, WeeklyScheduleResponse};
 
 pub struct Client {
     client: HttpClient,
@@ -25,11 +25,12 @@ impl Client {
         })
     }
 
-    // TODO
-    // /// Create a new NHL client with debug logging enabled
-    // pub fn with_debug() -> Self {
-    //     Self::with_config(ClientConfig::builder().debug(true).build())
-    // }
+    /// Create a new NHL client with debug logging enabled
+    pub fn with_debug() -> Result<Self> {
+        let mut config = ClientConfig::default();
+        config.debug = true;
+        Self::with_config(config)
+    }
 
     pub async fn teams(&self /*, date: Option<&GameDate>*/) -> Result<Vec<Team>> {
         //let date = date.cloned().unwrap_or_default();
@@ -85,6 +86,53 @@ impl Client {
             .get_json(
                 Endpoint::ApiWebV1,
                 &format!("gamecenter/{}/boxscore", game_id),
+                None,
+            )
+            .await
+    }
+
+    pub async fn daily_schedule(&self, date: Option<&GameDate>) -> Result<DailySchedule> {
+        let date = date.cloned().unwrap_or_else(GameDate::today);
+        let date_string = date.to_api_string();
+
+        let schedule_data: WeeklyScheduleResponse = self
+            .client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("schedule/{}", date_string),
+                None,
+            )
+            .await?;
+
+        let mut games = Vec::new();
+
+        if let Some(matching_day) = schedule_data
+            .game_week
+            .iter()
+            .find(|day| day.date == date_string)
+        {
+            games = matching_day.games.clone();
+        }
+
+        Ok(DailySchedule {
+            next_start_date: Some(schedule_data.next_start_date),
+            previous_start_date: Some(schedule_data.previous_start_date),
+            date: date_string.clone(),
+            number_of_games: games.len(),
+            games,
+        })
+    }
+
+    /// Gets NHL schedule for a week starting from the specified date.
+    ///
+    /// # Arguments
+    /// * `date` - Optional GameDate. If None, defaults to "now".
+    pub async fn weekly_schedule(&self, date: Option<&GameDate>) -> Result<WeeklyScheduleResponse> {
+        let date = date.cloned().unwrap_or_default();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("schedule/{}", date.to_api_string()),
                 None,
             )
             .await
