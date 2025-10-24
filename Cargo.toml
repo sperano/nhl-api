@@ -1,0 +1,18 @@
+[package]
+name = "nhl_api"
+version = "0.2.0"
+edition = "2021"
+description = "An NHL stats and scores API client"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/sperano/nhl-api"
+homepage = "https://github.com/sperano/nhl-api"
+documentation = "https://docs.rs/nhl-api"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0.100"
+chrono = "0.4.42"
+cargo-tarpaulin = "0.34.0"
