@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::common::LocalizedString;
+use crate::game_state::GameState;
 
 /// Schedule game information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -18,7 +19,7 @@ pub struct ScheduleGame {
     #[serde(rename = "homeTeam")]
     pub home_team: ScheduleTeam,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
 }
 
 impl fmt::Display for ScheduleGame {
@@ -109,7 +110,7 @@ pub struct GameScore {
     #[serde(rename = "gameType")]
     pub game_type: i32,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "awayTeam")]
     pub away_team: ScheduleTeam,
     #[serde(rename = "homeTeam")]

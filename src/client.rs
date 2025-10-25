@@ -5,7 +5,7 @@ use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
-use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing, DailySchedule, WeeklyScheduleResponse, PlayByPlay};
+use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing, DailySchedule, WeeklyScheduleResponse, PlayByPlay, GameMatchup};
 
 pub struct Client {
     client: HttpClient,
@@ -96,6 +96,17 @@ impl Client {
             .get_json(
                 Endpoint::ApiWebV1,
                 &format!("gamecenter/{}/play-by-play", game_id),
+                None,
+            )
+            .await
+    }
+
+    /// Fetch game landing data (lighter than play-by-play, includes summary with period scores)
+    pub async fn landing(&self, game_id: &GameId) -> Result<GameMatchup> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("gamecenter/{}/landing", game_id),
                 None,
             )
             .await

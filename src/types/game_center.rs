@@ -402,16 +402,30 @@ pub struct ShootoutAttempt {
 /// Three stars selection
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ThreeStar {
+    pub star: i32,
     #[serde(rename = "playerId")]
     pub player_id: i64,
-    #[serde(rename = "firstName")]
-    pub first_name: LocalizedString,
-    #[serde(rename = "lastName")]
-    pub last_name: LocalizedString,
-    pub name: LocalizedString,
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: String,
     pub headshot: String,
+    pub name: LocalizedString,
+    #[serde(rename = "sweaterNo")]
+    pub sweater_no: i32,
+    pub position: String,
+    // Skater stats
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub goals: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assists: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub points: Option<i32>,
+    // Goalie stats
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "goalsAgainstAverage")]
+    pub goals_against_average: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "savePctg")]
+    pub save_pctg: Option<f64>,
 }
 
 /// Penalty summary for a period
@@ -425,21 +439,40 @@ pub struct PeriodPenalties {
 /// Penalty summary information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PenaltySummary {
-    #[serde(rename = "eventId")]
-    pub event_id: i64,
-    #[serde(rename = "typeCode")]
-    pub type_code: String,
-    #[serde(rename = "descKey")]
-    pub desc_key: String,
-    pub duration: i32,
-    #[serde(rename = "committedByPlayerId")]
-    pub committed_by_player_id: i64,
-    #[serde(rename = "drawnByPlayerId", skip_serializing_if = "Option::is_none")]
-    pub drawn_by_player_id: Option<i64>,
-    #[serde(rename = "teamAbbrev")]
-    pub team_abbrev: String,
     #[serde(rename = "timeInPeriod")]
     pub time_in_period: String,
+    #[serde(rename = "type")]
+    pub penalty_type: String,
+    pub duration: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "committedByPlayer")]
+    pub committed_by_player: Option<PenaltyPlayer>,
+    #[serde(rename = "teamAbbrev")]
+    pub team_abbrev: LocalizedString,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "drawnBy")]
+    pub drawn_by: Option<PenaltyPlayer>,
+    #[serde(rename = "descKey")]
+    pub desc_key: String,
+    // Bench penalty specific field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "servedBy")]
+    pub served_by: Option<LocalizedString>,
+    // Optional fields from play-by-play endpoint
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "eventId")]
+    pub event_id: Option<i64>,
+}
+
+/// Player information in penalty summary
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PenaltyPlayer {
+    #[serde(rename = "firstName")]
+    pub first_name: LocalizedString,
+    #[serde(rename = "lastName")]
+    pub last_name: LocalizedString,
+    #[serde(rename = "sweaterNumber")]
+    pub sweater_number: i32,
 }
 
 /// Shift chart data

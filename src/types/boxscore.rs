@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::common::LocalizedString;
+use crate::game_state::GameState;
 
 /// Boxscore response with detailed game and player statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +26,7 @@ pub struct Boxscore {
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
     pub game_schedule_state: String,
     #[serde(rename = "periodDescriptor")]
