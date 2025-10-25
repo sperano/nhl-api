@@ -51,6 +51,10 @@ impl Standing {
             franchise_id: None,
         }
     }
+
+    pub fn games_played(&self) -> i32 {
+        self.wins + self.losses + self.ot_losses
+    }
 }
 
 impl fmt::Display for Standing {
