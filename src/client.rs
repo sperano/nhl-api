@@ -1,6 +1,5 @@
-use std::sync::Arc;
 use crate::config::ClientConfig;
-use anyhow::{Result, Context};
+use anyhow::{Result};
 use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
@@ -32,11 +31,10 @@ impl Client {
         Self::with_config(config)
     }
 
-    pub async fn teams(&self /*, date: Option<&GameDate>*/) -> Result<Vec<Team>> {
-        //let date = date.cloned().unwrap_or_default();
-        let date = GameDate::default();
+    pub async fn teams(&self, date: Option<&GameDate>) -> Result<Vec<Team>> {
+        let date = date.cloned().unwrap_or_default();
         let standings_response = self.fetch_standings_data(&date.to_api_string()).await?;
-        let mut teams: Vec<Team> = standings_response
+        let teams: Vec<Team> = standings_response
             .standings
             .iter()
             .map(|standing| standing.to_team())

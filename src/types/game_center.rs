@@ -341,8 +341,9 @@ pub struct GoalSummary {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "discreteClip")]
     pub discrete_clip: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "goalsToDate")]
-    pub goals_to_date: i32,
+    pub goals_to_date: Option<i32>,
     #[serde(rename = "awayScore")]
     pub away_score: i32,
     #[serde(rename = "homeScore")]
@@ -383,20 +384,21 @@ pub struct AssistSummary {
 /// Shootout attempt information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShootoutAttempt {
+    pub sequence: i32,
     #[serde(rename = "playerId")]
     pub player_id: i64,
+    #[serde(rename = "teamAbbrev")]
+    pub team_abbrev: LocalizedString,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
-    #[serde(rename = "teamAbbrev")]
-    pub team_abbrev: String,
-    pub headshot: String,
     #[serde(rename = "shotType")]
     pub shot_type: String,
     pub result: String,
-    #[serde(rename = "isHomeTeam")]
-    pub is_home_team: bool,
+    pub headshot: String,
+    #[serde(rename = "gameWinner")]
+    pub game_winner: bool,
 }
 
 /// Three stars selection

@@ -5,7 +5,6 @@ mod http_client;
 mod error;
 mod date;
 mod ids;
-mod game_state;
 
 pub use client::Client;
 pub use types::Standing;
@@ -25,4 +24,4 @@ pub use config::ClientConfig;
 pub use error::NHLApiError;
 pub use date::GameDate;
 pub use ids::GameId;
-pub use game_state::GameState;
+pub use types::GameState;
