@@ -35,9 +35,24 @@ impl GameDate {
         }
     }
 
+    #[allow(dead_code)]
     /// Parse from a string in YYYY-MM-DD format
     pub fn from_str(s: &str) -> Result<Self, chrono::ParseError> {
         s.parse()
+    }
+
+    /// Add or subtract days from the date
+    pub fn add_days(&self, days: i64) -> Self {
+        match self {
+            Self::Now => {
+                // For "now", convert to today's date and add days
+                let today = chrono::Local::now().date_naive();
+                Self::Date(today + chrono::Duration::days(days))
+            }
+            Self::Date(date) => {
+                Self::Date(*date + chrono::Duration::days(days))
+            }
+        }
     }
 }
 
@@ -79,11 +94,13 @@ pub struct Season {
 }
 
 impl Season {
+    #[allow(dead_code)]
     /// Create a new season from the starting year
     pub fn new(start_year: u16) -> Self {
         Self { start_year }
     }
 
+    #[allow(dead_code)]
     /// Create a season from start and end years (e.g., 2023, 2024)
     pub fn from_years(start_year: u16, end_year: u16) -> Self {
         debug_assert_eq!(end_year, start_year + 1, "End year should be start year + 1");
@@ -100,6 +117,7 @@ impl Season {
         format!("{}{}", self.start_year, self.end_year())
     }
 
+    #[allow(dead_code)]
     /// Parse from API string format (YYYYYYYY)
     pub fn from_str(s: &str) -> Option<Self> {
         if s.len() != 8 {
@@ -113,6 +131,7 @@ impl Season {
         Some(Self { start_year })
     }
 
+    #[allow(dead_code)]
     /// Get the current NHL season based on the current date
     /// NHL seasons typically start in October
     pub fn current() -> Self {

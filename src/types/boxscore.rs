@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::common::LocalizedString;
+use super::game_state::GameState;
 
 /// Boxscore response with detailed game and player statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +26,7 @@ pub struct Boxscore {
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
     pub game_schedule_state: String,
     #[serde(rename = "periodDescriptor")]
@@ -262,7 +263,7 @@ mod tests {
         assert_eq!(boxscore.id, 2024020001);
         assert_eq!(boxscore.season, 20242025);
         assert_eq!(boxscore.game_type, 2);
-        assert_eq!(boxscore.game_state, "LIVE");
+        assert_eq!(boxscore.game_state, GameState::Live);
         assert_eq!(boxscore.away_team.abbrev, "NJD");
         assert_eq!(boxscore.home_team.abbrev, "BUF");
         assert_eq!(boxscore.away_team.score, 2);

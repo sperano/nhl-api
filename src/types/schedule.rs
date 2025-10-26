@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::common::LocalizedString;
+use super::game_state::GameState;
 
 /// Schedule game information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -18,7 +19,7 @@ pub struct ScheduleGame {
     #[serde(rename = "homeTeam")]
     pub home_team: ScheduleTeam,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
 }
 
 impl fmt::Display for ScheduleGame {
@@ -109,7 +110,7 @@ pub struct GameScore {
     #[serde(rename = "gameType")]
     pub game_type: i32,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "awayTeam")]
     pub away_team: ScheduleTeam,
     #[serde(rename = "homeTeam")]
@@ -181,7 +182,7 @@ mod tests {
                 logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
                 score: None,
             },
-            game_state: "FUT".to_string(),
+            game_state: GameState::Future,
         };
 
         assert_eq!(game.to_string(), "BUF @ TOR on 2023-10-10 [FUT]");
@@ -208,7 +209,7 @@ mod tests {
                 logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
                 score: None,
             },
-            game_state: "FUT".to_string(),
+            game_state: GameState::Future,
         };
 
         assert_eq!(game.to_string(), "BUF @ TOR [FUT]");
@@ -245,7 +246,7 @@ mod tests {
         let game = GameScore {
             id: 2023020001,
             game_type: 2,
-            game_state: "FINAL".to_string(),
+            game_state: GameState::Final,
             away_team: ScheduleTeam {
                 id: 7,
                 abbrev: "BUF".to_string(),
