@@ -180,11 +180,13 @@ pub struct GoalieStats {
     pub power_play_goals_against: i32,
     #[serde(rename = "shorthandedGoalsAgainst")]
     pub shorthanded_goals_against: i32,
-    pub pim: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pim: Option<i32>,
     #[serde(rename = "goalsAgainst")]
     pub goals_against: i32,
     pub toi: String,
-    pub starter: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub starter: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decision: Option<String>,
     #[serde(rename = "shotsAgainst")]
