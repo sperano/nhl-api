@@ -33,12 +33,16 @@ pub enum GameState {
     /// Suspended
     #[serde(rename = "SUSP")]
     Suspended,
+
+    /// Critical (close game, possibly final minutes)
+    #[serde(rename = "CRIT")]
+    Critical,
 }
 
 impl GameState {
     /// Returns true if the game has started (live or completed)
     pub fn has_started(&self) -> bool {
-        matches!(self, GameState::Live | GameState::Final | GameState::Off)
+        matches!(self, GameState::Live | GameState::Critical | GameState::Final | GameState::Off)
     }
 
     /// Returns true if the game is completed
@@ -48,7 +52,7 @@ impl GameState {
 
     /// Returns true if the game is currently in progress
     pub fn is_live(&self) -> bool {
-        matches!(self, GameState::Live)
+        matches!(self, GameState::Live | GameState::Critical)
     }
 
     /// Returns true if the game is scheduled but not started
@@ -67,6 +71,7 @@ impl fmt::Display for GameState {
             GameState::Off => "OFF",
             GameState::Postponed => "PPD",
             GameState::Suspended => "SUSP",
+            GameState::Critical => "CRIT",
         };
         write!(f, "{}", s)
     }
@@ -84,6 +89,7 @@ impl FromStr for GameState {
             "OFF" => Ok(GameState::Off),
             "PPD" => Ok(GameState::Postponed),
             "SUSP" => Ok(GameState::Suspended),
+            "CRIT" => Ok(GameState::Critical),
             _ => Err(format!("Unknown game state: {}", s)),
         }
     }
