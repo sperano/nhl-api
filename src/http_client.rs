@@ -3,6 +3,7 @@ use reqwest::{Client, Response};
 use crate::error::NHLApiError;
 use crate::config::ClientConfig;
 use std::collections::HashMap;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub enum Endpoint {
@@ -22,7 +23,6 @@ impl Endpoint {
 }
 
 pub struct HttpClient {
-    config: ClientConfig,
     client: Client,
 }
 
@@ -39,7 +39,7 @@ impl HttpClient {
         }
 
         let client = client_builder.build()?;
-        Ok(Self { config, client })
+        Ok(Self { client })
     }
 
     fn handle_response(&self, response: Response, url: &str) -> Result<Response, NHLApiError> {
@@ -87,20 +87,22 @@ impl HttpClient {
     ) -> Result<T> {
         let full_url = format!("{}{}", endpoint.base_url(), resource);
 
-        if self.config.debug {
-            eprintln!("GET: {}", full_url);
-        }
+        debug!(url = %full_url, "Sending HTTP GET request");
 
         let mut request = self.client.get(&full_url);
 
         if let Some(params) = query_params {
+            debug!(params = ?params, "Adding query parameters");
             request = request.query(&params);
         }
 
         let response = request.send().await?;
+        debug!(status = %response.status(), url = %full_url, "Received HTTP response");
+
         let response = self.handle_response(response, resource)?;
 
         let json = response.json::<T>().await?;
+        debug!(url = %full_url, "Successfully deserialized response");
         Ok(json)
     }
 
@@ -174,22 +176,11 @@ mod tests {
     }
 
     #[test]
-    fn test_http_client_new_with_debug() {
-        let config = ClientConfig {
-            debug: true,
-            ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
-    }
-
-    #[test]
     fn test_http_client_new_with_all_options() {
         let config = ClientConfig {
             timeout: Duration::from_secs(120),
             follow_redirects: false,
             ssl_verify: false,
-            debug: true,
         };
         let client = HttpClient::new(config);
         assert!(client.is_ok());

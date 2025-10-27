@@ -24,13 +24,6 @@ impl Client {
         })
     }
 
-    /// Create a new NHL client with debug logging enabled
-    pub fn with_debug() -> Result<Self> {
-        let mut config = ClientConfig::default();
-        config.debug = true;
-        Self::with_config(config)
-    }
-
     pub async fn teams(&self, date: Option<&GameDate>) -> Result<Vec<Team>> {
         let date = date.cloned().unwrap_or_default();
         let standings_response = self.fetch_standings_data(&date.to_api_string()).await?;

@@ -2,7 +2,6 @@ use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct ClientConfig {
-    pub(crate) debug: bool,
     pub(crate) timeout: Duration,
     pub(crate) ssl_verify: bool,
     pub(crate) follow_redirects: bool,
@@ -14,7 +13,6 @@ pub struct ClientConfig {
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
-            debug: false,
             timeout: Duration::from_secs(10),
             ssl_verify: true,
             follow_redirects: true,
@@ -25,14 +23,6 @@ impl Default for ClientConfig {
     }
 }
 
-impl ClientConfig {
-    /// Create a new ClientConfig with debug mode enabled
-    pub fn with_debug(mut self) -> Self {
-        self.debug = true;
-        self
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -40,7 +30,6 @@ mod tests {
     #[test]
     fn test_client_config_default() {
         let config = ClientConfig::default();
-        assert!(!config.debug);
         assert_eq!(config.timeout, Duration::from_secs(10));
         assert!(config.ssl_verify);
         assert!(config.follow_redirects);

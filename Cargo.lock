@@ -1109,7 +1109,7 @@ dependencies = [
 
 [[package]]
 name = "nhl_api"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "anyhow",
  "cargo-tarpaulin",
@@ -1118,6 +1118,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]
