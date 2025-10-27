@@ -344,7 +344,7 @@ mod tests {
         assert_eq!(stats.goals_against, 1);
         assert_eq!(stats.saves, 30);
         assert_eq!(stats.shots_against, 31);
-        assert!(stats.starter);
+        assert_eq!(stats.starter, Some(true));
         assert_eq!(stats.decision, Some("W".to_string()));
     }
 }
