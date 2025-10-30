@@ -27,8 +27,18 @@ impl Client {
         })
     }
 
-    pub async fn teams(&self, date: Option<&GameDate>) -> Result<Vec<Team>> {
-        let date = date.cloned().unwrap_or_default();
+    /// Resolve optional date to owned GameDate, defaulting to "now"
+    fn resolve_date(&self, date: Option<GameDate>) -> GameDate {
+        date.unwrap_or_default()
+    }
+
+    /// Resolve optional date to owned GameDate, defaulting to today's date
+    fn resolve_date_to_today(&self, date: Option<GameDate>) -> GameDate {
+        date.unwrap_or_else(GameDate::today)
+    }
+
+    pub async fn teams(&self, date: Option<GameDate>) -> Result<Vec<Team>> {
+        let date = self.resolve_date(date);
         let standings_response = self.fetch_standings_data(&date.to_api_string()).await?;
         let teams: Vec<Team> = standings_response
             .standings
@@ -78,75 +88,78 @@ impl Client {
         Ok(response.seasons)
     }
 
-    pub async fn boxscore(&self, game_id: &GameId) -> Result<Boxscore> {
+    /// Fetch data from a gamecenter endpoint
+    async fn fetch_gamecenter<T: serde::de::DeserializeOwned>(
+        &self,
+        game_id: &GameId,
+        resource: &str,
+    ) -> Result<T> {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("gamecenter/{}/boxscore", game_id),
+                &format!("gamecenter/{}/{}", game_id, resource),
                 None,
             )
             .await
     }
 
+    pub async fn boxscore(&self, game_id: &GameId) -> Result<Boxscore> {
+        self.fetch_gamecenter(game_id, "boxscore").await
+    }
+
     pub async fn play_by_play(&self, game_id: &GameId) -> Result<PlayByPlay> {
-        self.client
-            .get_json(
-                Endpoint::ApiWebV1,
-                &format!("gamecenter/{}/play-by-play", game_id),
-                None,
-            )
-            .await
+        self.fetch_gamecenter(game_id, "play-by-play").await
     }
 
     /// Fetch game landing data (lighter than play-by-play, includes summary with period scores)
     pub async fn landing(&self, game_id: &GameId) -> Result<GameMatchup> {
-        self.client
-            .get_json(
-                Endpoint::ApiWebV1,
-                &format!("gamecenter/{}/landing", game_id),
-                None,
-            )
-            .await
+        self.fetch_gamecenter(game_id, "landing").await
     }
 
-    pub async fn daily_schedule(&self, date: Option<&GameDate>) -> Result<DailySchedule> {
-        let date = date.cloned().unwrap_or_else(GameDate::today);
-        let date_string = date.to_api_string();
-
-        let schedule_data: WeeklyScheduleResponse = self
-            .client
+    async fn fetch_weekly_schedule(&self, date_string: &str) -> Result<WeeklyScheduleResponse> {
+        self.client
             .get_json(
                 Endpoint::ApiWebV1,
                 &format!("schedule/{}", date_string),
                 None,
             )
-            .await?;
+            .await
+    }
 
-        let mut games = Vec::new();
-
-        if let Some(matching_day) = schedule_data
+    fn extract_daily_schedule(
+        &self,
+        schedule_data: WeeklyScheduleResponse,
+        date_string: String,
+    ) -> DailySchedule {
+        let games = schedule_data
             .game_week
             .iter()
             .find(|day| day.date == date_string)
-        {
-            games = matching_day.games.clone();
-        }
+            .map(|day| day.games.clone())
+            .unwrap_or_default();
 
-        Ok(DailySchedule {
+        DailySchedule {
             next_start_date: Some(schedule_data.next_start_date),
             previous_start_date: Some(schedule_data.previous_start_date),
-            date: date_string.clone(),
+            date: date_string,
             number_of_games: games.len(),
             games,
-        })
+        }
+    }
+
+    pub async fn daily_schedule(&self, date: Option<GameDate>) -> Result<DailySchedule> {
+        let date = self.resolve_date_to_today(date);
+        let date_string = date.to_api_string();
+        let schedule_data = self.fetch_weekly_schedule(&date_string).await?;
+        Ok(self.extract_daily_schedule(schedule_data, date_string))
     }
 
     /// Gets NHL schedule for a week starting from the specified date.
     ///
     /// # Arguments
     /// * `date` - Optional GameDate. If None, defaults to "now".
-    pub async fn weekly_schedule(&self, date: Option<&GameDate>) -> Result<WeeklyScheduleResponse> {
-        let date = date.cloned().unwrap_or_default();
+    pub async fn weekly_schedule(&self, date: Option<GameDate>) -> Result<WeeklyScheduleResponse> {
+        let date = self.resolve_date(date);
         self.client
             .get_json(
                 Endpoint::ApiWebV1,

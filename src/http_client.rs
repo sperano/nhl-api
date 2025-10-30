@@ -43,41 +43,45 @@ impl HttpClient {
         Ok(Self { client })
     }
 
+    fn error_from_status(status_code: u16, url: &str) -> NHLApiError {
+        let message = format!("Request to {} failed", url);
+
+        match status_code {
+            404 => NHLApiError::ResourceNotFound {
+                message,
+                status_code,
+            },
+            429 => NHLApiError::RateLimitExceeded {
+                message,
+                status_code,
+            },
+            400 => NHLApiError::BadRequest {
+                message,
+                status_code,
+            },
+            401 => NHLApiError::Unauthorized {
+                message,
+                status_code,
+            },
+            500..=599 => NHLApiError::ServerError {
+                message,
+                status_code,
+            },
+            _ => NHLApiError::ApiError {
+                message: format!("Unexpected error: {}", message),
+                status_code,
+                error_code: None,
+            },
+        }
+    }
+
     fn handle_response(&self, response: Response, url: &str) -> Result<Response, NHLApiError> {
         let status = response.status();
         if status.is_success() {
             return Ok(response);
         }
 
-        let status_code = status.as_u16();
-        let error_message = format!("Request to {} failed", url);
-        match status_code {
-            404 => Err(NHLApiError::ResourceNotFound {
-                message: error_message,
-                status_code,
-            }),
-            429 => Err(NHLApiError::RateLimitExceeded {
-                message: error_message,
-                status_code,
-            }),
-            400 => Err(NHLApiError::BadRequest {
-                message: error_message,
-                status_code,
-            }),
-            401 => Err(NHLApiError::Unauthorized {
-                message: error_message,
-                status_code,
-            }),
-            500..=599 => Err(NHLApiError::ServerError {
-                message: error_message,
-                status_code,
-            }),
-            _ => Err(NHLApiError::ApiError {
-                message: format!("Unexpected error: {}", error_message),
-                status_code,
-                error_code: None,
-            }),
-        }
+        Err(Self::error_from_status(status.as_u16(), url))
     }
 
     pub async fn get_json<T: serde::de::DeserializeOwned>(
@@ -113,6 +117,11 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
+    fn assert_config_creates_client(config: ClientConfig) {
+        let client = HttpClient::new(config);
+        assert!(client.is_ok(), "HttpClient creation should succeed");
+    }
+
     #[test]
     fn test_endpoint_base_url_api_web_v1() {
         let endpoint = Endpoint::ApiWebV1;
@@ -140,70 +149,55 @@ mod tests {
 
     #[test]
     fn test_http_client_new_default_config() {
-        let config = ClientConfig::default();
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        assert_config_creates_client(ClientConfig::default());
     }
 
     #[test]
     fn test_http_client_new_with_custom_timeout() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             timeout: Duration::from_secs(60),
             ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        });
     }
 
     #[test]
     fn test_http_client_new_with_redirects_disabled() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             follow_redirects: false,
             ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        });
     }
 
     #[test]
     fn test_http_client_new_with_ssl_verify_disabled() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             ssl_verify: false,
             ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        });
     }
 
     #[test]
     fn test_http_client_new_with_all_options() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             timeout: Duration::from_secs(120),
             follow_redirects: false,
             ssl_verify: false,
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        });
     }
 
     #[test]
     fn test_http_client_new_with_very_short_timeout() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             timeout: Duration::from_millis(100),
             ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        assert!(client.is_ok());
+        });
     }
 
     #[test]
     fn test_http_client_new_with_zero_timeout() {
-        let config = ClientConfig {
+        assert_config_creates_client(ClientConfig {
             timeout: Duration::from_secs(0),
             ..Default::default()
-        };
-        let client = HttpClient::new(config);
-        // Should still create successfully, though this might cause issues in practice
-        assert!(client.is_ok());
+        });
     }
 }

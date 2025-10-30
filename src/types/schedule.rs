@@ -119,20 +119,23 @@ pub struct GameScore {
 
 impl fmt::Display for GameScore {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let away_score = self
-            .away_team
-            .score
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "-".to_string());
-        let home_score = self
-            .home_team
-            .score
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "-".to_string());
+        use std::borrow::Cow;
+
+        let format_score = |score: Option<i32>| -> Cow<'static, str> {
+            match score {
+                Some(s) => Cow::Owned(s.to_string()),
+                None => Cow::Borrowed("-"),
+            }
+        };
+
         write!(
             f,
             "{} {} @ {} {} [{}]",
-            self.away_team.abbrev, away_score, self.home_team.abbrev, home_score, self.game_state
+            self.away_team.abbrev,
+            format_score(self.away_team.score),
+            self.home_team.abbrev,
+            format_score(self.home_team.score),
+            self.game_state
         )
     }
 }

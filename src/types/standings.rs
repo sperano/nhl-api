@@ -33,6 +33,21 @@ pub struct Standing {
 }
 
 impl Standing {
+    const UNKNOWN_CONFERENCE_ABBR: &'static str = "UNK";
+    const UNKNOWN_CONFERENCE_NAME: &'static str = "Unknown";
+
+    fn conference_abbrev(&self) -> &str {
+        self.conference_abbrev
+            .as_deref()
+            .unwrap_or(Self::UNKNOWN_CONFERENCE_ABBR)
+    }
+
+    fn conference_name(&self) -> &str {
+        self.conference_name
+            .as_deref()
+            .unwrap_or(Self::UNKNOWN_CONFERENCE_NAME)
+    }
+
     /// Convert a Standing entry into a Team struct
     pub fn to_team(&self) -> Team {
         Team {
@@ -41,14 +56,8 @@ impl Standing {
             abbr: self.team_abbrev.default.clone(),
             logo: self.team_logo.clone(),
             conference: Conference {
-                abbr: self
-                    .conference_abbrev
-                    .clone()
-                    .unwrap_or_else(|| "UNK".to_string()),
-                name: self
-                    .conference_name
-                    .clone()
-                    .unwrap_or_else(|| "Unknown".to_string()),
+                abbr: self.conference_abbrev().to_string(),
+                name: self.conference_name().to_string(),
             },
             division: Division {
                 abbr: self.division_abbrev.clone(),

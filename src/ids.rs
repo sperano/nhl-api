@@ -209,7 +209,7 @@ mod tests {
     fn test_game_id_copy_clone() {
         let id1 = GameId::new(2023020001);
         let id2 = id1; // Copy
-        let id3 = id1.clone(); // Clone
+        let id3 = id1; // GameId is Copy, so no need for .clone()
 
         assert_eq!(id1, id2);
         assert_eq!(id1, id3);
