@@ -36,6 +36,7 @@ impl GameDate {
     }
 
     #[allow(dead_code)]
+    #[allow(clippy::should_implement_trait)]
     /// Parse from a string in YYYY-MM-DD format
     pub fn from_str(s: &str) -> Result<Self, chrono::ParseError> {
         s.parse()
@@ -49,9 +50,7 @@ impl GameDate {
                 let today = chrono::Local::now().date_naive();
                 Self::Date(today + chrono::Duration::days(days))
             }
-            Self::Date(date) => {
-                Self::Date(*date + chrono::Duration::days(days))
-            }
+            Self::Date(date) => Self::Date(*date + chrono::Duration::days(days)),
         }
     }
 }
@@ -103,7 +102,11 @@ impl Season {
     #[allow(dead_code)]
     /// Create a season from start and end years (e.g., 2023, 2024)
     pub fn from_years(start_year: u16, end_year: u16) -> Self {
-        debug_assert_eq!(end_year, start_year + 1, "End year should be start year + 1");
+        debug_assert_eq!(
+            end_year,
+            start_year + 1,
+            "End year should be start year + 1"
+        );
         Self { start_year }
     }
 
@@ -113,6 +116,7 @@ impl Season {
     }
 
     /// Convert to API string format (YYYYYYYY)
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_api_string(&self) -> String {
         format!("{}{}", self.start_year, self.end_year())
     }

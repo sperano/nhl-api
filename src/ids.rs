@@ -15,11 +15,6 @@ impl GameId {
     pub const fn as_i64(&self) -> i64 {
         self.0
     }
-
-    /// Convert to a string for API calls
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
 }
 
 impl From<i64> for GameId {

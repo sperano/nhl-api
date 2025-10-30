@@ -1,10 +1,13 @@
 use crate::config::ClientConfig;
-use anyhow::{Result};
 use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
-use crate::types::{Boxscore, Team, StandingsResponse, SeasonInfo, SeasonsResponse, Standing, DailySchedule, WeeklyScheduleResponse, PlayByPlay, GameMatchup};
+use crate::types::{
+    Boxscore, DailySchedule, GameMatchup, PlayByPlay, SeasonInfo, SeasonsResponse, Standing,
+    StandingsResponse, Team, WeeklyScheduleResponse,
+};
+use anyhow::Result;
 
 pub struct Client {
     client: HttpClient,
@@ -48,7 +51,10 @@ impl Client {
     }
 
     pub async fn league_standings_for_date(&self, date: &GameDate) -> Result<Vec<Standing>> {
-        Ok(self.fetch_standings_data(&date.to_api_string()).await?.standings)
+        Ok(self
+            .fetch_standings_data(&date.to_api_string())
+            .await?
+            .standings)
     }
 
     pub async fn league_standings_for_season(&self, season_id: i64) -> Result<Vec<Standing>> {
@@ -149,6 +155,4 @@ impl Client {
             )
             .await
     }
-
 }
-

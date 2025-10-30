@@ -119,8 +119,16 @@ pub struct GameScore {
 
 impl fmt::Display for GameScore {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let away_score = self.away_team.score.map(|s| s.to_string()).unwrap_or_else(|| "-".to_string());
-        let home_score = self.home_team.score.map(|s| s.to_string()).unwrap_or_else(|| "-".to_string());
+        let away_score = self
+            .away_team
+            .score
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "-".to_string());
+        let home_score = self
+            .home_team
+            .score
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "-".to_string());
         write!(
             f,
             "{} {} @ {} {} [{}]",

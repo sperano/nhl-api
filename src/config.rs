@@ -35,4 +35,3 @@ mod tests {
         assert!(config.follow_redirects);
     }
 }
-

@@ -41,8 +41,14 @@ impl Standing {
             abbr: self.team_abbrev.default.clone(),
             logo: self.team_logo.clone(),
             conference: Conference {
-                abbr: self.conference_abbrev.clone().unwrap_or_else(|| "UNK".to_string()),
-                name: self.conference_name.clone().unwrap_or_else(|| "Unknown".to_string()),
+                abbr: self
+                    .conference_abbrev
+                    .clone()
+                    .unwrap_or_else(|| "UNK".to_string()),
+                name: self
+                    .conference_name
+                    .clone()
+                    .unwrap_or_else(|| "Unknown".to_string()),
             },
             division: Division {
                 abbr: self.division_abbrev.clone(),
@@ -149,7 +155,10 @@ mod tests {
         assert_eq!(team.name, "Vegas Golden Knights");
         assert_eq!(team.common_name, "Golden Knights");
         assert_eq!(team.abbr, "VGK");
-        assert_eq!(team.logo, "https://assets.nhle.com/logos/nhl/svg/VGK_light.svg");
+        assert_eq!(
+            team.logo,
+            "https://assets.nhle.com/logos/nhl/svg/VGK_light.svg"
+        );
         assert_eq!(team.conference.abbr, "W");
         assert_eq!(team.conference.name, "Western");
         assert_eq!(team.division.abbr, "PAC");

@@ -42,7 +42,10 @@ pub enum GameState {
 impl GameState {
     /// Returns true if the game has started (live or completed)
     pub fn has_started(&self) -> bool {
-        matches!(self, GameState::Live | GameState::Critical | GameState::Final | GameState::Off)
+        matches!(
+            self,
+            GameState::Live | GameState::Critical | GameState::Final | GameState::Off
+        )
     }
 
     /// Returns true if the game is completed

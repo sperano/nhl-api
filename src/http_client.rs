@@ -1,11 +1,12 @@
+use crate::config::ClientConfig;
+use crate::error::NHLApiError;
 use anyhow::Result;
 use reqwest::{Client, Response};
-use crate::error::NHLApiError;
-use crate::config::ClientConfig;
 use std::collections::HashMap;
 use tracing::debug;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Endpoint {
     ApiWebV1,
     ApiCore,
@@ -105,7 +106,6 @@ impl HttpClient {
         debug!(url = %full_url, "Successfully deserialized response");
         Ok(json)
     }
-
 }
 
 #[cfg(test)]
