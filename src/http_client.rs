@@ -11,6 +11,7 @@ pub enum Endpoint {
     ApiWebV1,
     ApiCore,
     ApiStats,
+    SearchV1,
 }
 
 impl Endpoint {
@@ -19,6 +20,7 @@ impl Endpoint {
             Endpoint::ApiWebV1 => "https://api-web.nhle.com/v1/",
             Endpoint::ApiCore => "https://api.nhle.com/",
             Endpoint::ApiStats => "https://api.nhle.com/stats/rest/",
+            Endpoint::SearchV1 => "https://search.d3.nhle.com/api/v1/",
         }
     }
 }
@@ -138,6 +140,12 @@ mod tests {
     fn test_endpoint_base_url_api_stats() {
         let endpoint = Endpoint::ApiStats;
         assert_eq!(endpoint.base_url(), "https://api.nhle.com/stats/rest/");
+    }
+
+    #[test]
+    fn test_endpoint_base_url_search_v1() {
+        let endpoint = Endpoint::SearchV1;
+        assert_eq!(endpoint.base_url(), "https://search.d3.nhle.com/api/v1/");
     }
 
     #[test]

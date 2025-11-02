@@ -4,10 +4,12 @@ use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
 use crate::types::{
-    Boxscore, DailySchedule, GameMatchup, PlayByPlay, SeasonInfo, SeasonsResponse, Standing,
-    StandingsResponse, Team, WeeklyScheduleResponse,
+    Boxscore, DailySchedule, GameMatchup, PlayByPlay, PlayerGameLog, PlayerLanding,
+    PlayerSearchResult, SeasonInfo, SeasonsResponse, Standing, StandingsResponse, Team,
+    WeeklyScheduleResponse,
 };
 use anyhow::Result;
+use std::collections::HashMap;
 
 pub struct Client {
     client: HttpClient,
@@ -166,6 +168,61 @@ impl Client {
                 &format!("schedule/{}", date.to_api_string()),
                 None,
             )
+            .await
+    }
+
+    /// Gets comprehensive player profile data including biography, stats, and career history
+    ///
+    /// # Arguments
+    /// * `player_id` - NHL player ID (7-digit integer)
+    pub async fn player_landing(&self, player_id: i64) -> Result<PlayerLanding> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("player/{}/landing", player_id),
+                None,
+            )
+            .await
+    }
+
+    /// Gets game-by-game log for a player's season
+    ///
+    /// # Arguments
+    /// * `player_id` - NHL player ID
+    /// * `season` - Season in YYYYYYYY format (e.g., 20232024)
+    /// * `game_type` - 2 for regular season, 3 for playoffs
+    pub async fn player_game_log(
+        &self,
+        player_id: i64,
+        season: i32,
+        game_type: i32,
+    ) -> Result<PlayerGameLog> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("player/{}/game-log/{}/{}", player_id, season, game_type),
+                None,
+            )
+            .await
+    }
+
+    /// Search for players by name
+    ///
+    /// # Arguments
+    /// * `query` - Search query (player name or partial name)
+    /// * `limit` - Maximum number of results to return (default 20)
+    pub async fn search_player(
+        &self,
+        query: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<PlayerSearchResult>> {
+        let mut params = HashMap::new();
+        params.insert("culture".to_string(), "en-us".to_string());
+        params.insert("q".to_string(), query.to_string());
+        params.insert("limit".to_string(), limit.unwrap_or(20).to_string());
+
+        self.client
+            .get_json(Endpoint::SearchV1, "search/player", Some(params))
             .await
     }
 }
