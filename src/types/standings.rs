@@ -307,4 +307,187 @@ mod tests {
         assert_eq!(team.division.abbr, "EAST");
         assert_eq!(team.division.name, "East");
     }
+
+    #[test]
+    fn test_games_played_typical_season() {
+        let standing = Standing {
+            conference_abbrev: Some("E".to_string()),
+            conference_name: Some("Eastern".to_string()),
+            division_abbrev: "ATL".to_string(),
+            division_name: "Atlantic".to_string(),
+            team_name: LocalizedString {
+                default: "Toronto Maple Leafs".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Maple Leafs".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "TOR".to_string(),
+            },
+            team_logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
+            wins: 15,
+            losses: 10,
+            ot_losses: 2,
+            points: 32,
+        };
+
+        assert_eq!(standing.games_played(), 27); // 15 + 10 + 2
+    }
+
+    #[test]
+    fn test_games_played_zero_games() {
+        let standing = Standing {
+            conference_abbrev: Some("W".to_string()),
+            conference_name: Some("Western".to_string()),
+            division_abbrev: "CEN".to_string(),
+            division_name: "Central".to_string(),
+            team_name: LocalizedString {
+                default: "Test Team".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Test".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "TST".to_string(),
+            },
+            team_logo: "https://example.com/logo.svg".to_string(),
+            wins: 0,
+            losses: 0,
+            ot_losses: 0,
+            points: 0,
+        };
+
+        assert_eq!(standing.games_played(), 0);
+    }
+
+    #[test]
+    fn test_games_played_only_wins() {
+        let standing = Standing {
+            conference_abbrev: Some("E".to_string()),
+            conference_name: Some("Eastern".to_string()),
+            division_abbrev: "ATL".to_string(),
+            division_name: "Atlantic".to_string(),
+            team_name: LocalizedString {
+                default: "Undefeated Team".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Undefeated".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "UND".to_string(),
+            },
+            team_logo: "https://example.com/logo.svg".to_string(),
+            wins: 10,
+            losses: 0,
+            ot_losses: 0,
+            points: 20,
+        };
+
+        assert_eq!(standing.games_played(), 10);
+    }
+
+    #[test]
+    fn test_games_played_only_losses() {
+        let standing = Standing {
+            conference_abbrev: Some("W".to_string()),
+            conference_name: Some("Western".to_string()),
+            division_abbrev: "PAC".to_string(),
+            division_name: "Pacific".to_string(),
+            team_name: LocalizedString {
+                default: "Winless Team".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Winless".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "WLS".to_string(),
+            },
+            team_logo: "https://example.com/logo.svg".to_string(),
+            wins: 0,
+            losses: 15,
+            ot_losses: 0,
+            points: 0,
+        };
+
+        assert_eq!(standing.games_played(), 15);
+    }
+
+    #[test]
+    fn test_games_played_only_ot_losses() {
+        let standing = Standing {
+            conference_abbrev: Some("E".to_string()),
+            conference_name: Some("Eastern".to_string()),
+            division_abbrev: "MET".to_string(),
+            division_name: "Metropolitan".to_string(),
+            team_name: LocalizedString {
+                default: "OT Loss Team".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "OT Loss".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "OTL".to_string(),
+            },
+            team_logo: "https://example.com/logo.svg".to_string(),
+            wins: 0,
+            losses: 0,
+            ot_losses: 5,
+            points: 5,
+        };
+
+        assert_eq!(standing.games_played(), 5);
+    }
+
+    #[test]
+    fn test_games_played_full_season() {
+        let standing = Standing {
+            conference_abbrev: Some("W".to_string()),
+            conference_name: Some("Western".to_string()),
+            division_abbrev: "CEN".to_string(),
+            division_name: "Central".to_string(),
+            team_name: LocalizedString {
+                default: "Colorado Avalanche".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Avalanche".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "COL".to_string(),
+            },
+            team_logo: "https://assets.nhle.com/logos/nhl/svg/COL_light.svg".to_string(),
+            wins: 50,
+            losses: 20,
+            ot_losses: 12,
+            points: 112,
+        };
+
+        assert_eq!(standing.games_played(), 82); // Full 82-game season
+    }
+
+    #[test]
+    fn test_games_played_with_existing_standings() {
+        // Verify calculation matches the standings used in other tests
+        let standing = Standing {
+            conference_abbrev: Some("E".to_string()),
+            conference_name: Some("Eastern".to_string()),
+            division_abbrev: "ATL".to_string(),
+            division_name: "Atlantic".to_string(),
+            team_name: LocalizedString {
+                default: "Buffalo Sabres".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Sabres".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "BUF".to_string(),
+            },
+            team_logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
+            wins: 10,
+            losses: 5,
+            ot_losses: 2,
+            points: 22,
+        };
+
+        assert_eq!(standing.games_played(), 17); // 10 + 5 + 2
+    }
 }

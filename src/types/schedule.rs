@@ -276,4 +276,82 @@ mod tests {
 
         assert_eq!(game.to_string(), "BUF 3 @ TOR 2 [FINAL]");
     }
+
+    #[test]
+    fn test_game_score_display_with_no_scores() {
+        // Test the None => Cow::Borrowed("-") branch
+        let game = GameScore {
+            id: 2023020001,
+            game_type: 2,
+            game_state: GameState::Future,
+            away_team: ScheduleTeam {
+                id: 7,
+                abbrev: "BUF".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
+                score: None,
+            },
+            home_team: ScheduleTeam {
+                id: 10,
+                abbrev: "TOR".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
+                score: None,
+            },
+        };
+
+        assert_eq!(game.to_string(), "BUF - @ TOR - [FUT]");
+    }
+
+    #[test]
+    fn test_game_score_display_with_partial_score() {
+        // Test mixed Some/None scores (one team has score, other doesn't)
+        let game = GameScore {
+            id: 2023020001,
+            game_type: 2,
+            game_state: GameState::Live,
+            away_team: ScheduleTeam {
+                id: 7,
+                abbrev: "BUF".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
+                score: Some(1),
+            },
+            home_team: ScheduleTeam {
+                id: 10,
+                abbrev: "TOR".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
+                score: None,
+            },
+        };
+
+        assert_eq!(game.to_string(), "BUF 1 @ TOR - [LIVE]");
+    }
+
+    #[test]
+    fn test_game_score_display_with_zero_scores() {
+        // Test that zero scores display as "0" not "-"
+        let game = GameScore {
+            id: 2023020001,
+            game_type: 2,
+            game_state: GameState::Live,
+            away_team: ScheduleTeam {
+                id: 7,
+                abbrev: "BUF".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
+                score: Some(0),
+            },
+            home_team: ScheduleTeam {
+                id: 10,
+                abbrev: "TOR".to_string(),
+                place_name: None,
+                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
+                score: Some(0),
+            },
+        };
+
+        assert_eq!(game.to_string(), "BUF 0 @ TOR 0 [LIVE]");
+    }
 }

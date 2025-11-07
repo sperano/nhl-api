@@ -8,6 +8,8 @@ mod types;
 
 pub use client::Client;
 pub use types::Boxscore;
+pub use types::ClubStats;
+pub use types::TeamGameStats;
 pub use types::Conference;
 pub use types::DailySchedule;
 pub use types::Division;
@@ -23,6 +25,7 @@ pub use types::PlayerGameLog;
 pub use types::PlayerLanding;
 pub use types::PlayerSearchResult;
 pub use types::ScheduleGame;
+pub use types::ScheduleTeam;
 pub use types::SkaterStats;
 pub use types::Standing;
 pub use types::TeamPlayerStats;

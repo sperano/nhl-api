@@ -41,13 +41,21 @@ impl fmt::Display for Team {
 }
 
 /// Franchise information
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Franchise {
-    pub id: i64,
+    pub id: i32,
     #[serde(rename = "fullName")]
     pub full_name: String,
     #[serde(rename = "teamCommonName")]
-    pub team_common_name: Option<String>,
+    pub team_common_name: String,
+    #[serde(rename = "teamPlaceName")]
+    pub team_place_name: String,
+}
+
+impl fmt::Display for Franchise {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (ID: {})", self.full_name, self.id)
+    }
 }
 
 /// Response from the franchises endpoint
@@ -133,21 +141,116 @@ mod tests {
     }
 
     #[test]
+    fn test_franchise_deserialization() {
+        let json = r#"{
+            "id": 32,
+            "fullName": "Anaheim Ducks",
+            "teamCommonName": "Ducks",
+            "teamPlaceName": "Anaheim"
+        }"#;
+
+        let franchise: Franchise = serde_json::from_str(json).unwrap();
+        assert_eq!(franchise.id, 32);
+        assert_eq!(franchise.full_name, "Anaheim Ducks");
+        assert_eq!(franchise.team_common_name, "Ducks");
+        assert_eq!(franchise.team_place_name, "Anaheim");
+    }
+
+    #[test]
+    fn test_franchise_display() {
+        let franchise = Franchise {
+            id: 16,
+            full_name: "Philadelphia Flyers".to_string(),
+            team_common_name: "Flyers".to_string(),
+            team_place_name: "Philadelphia".to_string(),
+        };
+
+        assert_eq!(format!("{}", franchise), "Philadelphia Flyers (ID: 16)");
+    }
+
+    #[test]
     fn test_franchise_response_deserialization() {
         let json = r#"{
             "data": [
                 {
-                    "id": 19,
-                    "fullName": "Buffalo Sabres",
-                    "teamCommonName": "Sabres"
+                    "id": 32,
+                    "fullName": "Anaheim Ducks",
+                    "teamCommonName": "Ducks",
+                    "teamPlaceName": "Anaheim"
+                },
+                {
+                    "id": 8,
+                    "fullName": "Brooklyn Americans",
+                    "teamCommonName": "Americans",
+                    "teamPlaceName": "Brooklyn"
                 }
             ]
         }"#;
 
         let response: FranchisesResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(response.data.len(), 1);
-        assert_eq!(response.data[0].id, 19);
-        assert_eq!(response.data[0].full_name, "Buffalo Sabres");
+        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.data[0].id, 32);
+        assert_eq!(response.data[0].full_name, "Anaheim Ducks");
+        assert_eq!(response.data[1].id, 8);
+        assert_eq!(response.data[1].full_name, "Brooklyn Americans");
+    }
+
+    #[test]
+    fn test_franchise_clone() {
+        let franchise = Franchise {
+            id: 1,
+            full_name: "Montreal Canadiens".to_string(),
+            team_common_name: "Canadiens".to_string(),
+            team_place_name: "Montreal".to_string(),
+        };
+
+        let cloned = franchise.clone();
+        assert_eq!(franchise, cloned);
+    }
+
+    #[test]
+    fn test_franchise_equality() {
+        let franchise1 = Franchise {
+            id: 1,
+            full_name: "Montreal Canadiens".to_string(),
+            team_common_name: "Canadiens".to_string(),
+            team_place_name: "Montreal".to_string(),
+        };
+
+        let franchise2 = Franchise {
+            id: 1,
+            full_name: "Montreal Canadiens".to_string(),
+            team_common_name: "Canadiens".to_string(),
+            team_place_name: "Montreal".to_string(),
+        };
+
+        assert_eq!(franchise1, franchise2);
+    }
+
+    #[test]
+    fn test_franchise_inequality() {
+        let franchise1 = Franchise {
+            id: 1,
+            full_name: "Montreal Canadiens".to_string(),
+            team_common_name: "Canadiens".to_string(),
+            team_place_name: "Montreal".to_string(),
+        };
+
+        let franchise2 = Franchise {
+            id: 6,
+            full_name: "Boston Bruins".to_string(),
+            team_common_name: "Bruins".to_string(),
+            team_place_name: "Boston".to_string(),
+        };
+
+        assert_ne!(franchise1, franchise2);
+    }
+
+    #[test]
+    fn test_franchise_empty_response() {
+        let json = r#"{"data": []}"#;
+        let response: FranchisesResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 0);
     }
 
     #[test]
