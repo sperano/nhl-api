@@ -3,9 +3,10 @@ use std::fmt;
 use std::str::FromStr;
 
 /// A date wrapper for NHL API calls that can be "now" or a specific date
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum GameDate {
     /// Use the current date
+    #[default]
     Now,
     /// Use a specific date
     Date(NaiveDate),
@@ -64,12 +65,6 @@ impl FromStr for GameDate {
         } else {
             NaiveDate::parse_from_str(s, "%Y-%m-%d").map(Self::Date)
         }
-    }
-}
-
-impl Default for GameDate {
-    fn default() -> Self {
-        Self::Now
     }
 }
 

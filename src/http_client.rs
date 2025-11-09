@@ -546,9 +546,7 @@ mod tests {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        struct TestResponse {
-            id: i32,
-        }
+        struct TestResponse {}
 
         let mut server = mockito::Server::new_async().await;
         let _mock = server
@@ -608,9 +606,7 @@ mod tests {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        struct TestResponse {
-            id: i32,
-        }
+        struct TestResponse {}
 
         let mut server = mockito::Server::new_async().await;
         let _mock = server
@@ -640,9 +636,7 @@ mod tests {
         use serde::Deserialize;
 
         #[derive(Debug, Deserialize)]
-        struct TestResponse {
-            id: i32,
-        }
+        struct TestResponse {}
 
         let mut server = mockito::Server::new_async().await;
         let _mock = server
