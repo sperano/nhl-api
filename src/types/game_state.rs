@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+use thiserror::Error;
+
+/// Error type for parsing GameState from string
+#[derive(Error, Debug, PartialEq)]
+#[error("Unknown game state: {0}")]
+pub struct ParseGameStateError(String);
 
 /// NHL game state representing the current status of a game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -39,6 +45,18 @@ pub enum GameState {
     Critical,
 }
 
+/// Mapping of GameState variants to their string representations
+const GAME_STATE_MAPPINGS: [(GameState, &str); 8] = [
+    (GameState::Future, "FUT"),
+    (GameState::PreGame, "PRE"),
+    (GameState::Live, "LIVE"),
+    (GameState::Final, "FINAL"),
+    (GameState::Off, "OFF"),
+    (GameState::Postponed, "PPD"),
+    (GameState::Suspended, "SUSP"),
+    (GameState::Critical, "CRIT"),
+];
+
 impl GameState {
     /// Returns true if the game has started (live or completed)
     pub fn has_started(&self) -> bool {
@@ -62,39 +80,37 @@ impl GameState {
     pub fn is_scheduled(&self) -> bool {
         matches!(self, GameState::Future | GameState::PreGame)
     }
+
+    /// Returns the string representation for this game state
+    const fn as_str(&self) -> &'static str {
+        match self {
+            GameState::Future => GAME_STATE_MAPPINGS[0].1,
+            GameState::PreGame => GAME_STATE_MAPPINGS[1].1,
+            GameState::Live => GAME_STATE_MAPPINGS[2].1,
+            GameState::Final => GAME_STATE_MAPPINGS[3].1,
+            GameState::Off => GAME_STATE_MAPPINGS[4].1,
+            GameState::Postponed => GAME_STATE_MAPPINGS[5].1,
+            GameState::Suspended => GAME_STATE_MAPPINGS[6].1,
+            GameState::Critical => GAME_STATE_MAPPINGS[7].1,
+        }
+    }
 }
 
 impl fmt::Display for GameState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            GameState::Future => "FUT",
-            GameState::PreGame => "PRE",
-            GameState::Live => "LIVE",
-            GameState::Final => "FINAL",
-            GameState::Off => "OFF",
-            GameState::Postponed => "PPD",
-            GameState::Suspended => "SUSP",
-            GameState::Critical => "CRIT",
-        };
-        write!(f, "{}", s)
+        write!(f, "{}", self.as_str())
     }
 }
 
 impl FromStr for GameState {
-    type Err = String;
+    type Err = ParseGameStateError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "FUT" => Ok(GameState::Future),
-            "PRE" => Ok(GameState::PreGame),
-            "LIVE" => Ok(GameState::Live),
-            "FINAL" => Ok(GameState::Final),
-            "OFF" => Ok(GameState::Off),
-            "PPD" => Ok(GameState::Postponed),
-            "SUSP" => Ok(GameState::Suspended),
-            "CRIT" => Ok(GameState::Critical),
-            _ => Err(format!("Unknown game state: {}", s)),
-        }
+        GAME_STATE_MAPPINGS
+            .iter()
+            .find(|(_, string)| *string == s)
+            .map(|(state, _)| *state)
+            .ok_or_else(|| ParseGameStateError(s.to_string()))
     }
 }
 
@@ -176,7 +192,10 @@ mod tests {
     fn test_game_state_from_str_invalid() {
         let result = "INVALID".parse::<GameState>();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Unknown game state: INVALID");
+        assert_eq!(
+            result.unwrap_err(),
+            ParseGameStateError("INVALID".to_string())
+        );
     }
 
     #[test]

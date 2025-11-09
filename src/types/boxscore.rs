@@ -126,7 +126,7 @@ pub struct TeamPlayerStats {
 }
 
 /// Aggregated team statistics for game comparison
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct TeamGameStats {
     pub shots_on_goal: i32,
     pub faceoff_wins: i32,
@@ -143,20 +143,15 @@ pub struct TeamGameStats {
 impl TeamGameStats {
     /// Calculate aggregated team statistics from individual player stats
     pub fn from_team_player_stats(stats: &TeamPlayerStats) -> Self {
-        let mut team_stats = TeamGameStats {
-            shots_on_goal: 0,
-            faceoff_wins: 0,
-            faceoff_total: 0,
-            power_play_goals: 0,
-            power_play_opportunities: 0,
-            penalty_minutes: 0,
-            hits: 0,
-            blocked_shots: 0,
-            giveaways: 0,
-            takeaways: 0,
-        };
+        let mut team_stats = Self::default();
 
-        // Aggregate stats from all skaters (forwards + defense)
+        Self::aggregate_skater_stats(&mut team_stats, stats);
+        Self::aggregate_goalie_stats(&mut team_stats, stats);
+
+        team_stats
+    }
+
+    fn aggregate_skater_stats(team_stats: &mut TeamGameStats, stats: &TeamPlayerStats) {
         for skater in stats.forwards.iter().chain(stats.defense.iter()) {
             team_stats.shots_on_goal += skater.sog;
             team_stats.power_play_goals += skater.power_play_goals;
@@ -166,18 +161,22 @@ impl TeamGameStats {
             team_stats.giveaways += skater.giveaways;
             team_stats.takeaways += skater.takeaways;
 
-            // Calculate faceoffs: faceoff_winning_pctg is wins/total
-            // Only count faceoffs for centers (positions with 'C')
-            if skater.position.contains('C') && skater.faceoff_winning_pctg > 0.0 {
-                // Estimate total faceoffs from SOG as proxy (not ideal but API doesn't give us total faceoffs)
-                // We'll use shifts as a better proxy for faceoff participation
-                let estimated_faceoffs = skater.shifts;
-                team_stats.faceoff_total += estimated_faceoffs;
-                team_stats.faceoff_wins += (estimated_faceoffs as f64 * skater.faceoff_winning_pctg).round() as i32;
-            }
+            Self::add_faceoff_stats(team_stats, skater);
         }
+    }
 
-        // Add goalie penalty minutes
+    fn add_faceoff_stats(team_stats: &mut TeamGameStats, skater: &SkaterStats) {
+        // Only count faceoffs for centers (positions with 'C')
+        if skater.position.contains('C') && skater.faceoff_winning_pctg > 0.0 {
+            // Estimate total faceoffs using shifts as a proxy for faceoff participation
+            let estimated_faceoffs = skater.shifts;
+            team_stats.faceoff_total += estimated_faceoffs;
+            team_stats.faceoff_wins +=
+                (estimated_faceoffs as f64 * skater.faceoff_winning_pctg).round() as i32;
+        }
+    }
+
+    fn aggregate_goalie_stats(team_stats: &mut TeamGameStats, stats: &TeamPlayerStats) {
         for goalie in &stats.goalies {
             if let Some(pim) = goalie.pim {
                 team_stats.penalty_minutes += pim;
@@ -185,8 +184,6 @@ impl TeamGameStats {
             // Count power play opportunities from goals against
             team_stats.power_play_opportunities += goalie.power_play_goals_against;
         }
-
-        team_stats
     }
 
     pub fn faceoff_percentage(&self) -> f64 {

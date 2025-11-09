@@ -32,7 +32,6 @@ pub use types::ScheduleTeam;
 pub use types::SkaterStats;
 pub use types::Standing;
 pub use types::TeamPlayerStats;
-//pub use types::Team;
 pub use config::ClientConfig;
 pub use date::GameDate;
 pub use error::NHLApiError;

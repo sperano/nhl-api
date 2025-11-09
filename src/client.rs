@@ -23,24 +23,18 @@ impl Client {
 
     /// Create a new NHL client with custom configuration
     pub fn with_config(config: ClientConfig) -> Result<Self, NHLApiError> {
-        //let http_client = Arc::new(HttpClient::new(config));
         Ok(Self {
             client: HttpClient::new(config)?,
         })
     }
 
-    /// Resolve optional date to owned GameDate, defaulting to "now"
-    fn resolve_date(&self, date: Option<GameDate>) -> GameDate {
-        date.unwrap_or_default()
-    }
-
-    /// Resolve optional date to owned GameDate, defaulting to today's date
-    fn resolve_date_to_today(&self, date: Option<GameDate>) -> GameDate {
-        date.unwrap_or_else(GameDate::today)
+    /// Resolve optional date to owned GameDate with a default value
+    fn resolve_date_or(date: Option<GameDate>, default: GameDate) -> GameDate {
+        date.unwrap_or(default)
     }
 
     pub async fn teams(&self, date: Option<GameDate>) -> Result<Vec<Team>, NHLApiError> {
-        let date = self.resolve_date(date);
+        let date = Self::resolve_date_or(date, GameDate::default());
         let standings_response = self.fetch_standings_data(&date.to_api_string()).await?;
         let teams: Vec<Team> = standings_response
             .standings
@@ -48,7 +42,6 @@ impl Client {
             .map(|standing| standing.to_team())
             .collect();
 
-        // self.enrich_teams_with_franchise_ids(&mut teams).await?;
         Ok(teams)
     }
 
@@ -75,8 +68,7 @@ impl Client {
             .iter()
             .find(|s| s.id == season_id)
             .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season_id)))?;
-        let date = season_data.standings_end.clone();
-        Ok(self.fetch_standings_data(date.as_str()).await?.standings)
+        Ok(self.fetch_standings_data(&season_data.standings_end).await?.standings)
     }
 
     /// Gets metadata for all NHL seasons.
@@ -93,9 +85,10 @@ impl Client {
     /// Fetch data from a gamecenter endpoint
     async fn fetch_gamecenter<T: serde::de::DeserializeOwned>(
         &self,
-        game_id: &GameId,
+        game_id: impl Into<GameId>,
         resource: &str,
     ) -> Result<T, NHLApiError> {
+        let game_id = game_id.into();
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -105,26 +98,27 @@ impl Client {
             .await
     }
 
-    pub async fn boxscore(&self, game_id: &GameId) -> Result<Boxscore, NHLApiError> {
+    pub async fn boxscore(&self, game_id: impl Into<GameId>) -> Result<Boxscore, NHLApiError> {
         self.fetch_gamecenter(game_id, "boxscore").await
     }
 
-    pub async fn play_by_play(&self, game_id: &GameId) -> Result<PlayByPlay, NHLApiError> {
+    pub async fn play_by_play(&self, game_id: impl Into<GameId>) -> Result<PlayByPlay, NHLApiError> {
         self.fetch_gamecenter(game_id, "play-by-play").await
     }
 
     /// Fetch game landing data (lighter than play-by-play, includes summary with period scores)
-    pub async fn landing(&self, game_id: &GameId) -> Result<GameMatchup, NHLApiError> {
+    pub async fn landing(&self, game_id: impl Into<GameId>) -> Result<GameMatchup, NHLApiError> {
         self.fetch_gamecenter(game_id, "landing").await
     }
 
     /// Fetch season series matchup data including head-to-head records
-    pub async fn season_series(&self, game_id: &GameId) -> Result<SeasonSeriesMatchup, NHLApiError> {
+    pub async fn season_series(&self, game_id: impl Into<GameId>) -> Result<SeasonSeriesMatchup, NHLApiError> {
         self.fetch_gamecenter(game_id, "right-rail").await
     }
 
     /// Fetch game story narrative content
-    pub async fn game_story(&self, game_id: &GameId) -> Result<GameStory, NHLApiError> {
+    pub async fn game_story(&self, game_id: impl Into<GameId>) -> Result<GameStory, NHLApiError> {
+        let game_id = game_id.into();
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -135,7 +129,8 @@ impl Client {
     }
 
     /// Fetch shift chart data for a game
-    pub async fn shift_chart(&self, game_id: &GameId) -> Result<ShiftChart, NHLApiError> {
+    pub async fn shift_chart(&self, game_id: impl Into<GameId>) -> Result<ShiftChart, NHLApiError> {
+        let game_id = game_id.into();
         let cayenne_expr = format!(
             "gameId={} and ((duration != '00:00' and typeCode = 517) or typeCode != 517 )",
             game_id
@@ -166,9 +161,9 @@ impl Client {
     ) -> DailySchedule {
         let games = schedule_data
             .game_week
-            .iter()
+            .into_iter()
             .find(|day| day.date == date_string)
-            .map(|day| day.games.clone())
+            .map(|day| day.games)
             .unwrap_or_default();
 
         DailySchedule {
@@ -181,7 +176,7 @@ impl Client {
     }
 
     pub async fn daily_schedule(&self, date: Option<GameDate>) -> Result<DailySchedule, NHLApiError> {
-        let date = self.resolve_date_to_today(date);
+        let date = Self::resolve_date_or(date, GameDate::today());
         let date_string = date.to_api_string();
         let schedule_data = self.fetch_weekly_schedule(&date_string).await?;
         Ok(self.extract_daily_schedule(schedule_data, date_string))
@@ -192,7 +187,7 @@ impl Client {
     /// # Arguments
     /// * `date` - Optional GameDate. If None, defaults to "now".
     pub async fn weekly_schedule(&self, date: Option<GameDate>) -> Result<WeeklyScheduleResponse, NHLApiError> {
-        let date = self.resolve_date(date);
+        let date = Self::resolve_date_or(date, GameDate::default());
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -368,7 +363,7 @@ impl Client {
     /// # Arguments
     /// * `date` - Optional GameDate. If None, defaults to today's date.
     pub async fn daily_scores(&self, date: Option<GameDate>) -> Result<DailyScores, NHLApiError> {
-        let date = self.resolve_date_to_today(date);
+        let date = Self::resolve_date_or(date, GameDate::today());
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -388,7 +383,7 @@ impl Client {
         team_abbr: &str,
         date: Option<GameDate>,
     ) -> Result<TeamScheduleResponse, NHLApiError> {
-        let date = self.resolve_date_to_today(date);
+        let date = Self::resolve_date_or(date, GameDate::today());
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -434,32 +429,28 @@ mod tests {
     // ===== Helper Method Tests =====
 
     #[test]
-    fn test_resolve_date_with_some() {
-        let client = Client::new().unwrap();
+    fn test_resolve_date_or_with_some() {
         let date = GameDate::Date(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
-        let resolved = client.resolve_date(Some(date.clone()));
+        let resolved = Client::resolve_date_or(Some(date.clone()), GameDate::default());
         assert_eq!(resolved.to_api_string(), "2024-01-15");
     }
 
     #[test]
-    fn test_resolve_date_with_none() {
-        let client = Client::new().unwrap();
-        let resolved = client.resolve_date(None);
+    fn test_resolve_date_or_with_none_default_now() {
+        let resolved = Client::resolve_date_or(None, GameDate::default());
         assert_eq!(resolved.to_api_string(), "now");
     }
 
     #[test]
-    fn test_resolve_date_to_today_with_some() {
-        let client = Client::new().unwrap();
+    fn test_resolve_date_or_with_some_today() {
         let date = GameDate::Date(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
-        let resolved = client.resolve_date_to_today(Some(date.clone()));
+        let resolved = Client::resolve_date_or(Some(date.clone()), GameDate::today());
         assert_eq!(resolved.to_api_string(), "2024-01-15");
     }
 
     #[test]
-    fn test_resolve_date_to_today_with_none() {
-        let client = Client::new().unwrap();
-        let resolved = client.resolve_date_to_today(None);
+    fn test_resolve_date_or_with_none_default_today() {
+        let resolved = Client::resolve_date_or(None, GameDate::today());
         // Should be today's date, not "now"
         assert_ne!(resolved.to_api_string(), "now");
     }
@@ -572,6 +563,29 @@ mod tests {
         assert_eq!(result.date, "2024-01-08");
         assert_eq!(result.number_of_games, 0);
         assert!(result.games.is_empty());
+    }
+
+    // ===== Into<GameId> Support Tests =====
+
+    #[test]
+    fn test_into_game_id_accepts_i64() {
+        // Verify that methods accepting impl Into<GameId> work with raw i64
+        let game_id_i64: i64 = 2023020001;
+
+        // This should compile and convert i64 to GameId automatically
+        // We're just testing the type conversion, not the actual API call
+        let converted: GameId = game_id_i64.into();
+        assert_eq!(converted.as_i64(), 2023020001);
+    }
+
+    #[test]
+    fn test_into_game_id_accepts_game_id() {
+        // Verify that methods accepting impl Into<GameId> work with GameId
+        let game_id = GameId::from(2023020001);
+
+        // This should compile - GameId can convert into itself
+        let converted: GameId = game_id.into();
+        assert_eq!(converted.as_i64(), 2023020001);
     }
 
 }

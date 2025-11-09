@@ -51,32 +51,35 @@ impl HttpClient {
     fn error_from_status(status_code: u16, url: &str) -> NHLApiError {
         let message = format!("Request to {} failed", url);
 
+        macro_rules! error_variant {
+            ($variant:ident) => {
+                NHLApiError::$variant {
+                    message,
+                    status_code,
+                }
+            };
+        }
+
         match status_code {
-            404 => NHLApiError::ResourceNotFound {
-                message,
-                status_code,
-            },
-            429 => NHLApiError::RateLimitExceeded {
-                message,
-                status_code,
-            },
-            400 => NHLApiError::BadRequest {
-                message,
-                status_code,
-            },
-            401 => NHLApiError::Unauthorized {
-                message,
-                status_code,
-            },
-            500..=599 => NHLApiError::ServerError {
-                message,
-                status_code,
-            },
+            404 => error_variant!(ResourceNotFound),
+            429 => error_variant!(RateLimitExceeded),
+            400 => error_variant!(BadRequest),
+            401 => error_variant!(Unauthorized),
+            500..=599 => error_variant!(ServerError),
             _ => NHLApiError::ApiError {
                 message: format!("Unexpected error: {}", message),
                 status_code,
-                error_code: None,
             },
+        }
+    }
+
+    fn build_url(base: &str, resource: &str) -> String {
+        if base.ends_with('/') && resource.starts_with('/') {
+            format!("{}{}", base, &resource[1..])
+        } else if !base.ends_with('/') && !resource.starts_with('/') {
+            format!("{}/{}", base, resource)
+        } else {
+            format!("{}{}", base, resource)
         }
     }
 
@@ -95,14 +98,7 @@ impl HttpClient {
         resource: &str,
         query_params: Option<HashMap<String, String>>,
     ) -> Result<T, NHLApiError> {
-        let base = endpoint.base_url();
-        let full_url = if base.ends_with('/') && resource.starts_with('/') {
-            format!("{}{}", base, &resource[1..])
-        } else if !base.ends_with('/') && !resource.starts_with('/') {
-            format!("{}/{}", base, resource)
-        } else {
-            format!("{}{}", base, resource)
-        };
+        let full_url = Self::build_url(endpoint.base_url(), resource);
 
         debug!(url = %full_url, "Sending HTTP GET request");
 
@@ -189,6 +185,48 @@ mod tests {
         assert_eq!(endpoint1.base_url(), endpoint2.base_url());
     }
 
+    // ===== URL Building Tests =====
+
+    #[test]
+    fn test_build_url_both_have_slash() {
+        // base ends with /, resource starts with /
+        let result = HttpClient::build_url("https://api.example.com/", "/resource");
+        assert_eq!(result, "https://api.example.com/resource");
+    }
+
+    #[test]
+    fn test_build_url_neither_has_slash() {
+        // base doesn't end with /, resource doesn't start with /
+        let result = HttpClient::build_url("https://api.example.com", "resource");
+        assert_eq!(result, "https://api.example.com/resource");
+    }
+
+    #[test]
+    fn test_build_url_base_has_slash_only() {
+        // base ends with /, resource doesn't start with /
+        let result = HttpClient::build_url("https://api.example.com/", "resource");
+        assert_eq!(result, "https://api.example.com/resource");
+    }
+
+    #[test]
+    fn test_build_url_resource_has_slash_only() {
+        // base doesn't end with /, resource starts with /
+        let result = HttpClient::build_url("https://api.example.com", "/resource");
+        assert_eq!(result, "https://api.example.com/resource");
+    }
+
+    #[test]
+    fn test_build_url_with_path_segments() {
+        let result = HttpClient::build_url("https://api.example.com/v1/", "/data/items");
+        assert_eq!(result, "https://api.example.com/v1/data/items");
+    }
+
+    #[test]
+    fn test_build_url_empty_resource() {
+        let result = HttpClient::build_url("https://api.example.com/", "");
+        assert_eq!(result, "https://api.example.com/");
+    }
+
     // ===== HttpClient Configuration Tests =====
 
     #[test]
@@ -247,225 +285,141 @@ mod tests {
 
     // ===== Error Mapping Tests =====
 
-    #[test]
-    fn test_error_from_status_404_not_found() {
-        let error = HttpClient::error_from_status(404, "/test/resource");
-        match error {
-            NHLApiError::ResourceNotFound {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 404);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ResourceNotFound error"),
-        }
+    /// Helper function to test that a status code produces the expected error variant
+    fn assert_error_matches(
+        status_code: u16,
+        expected_variant: fn(&NHLApiError) -> bool,
+        expected_message_contains: &str,
+    ) {
+        let error = HttpClient::error_from_status(status_code, "/test/resource");
+
+        assert!(
+            expected_variant(&error),
+            "Expected specific error variant for status {}, got {:?}",
+            status_code,
+            error
+        );
+
+        // Verify the status code is preserved in the error
+        let actual_status = match &error {
+            NHLApiError::ResourceNotFound { status_code, .. } => *status_code,
+            NHLApiError::RateLimitExceeded { status_code, .. } => *status_code,
+            NHLApiError::BadRequest { status_code, .. } => *status_code,
+            NHLApiError::Unauthorized { status_code, .. } => *status_code,
+            NHLApiError::ServerError { status_code, .. } => *status_code,
+            NHLApiError::ApiError { status_code, .. } => *status_code,
+            _ => panic!("Unexpected error variant: {:?}", error),
+        };
+        assert_eq!(actual_status, status_code);
+
+        // Verify the message contains expected text
+        let actual_message = match &error {
+            NHLApiError::ResourceNotFound { message, .. } => message,
+            NHLApiError::RateLimitExceeded { message, .. } => message,
+            NHLApiError::BadRequest { message, .. } => message,
+            NHLApiError::Unauthorized { message, .. } => message,
+            NHLApiError::ServerError { message, .. } => message,
+            NHLApiError::ApiError { message, .. } => message,
+            _ => panic!("Unexpected error variant"),
+        };
+        assert!(
+            actual_message.contains(expected_message_contains),
+            "Expected message to contain '{}', got '{}'",
+            expected_message_contains,
+            actual_message
+        );
     }
 
     #[test]
-    fn test_error_from_status_429_rate_limit() {
-        let error = HttpClient::error_from_status(429, "/test/resource");
-        match error {
-            NHLApiError::RateLimitExceeded {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 429);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected RateLimitExceeded error"),
+    fn test_error_from_status_mapping() {
+        struct ErrorTestCase {
+            status_code: u16,
+            expected_variant: fn(&NHLApiError) -> bool,
+            expected_message_contains: &'static str,
         }
-    }
 
-    #[test]
-    fn test_error_from_status_400_bad_request() {
-        let error = HttpClient::error_from_status(400, "/test/resource");
-        match error {
-            NHLApiError::BadRequest {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 400);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected BadRequest error"),
-        }
-    }
+        let test_cases = [
+            // Specific HTTP error codes
+            ErrorTestCase {
+                status_code: 404,
+                expected_variant: |e| matches!(e, NHLApiError::ResourceNotFound { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 429,
+                expected_variant: |e| matches!(e, NHLApiError::RateLimitExceeded { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 400,
+                expected_variant: |e| matches!(e, NHLApiError::BadRequest { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 401,
+                expected_variant: |e| matches!(e, NHLApiError::Unauthorized { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            // Server error range (500-599)
+            ErrorTestCase {
+                status_code: 500,
+                expected_variant: |e| matches!(e, NHLApiError::ServerError { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 502,
+                expected_variant: |e| matches!(e, NHLApiError::ServerError { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 503,
+                expected_variant: |e| matches!(e, NHLApiError::ServerError { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            ErrorTestCase {
+                status_code: 599,
+                expected_variant: |e| matches!(e, NHLApiError::ServerError { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
+            // Catch-all API errors
+            ErrorTestCase {
+                status_code: 418,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+            ErrorTestCase {
+                status_code: 402,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+            ErrorTestCase {
+                status_code: 403,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+            ErrorTestCase {
+                status_code: 600,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+            ErrorTestCase {
+                status_code: 100,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+            ErrorTestCase {
+                status_code: 300,
+                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
+                expected_message_contains: "Unexpected error",
+            },
+        ];
 
-    #[test]
-    fn test_error_from_status_401_unauthorized() {
-        let error = HttpClient::error_from_status(401, "/test/resource");
-        match error {
-            NHLApiError::Unauthorized {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 401);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected Unauthorized error"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_500_server_error() {
-        let error = HttpClient::error_from_status(500, "/test/resource");
-        match error {
-            NHLApiError::ServerError {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 500);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ServerError error"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_502_server_error() {
-        let error = HttpClient::error_from_status(502, "/test/resource");
-        match error {
-            NHLApiError::ServerError {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 502);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ServerError error"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_503_server_error() {
-        let error = HttpClient::error_from_status(503, "/test/resource");
-        match error {
-            NHLApiError::ServerError {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 503);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ServerError error"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_599_server_error_boundary() {
-        let error = HttpClient::error_from_status(599, "/test/resource");
-        match error {
-            NHLApiError::ServerError {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 599);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ServerError error"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_418_teapot_api_error() {
-        let error = HttpClient::error_from_status(418, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 418);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for unexpected status"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_402_payment_required_api_error() {
-        let error = HttpClient::error_from_status(402, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 402);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for unexpected status"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_403_forbidden_api_error() {
-        let error = HttpClient::error_from_status(403, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 403);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for unexpected status"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_600_invalid_status_api_error() {
-        let error = HttpClient::error_from_status(600, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 600);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for out-of-range status"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_100_informational_api_error() {
-        let error = HttpClient::error_from_status(100, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 100);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for informational status"),
-        }
-    }
-
-    #[test]
-    fn test_error_from_status_300_redirect_api_error() {
-        let error = HttpClient::error_from_status(300, "/test/resource");
-        match error {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 300);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for redirect status"),
+        for test_case in &test_cases {
+            assert_error_matches(
+                test_case.status_code,
+                test_case.expected_variant,
+                test_case.expected_message_contains,
+            );
         }
     }
 
@@ -684,7 +638,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_response_404_error() {
+    async fn test_handle_response_error_delegation() {
+        // Single test to verify handle_response delegates to error_from_status correctly
+        // Detailed error mapping is tested in test_error_from_status_* tests
         let mut server = mockito::Server::new_async().await;
         let _mock = server
             .mock("GET", "/")
@@ -694,110 +650,15 @@ mod tests {
 
         let config = ClientConfig::default();
         let http_client = HttpClient::new(config).unwrap();
-
         let response = http_client.client.get(server.url()).send().await.unwrap();
 
         let result = http_client.handle_response(response, "/test/resource");
-        assert!(result.is_err());
+        assert!(result.is_err(), "Expected error response for 404 status");
 
-        match result.unwrap_err() {
-            NHLApiError::ResourceNotFound {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 404);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ResourceNotFound error"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_handle_response_429_rate_limit() {
-        let mut server = mockito::Server::new_async().await;
-        let _mock = server
-            .mock("GET", "/")
-            .with_status(429)
-            .create_async()
-            .await;
-
-        let config = ClientConfig::default();
-        let http_client = HttpClient::new(config).unwrap();
-
-        let response = http_client.client.get(server.url()).send().await.unwrap();
-
-        let result = http_client.handle_response(response, "/test/resource");
-        assert!(result.is_err());
-
-        match result.unwrap_err() {
-            NHLApiError::RateLimitExceeded {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 429);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected RateLimitExceeded error"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_handle_response_500_server_error() {
-        let mut server = mockito::Server::new_async().await;
-        let _mock = server
-            .mock("GET", "/")
-            .with_status(500)
-            .create_async()
-            .await;
-
-        let config = ClientConfig::default();
-        let http_client = HttpClient::new(config).unwrap();
-
-        let response = http_client.client.get(server.url()).send().await.unwrap();
-
-        let result = http_client.handle_response(response, "/test/resource");
-        assert!(result.is_err());
-
-        match result.unwrap_err() {
-            NHLApiError::ServerError {
-                message,
-                status_code,
-            } => {
-                assert_eq!(status_code, 500);
-                assert!(message.contains("Request to /test/resource failed"));
-            }
-            _ => panic!("Expected ServerError error"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_handle_response_403_api_error() {
-        let mut server = mockito::Server::new_async().await;
-        let _mock = server
-            .mock("GET", "/")
-            .with_status(403)
-            .create_async()
-            .await;
-
-        let config = ClientConfig::default();
-        let http_client = HttpClient::new(config).unwrap();
-
-        let response = http_client.client.get(server.url()).send().await.unwrap();
-
-        let result = http_client.handle_response(response, "/test/resource");
-        assert!(result.is_err());
-
-        match result.unwrap_err() {
-            NHLApiError::ApiError {
-                message,
-                status_code,
-                error_code,
-            } => {
-                assert_eq!(status_code, 403);
-                assert!(message.contains("Unexpected error"));
-                assert!(error_code.is_none());
-            }
-            _ => panic!("Expected ApiError for 403"),
-        }
+        // Verify it's the right error type (details are tested in error_from_status tests)
+        assert!(
+            matches!(result.unwrap_err(), NHLApiError::ResourceNotFound { .. }),
+            "Expected ResourceNotFound error"
+        );
     }
 }

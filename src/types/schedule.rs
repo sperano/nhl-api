@@ -144,6 +144,166 @@ impl fmt::Display for GameScore {
 mod tests {
     use super::*;
 
+    /// Builder for creating test ScheduleTeam instances
+    struct TeamBuilder {
+        id: i64,
+        abbrev: String,
+        place_name: Option<LocalizedString>,
+        logo: String,
+        score: Option<i32>,
+    }
+
+    impl TeamBuilder {
+        fn new(abbrev: &str) -> Self {
+            Self {
+                id: 1,
+                abbrev: abbrev.to_string(),
+                place_name: None,
+                logo: format!("https://assets.nhle.com/logos/nhl/svg/{}_light.svg", abbrev),
+                score: None,
+            }
+        }
+
+        fn id(mut self, id: i64) -> Self {
+            self.id = id;
+            self
+        }
+
+        #[allow(dead_code)]
+        fn score(mut self, score: i32) -> Self {
+            self.score = Some(score);
+            self
+        }
+
+        fn build(self) -> ScheduleTeam {
+            ScheduleTeam {
+                id: self.id,
+                abbrev: self.abbrev,
+                place_name: self.place_name,
+                logo: self.logo,
+                score: self.score,
+            }
+        }
+    }
+
+    /// Builder for creating test ScheduleGame instances
+    struct ScheduleGameBuilder {
+        id: i64,
+        game_type: i32,
+        game_date: Option<String>,
+        start_time_utc: String,
+        away_team: ScheduleTeam,
+        home_team: ScheduleTeam,
+        game_state: GameState,
+    }
+
+    impl ScheduleGameBuilder {
+        fn new(away_abbrev: &str, home_abbrev: &str) -> Self {
+            Self {
+                id: 2023020001,
+                game_type: 2,
+                game_date: None,
+                start_time_utc: "23:00:00Z".to_string(),
+                away_team: TeamBuilder::new(away_abbrev).id(7).build(),
+                home_team: TeamBuilder::new(home_abbrev).id(10).build(),
+                game_state: GameState::Future,
+            }
+        }
+
+        #[allow(dead_code)]
+        fn id(mut self, id: i64) -> Self {
+            self.id = id;
+            self
+        }
+
+        fn game_date(mut self, date: &str) -> Self {
+            self.game_date = Some(date.to_string());
+            self
+        }
+
+        #[allow(dead_code)]
+        fn game_state(mut self, state: GameState) -> Self {
+            self.game_state = state;
+            self
+        }
+
+        #[allow(dead_code)]
+        fn away_score(mut self, score: i32) -> Self {
+            self.away_team.score = Some(score);
+            self
+        }
+
+        #[allow(dead_code)]
+        fn home_score(mut self, score: i32) -> Self {
+            self.home_team.score = Some(score);
+            self
+        }
+
+        fn build(self) -> ScheduleGame {
+            ScheduleGame {
+                id: self.id,
+                game_type: self.game_type,
+                game_date: self.game_date,
+                start_time_utc: self.start_time_utc,
+                away_team: self.away_team,
+                home_team: self.home_team,
+                game_state: self.game_state,
+            }
+        }
+    }
+
+    /// Builder for creating test GameScore instances
+    struct GameScoreBuilder {
+        id: i64,
+        game_type: i32,
+        game_state: GameState,
+        away_team: ScheduleTeam,
+        home_team: ScheduleTeam,
+    }
+
+    impl GameScoreBuilder {
+        fn new(away_abbrev: &str, home_abbrev: &str) -> Self {
+            Self {
+                id: 2023020001,
+                game_type: 2,
+                game_state: GameState::Future,
+                away_team: TeamBuilder::new(away_abbrev).id(7).build(),
+                home_team: TeamBuilder::new(home_abbrev).id(10).build(),
+            }
+        }
+
+        #[allow(dead_code)]
+        fn id(mut self, id: i64) -> Self {
+            self.id = id;
+            self
+        }
+
+        fn game_state(mut self, state: GameState) -> Self {
+            self.game_state = state;
+            self
+        }
+
+        fn away_score(mut self, score: i32) -> Self {
+            self.away_team.score = Some(score);
+            self
+        }
+
+        fn home_score(mut self, score: i32) -> Self {
+            self.home_team.score = Some(score);
+            self
+        }
+
+        fn build(self) -> GameScore {
+            GameScore {
+                id: self.id,
+                game_type: self.game_type,
+                game_state: self.game_state,
+                away_team: self.away_team,
+                home_team: self.home_team,
+            }
+        }
+    }
+
     #[test]
     fn test_daily_schedule_with_no_games() {
         let schedule = DailySchedule {
@@ -174,54 +334,16 @@ mod tests {
 
     #[test]
     fn test_schedule_game_display() {
-        let game = ScheduleGame {
-            id: 2023020001,
-            game_type: 2,
-            game_date: Some("2023-10-10".to_string()),
-            start_time_utc: "23:00:00Z".to_string(),
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: None,
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: None,
-            },
-            game_state: GameState::Future,
-        };
+        let game = ScheduleGameBuilder::new("BUF", "TOR")
+            .game_date("2023-10-10")
+            .build();
 
         assert_eq!(game.to_string(), "BUF @ TOR on 2023-10-10 [FUT]");
     }
 
     #[test]
     fn test_schedule_game_display_without_date() {
-        let game = ScheduleGame {
-            id: 2023020001,
-            game_type: 2,
-            game_date: None,
-            start_time_utc: "23:00:00Z".to_string(),
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: None,
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: None,
-            },
-            game_state: GameState::Future,
-        };
+        let game = ScheduleGameBuilder::new("BUF", "TOR").build();
 
         assert_eq!(game.to_string(), "BUF @ TOR [FUT]");
     }
@@ -254,25 +376,11 @@ mod tests {
 
     #[test]
     fn test_game_score_display() {
-        let game = GameScore {
-            id: 2023020001,
-            game_type: 2,
-            game_state: GameState::Final,
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: Some(3),
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: Some(2),
-            },
-        };
+        let game = GameScoreBuilder::new("BUF", "TOR")
+            .away_score(3)
+            .home_score(2)
+            .game_state(GameState::Final)
+            .build();
 
         assert_eq!(game.to_string(), "BUF 3 @ TOR 2 [FINAL]");
     }
@@ -280,25 +388,7 @@ mod tests {
     #[test]
     fn test_game_score_display_with_no_scores() {
         // Test the None => Cow::Borrowed("-") branch
-        let game = GameScore {
-            id: 2023020001,
-            game_type: 2,
-            game_state: GameState::Future,
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: None,
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: None,
-            },
-        };
+        let game = GameScoreBuilder::new("BUF", "TOR").build();
 
         assert_eq!(game.to_string(), "BUF - @ TOR - [FUT]");
     }
@@ -306,25 +396,10 @@ mod tests {
     #[test]
     fn test_game_score_display_with_partial_score() {
         // Test mixed Some/None scores (one team has score, other doesn't)
-        let game = GameScore {
-            id: 2023020001,
-            game_type: 2,
-            game_state: GameState::Live,
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: Some(1),
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: None,
-            },
-        };
+        let game = GameScoreBuilder::new("BUF", "TOR")
+            .away_score(1)
+            .game_state(GameState::Live)
+            .build();
 
         assert_eq!(game.to_string(), "BUF 1 @ TOR - [LIVE]");
     }
@@ -332,25 +407,11 @@ mod tests {
     #[test]
     fn test_game_score_display_with_zero_scores() {
         // Test that zero scores display as "0" not "-"
-        let game = GameScore {
-            id: 2023020001,
-            game_type: 2,
-            game_state: GameState::Live,
-            away_team: ScheduleTeam {
-                id: 7,
-                abbrev: "BUF".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
-                score: Some(0),
-            },
-            home_team: ScheduleTeam {
-                id: 10,
-                abbrev: "TOR".to_string(),
-                place_name: None,
-                logo: "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg".to_string(),
-                score: Some(0),
-            },
-        };
+        let game = GameScoreBuilder::new("BUF", "TOR")
+            .away_score(0)
+            .home_score(0)
+            .game_state(GameState::Live)
+            .build();
 
         assert_eq!(game.to_string(), "BUF 0 @ TOR 0 [LIVE]");
     }

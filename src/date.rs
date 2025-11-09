@@ -36,23 +36,17 @@ impl GameDate {
         }
     }
 
-    #[allow(dead_code)]
-    #[allow(clippy::should_implement_trait)]
-    /// Parse from a string in YYYY-MM-DD format
-    pub fn from_str(s: &str) -> Result<Self, chrono::ParseError> {
-        s.parse()
+    /// Convert to a concrete date (resolves "now" to today's date)
+    fn as_date(&self) -> NaiveDate {
+        match self {
+            Self::Now => chrono::Local::now().date_naive(),
+            Self::Date(date) => *date,
+        }
     }
 
     /// Add or subtract days from the date
     pub fn add_days(&self, days: i64) -> Self {
-        match self {
-            Self::Now => {
-                // For "now", convert to today's date and add days
-                let today = chrono::Local::now().date_naive();
-                Self::Date(today + chrono::Duration::days(days))
-            }
-            Self::Date(date) => Self::Date(*date + chrono::Duration::days(days)),
-        }
+        Self::Date(self.as_date() + chrono::Duration::days(days))
     }
 }
 
@@ -169,10 +163,10 @@ mod tests {
 
     #[test]
     fn test_game_date_from_str() {
-        let date = GameDate::from_str("2024-10-19").unwrap();
+        let date: GameDate = "2024-10-19".parse().unwrap();
         assert_eq!(date.to_api_string(), "2024-10-19");
 
-        let now = GameDate::from_str("now").unwrap();
+        let now: GameDate = "now".parse().unwrap();
         assert_eq!(now, GameDate::Now);
     }
 
@@ -280,15 +274,15 @@ mod tests {
     #[test]
     fn test_game_date_from_str_invalid() {
         // Invalid format
-        assert!(GameDate::from_str("2024/10/19").is_err());
-        assert!(GameDate::from_str("10-19-2024").is_err());
-        assert!(GameDate::from_str("2024-10").is_err());
-        assert!(GameDate::from_str("").is_err());
-        assert!(GameDate::from_str("not-a-date").is_err());
+        assert!("2024/10/19".parse::<GameDate>().is_err());
+        assert!("10-19-2024".parse::<GameDate>().is_err());
+        assert!("2024-10".parse::<GameDate>().is_err());
+        assert!("".parse::<GameDate>().is_err());
+        assert!("not-a-date".parse::<GameDate>().is_err());
 
         // Invalid date values
-        assert!(GameDate::from_str("2024-13-01").is_err());
-        assert!(GameDate::from_str("2024-02-30").is_err());
+        assert!("2024-13-01".parse::<GameDate>().is_err());
+        assert!("2024-02-30".parse::<GameDate>().is_err());
     }
 
     #[test]
