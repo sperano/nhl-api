@@ -3,9 +3,10 @@ use std::fmt;
 use std::str::FromStr;
 
 /// A date wrapper for NHL API calls that can be "now" or a specific date
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum GameDate {
     /// Use the current date
+    #[default]
     Now,
     /// Use a specific date
     Date(NaiveDate),
@@ -35,23 +36,17 @@ impl GameDate {
         }
     }
 
-    #[allow(dead_code)]
-    #[allow(clippy::should_implement_trait)]
-    /// Parse from a string in YYYY-MM-DD format
-    pub fn from_str(s: &str) -> Result<Self, chrono::ParseError> {
-        s.parse()
+    /// Convert to a concrete date (resolves "now" to today's date)
+    fn as_date(&self) -> NaiveDate {
+        match self {
+            Self::Now => chrono::Local::now().date_naive(),
+            Self::Date(date) => *date,
+        }
     }
 
     /// Add or subtract days from the date
     pub fn add_days(&self, days: i64) -> Self {
-        match self {
-            Self::Now => {
-                // For "now", convert to today's date and add days
-                let today = chrono::Local::now().date_naive();
-                Self::Date(today + chrono::Duration::days(days))
-            }
-            Self::Date(date) => Self::Date(*date + chrono::Duration::days(days)),
-        }
+        Self::Date(self.as_date() + chrono::Duration::days(days))
     }
 }
 
@@ -64,12 +59,6 @@ impl FromStr for GameDate {
         } else {
             NaiveDate::parse_from_str(s, "%Y-%m-%d").map(Self::Date)
         }
-    }
-}
-
-impl Default for GameDate {
-    fn default() -> Self {
-        Self::Now
     }
 }
 
@@ -174,10 +163,10 @@ mod tests {
 
     #[test]
     fn test_game_date_from_str() {
-        let date = GameDate::from_str("2024-10-19").unwrap();
+        let date: GameDate = "2024-10-19".parse().unwrap();
         assert_eq!(date.to_api_string(), "2024-10-19");
 
-        let now = GameDate::from_str("now").unwrap();
+        let now: GameDate = "now".parse().unwrap();
         assert_eq!(now, GameDate::Now);
     }
 
@@ -285,15 +274,15 @@ mod tests {
     #[test]
     fn test_game_date_from_str_invalid() {
         // Invalid format
-        assert!(GameDate::from_str("2024/10/19").is_err());
-        assert!(GameDate::from_str("10-19-2024").is_err());
-        assert!(GameDate::from_str("2024-10").is_err());
-        assert!(GameDate::from_str("").is_err());
-        assert!(GameDate::from_str("not-a-date").is_err());
+        assert!("2024/10/19".parse::<GameDate>().is_err());
+        assert!("10-19-2024".parse::<GameDate>().is_err());
+        assert!("2024-10".parse::<GameDate>().is_err());
+        assert!("".parse::<GameDate>().is_err());
+        assert!("not-a-date".parse::<GameDate>().is_err());
 
         // Invalid date values
-        assert!(GameDate::from_str("2024-13-01").is_err());
-        assert!(GameDate::from_str("2024-02-30").is_err());
+        assert!("2024-13-01".parse::<GameDate>().is_err());
+        assert!("2024-02-30".parse::<GameDate>().is_err());
     }
 
     #[test]
@@ -347,5 +336,119 @@ mod tests {
 
         let season = Season::from_str("20502051").unwrap();
         assert_eq!(season.start_year, 2050);
+    }
+
+    #[test]
+    fn test_add_days_with_specific_date() {
+        let date = GameDate::from_ymd(2024, 10, 19).unwrap();
+
+        // Add positive days
+        let future = date.add_days(5);
+        assert_eq!(future.to_api_string(), "2024-10-24");
+
+        // Add negative days (subtract)
+        let past = date.add_days(-5);
+        assert_eq!(past.to_api_string(), "2024-10-14");
+
+        // Add zero days
+        let same = date.add_days(0);
+        assert_eq!(same.to_api_string(), "2024-10-19");
+    }
+
+    #[test]
+    fn test_add_days_across_month_boundary() {
+        let date = GameDate::from_ymd(2024, 10, 30).unwrap();
+
+        // Cross into next month
+        let next_month = date.add_days(5);
+        assert_eq!(next_month.to_api_string(), "2024-11-04");
+
+        // Cross into previous month
+        let date2 = GameDate::from_ymd(2024, 11, 3).unwrap();
+        let prev_month = date2.add_days(-5);
+        assert_eq!(prev_month.to_api_string(), "2024-10-29");
+    }
+
+    #[test]
+    fn test_add_days_across_year_boundary() {
+        let date = GameDate::from_ymd(2024, 12, 30).unwrap();
+
+        // Cross into next year
+        let next_year = date.add_days(5);
+        assert_eq!(next_year.to_api_string(), "2025-01-04");
+
+        // Cross into previous year
+        let date2 = GameDate::from_ymd(2025, 1, 3).unwrap();
+        let prev_year = date2.add_days(-5);
+        assert_eq!(prev_year.to_api_string(), "2024-12-29");
+    }
+
+    #[test]
+    fn test_add_days_leap_year() {
+        // 2024 is a leap year
+        let date = GameDate::from_ymd(2024, 2, 28).unwrap();
+
+        // February 29 exists in 2024
+        let leap_day = date.add_days(1);
+        assert_eq!(leap_day.to_api_string(), "2024-02-29");
+
+        let march_1 = date.add_days(2);
+        assert_eq!(march_1.to_api_string(), "2024-03-01");
+
+        // 2023 is not a leap year
+        let date_2023 = GameDate::from_ymd(2023, 2, 28).unwrap();
+        let march_1_2023 = date_2023.add_days(1);
+        assert_eq!(march_1_2023.to_api_string(), "2023-03-01");
+    }
+
+    #[test]
+    fn test_add_days_with_now() {
+        // Note: This test is time-dependent but should work
+        // We're just verifying that "now" gets converted to a date
+        let now = GameDate::Now;
+        let future = now.add_days(7);
+
+        // Should return a Date variant, not Now
+        match future {
+            GameDate::Date(_) => {} // Success
+            GameDate::Now => panic!("add_days(7) on Now should return a specific date"),
+        }
+
+        // Verify the format is a date string
+        let future_str = future.to_api_string();
+        assert_ne!(future_str, "now");
+        assert!(future_str.contains("-")); // Should be YYYY-MM-DD format
+    }
+
+    #[test]
+    fn test_add_days_large_values() {
+        let date = GameDate::from_ymd(2024, 1, 1).unwrap();
+
+        // Add a full year (2024 is a leap year with 366 days)
+        let next_year = date.add_days(366);
+        assert_eq!(next_year.to_api_string(), "2025-01-01");
+
+        // Subtract a full year (365 days takes us back to Jan 1, 2023)
+        let prev_year = date.add_days(-365);
+        assert_eq!(prev_year.to_api_string(), "2023-01-01");
+
+        // Add multiple years (365 * 5 = 1825 days from 2024-01-01)
+        // 2024 has 366 days (leap year), others have 365
+        // Result is 2028-12-30
+        let far_future = date.add_days(365 * 5);
+        assert_eq!(far_future.to_api_string(), "2028-12-30");
+    }
+
+    #[test]
+    fn test_add_days_chaining() {
+        let date = GameDate::from_ymd(2024, 10, 15).unwrap();
+
+        // Chain multiple add_days calls
+        let result = date.add_days(5).add_days(3).add_days(-2);
+        assert_eq!(result.to_api_string(), "2024-10-21");
+
+        // Should be equivalent to adding all at once
+        let direct = date.add_days(6);
+        assert_eq!(result.to_api_string(), direct.to_api_string());
     }
 }
