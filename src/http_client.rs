@@ -7,6 +7,7 @@ use tracing::debug;
 #[derive(Debug, Clone)]
 pub enum Endpoint {
     ApiWebV1,
+    #[allow(dead_code)]
     ApiCore,
     ApiStats,
     SearchV1,

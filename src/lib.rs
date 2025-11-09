@@ -26,6 +26,7 @@ pub use types::PlayByPlay;
 pub use types::PlayerGameLog;
 pub use types::PlayerLanding;
 pub use types::PlayerSearchResult;
+pub use types::SeasonTotal;
 pub use types::ScheduleGame;
 pub use types::ScheduleTeam;
 pub use types::SkaterStats;

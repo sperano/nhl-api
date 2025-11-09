@@ -4,9 +4,10 @@ use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
 use crate::types::{
-    Boxscore, ClubStats, DailySchedule, Franchise, FranchisesResponse, GameMatchup, PlayByPlay,
-    PlayerGameLog, PlayerLanding, PlayerSearchResult, SeasonGameTypes, SeasonInfo, SeasonsResponse,
-    Standing, StandingsResponse, Team, WeeklyScheduleResponse,
+    Boxscore, ClubStats, DailySchedule, DailyScores, Franchise, FranchisesResponse, GameMatchup,
+    GameStory, PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster,
+    SeasonGameTypes, SeasonInfo, SeasonSeriesMatchup, SeasonsResponse, ShiftChart, Standing,
+    StandingsResponse, Team, TeamScheduleResponse, WeeklyScheduleResponse,
 };
 use std::collections::HashMap;
 
@@ -115,6 +116,37 @@ impl Client {
     /// Fetch game landing data (lighter than play-by-play, includes summary with period scores)
     pub async fn landing(&self, game_id: &GameId) -> Result<GameMatchup, NHLApiError> {
         self.fetch_gamecenter(game_id, "landing").await
+    }
+
+    /// Fetch season series matchup data including head-to-head records
+    pub async fn season_series(&self, game_id: &GameId) -> Result<SeasonSeriesMatchup, NHLApiError> {
+        self.fetch_gamecenter(game_id, "right-rail").await
+    }
+
+    /// Fetch game story narrative content
+    pub async fn game_story(&self, game_id: &GameId) -> Result<GameStory, NHLApiError> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("wsc/game-story/{}", game_id),
+                None,
+            )
+            .await
+    }
+
+    /// Fetch shift chart data for a game
+    pub async fn shift_chart(&self, game_id: &GameId) -> Result<ShiftChart, NHLApiError> {
+        let cayenne_expr = format!(
+            "gameId={} and ((duration != '00:00' and typeCode = 517) or typeCode != 517 )",
+            game_id
+        );
+        let mut params = HashMap::new();
+        params.insert("cayenneExp".to_string(), cayenne_expr);
+        params.insert("exclude".to_string(), "eventDetails".to_string());
+
+        self.client
+            .get_json(Endpoint::ApiStats, "en/shiftcharts", Some(params))
+            .await
     }
 
     async fn fetch_weekly_schedule(&self, date_string: &str) -> Result<WeeklyScheduleResponse, NHLApiError> {
@@ -301,6 +333,70 @@ impl Client {
             )
             .await
     }
+
+    /// Gets the current roster for a team
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    pub async fn roster_current(&self, team_abbr: &str) -> Result<Roster, NHLApiError> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("roster/{}/current", team_abbr),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the roster for a team in a specific season
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    /// * `season` - Season in YYYYYYYY format (e.g., 20242025)
+    pub async fn roster_season(&self, team_abbr: &str, season: i32) -> Result<Roster, NHLApiError> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("roster/{}/{}", team_abbr, season),
+                None,
+            )
+            .await
+    }
+
+    /// Gets daily game scores for a specific date
+    ///
+    /// # Arguments
+    /// * `date` - Optional GameDate. If None, defaults to today's date.
+    pub async fn daily_scores(&self, date: Option<GameDate>) -> Result<DailyScores, NHLApiError> {
+        let date = self.resolve_date_to_today(date);
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("score/{}", date.to_api_string()),
+                None,
+            )
+            .await
+    }
+
+    /// Gets weekly schedule for a specific team
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    /// * `date` - Optional GameDate for the week start. If None, defaults to today's date.
+    pub async fn team_weekly_schedule(
+        &self,
+        team_abbr: &str,
+        date: Option<GameDate>,
+    ) -> Result<TeamScheduleResponse, NHLApiError> {
+        let date = self.resolve_date_to_today(date);
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("club-schedule/{}/week/{}", team_abbr, date.to_api_string()),
+                None,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -476,5 +572,77 @@ mod tests {
         assert_eq!(result.date, "2024-01-08");
         assert_eq!(result.number_of_games, 0);
         assert!(result.games.is_empty());
+    }
+
+    // ===== New Client Method Tests =====
+
+    #[tokio::test]
+    async fn test_season_series_endpoint() {
+        let game_id = GameId::from(2023020001);
+        let client = Client::new().unwrap();
+
+        // This is a basic test to ensure the method exists and has correct signature
+        // The actual API call would be tested in integration tests
+        let _ = client.season_series(&game_id).await;
+    }
+
+    #[tokio::test]
+    async fn test_game_story_endpoint() {
+        let game_id = GameId::from(2023020001);
+        let client = Client::new().unwrap();
+
+        let _ = client.game_story(&game_id).await;
+    }
+
+    #[tokio::test]
+    async fn test_shift_chart_endpoint() {
+        let game_id = GameId::from(2023020001);
+        let client = Client::new().unwrap();
+
+        let _ = client.shift_chart(&game_id).await;
+    }
+
+    #[tokio::test]
+    async fn test_roster_current_endpoint() {
+        let client = Client::new().unwrap();
+
+        let _ = client.roster_current("MTL").await;
+    }
+
+    #[tokio::test]
+    async fn test_roster_season_endpoint() {
+        let client = Client::new().unwrap();
+
+        let _ = client.roster_season("MTL", 20232024).await;
+    }
+
+    #[tokio::test]
+    async fn test_daily_scores_endpoint() {
+        let client = Client::new().unwrap();
+        let date = Some(GameDate::Date(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+
+        let _ = client.daily_scores(date).await;
+    }
+
+    #[tokio::test]
+    async fn test_daily_scores_default_date() {
+        let client = Client::new().unwrap();
+
+        let _ = client.daily_scores(None).await;
+    }
+
+    #[tokio::test]
+    async fn test_team_weekly_schedule_endpoint() {
+        let client = Client::new().unwrap();
+        let date = Some(GameDate::Date(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+
+        let _ = client.team_weekly_schedule("MTL", date).await;
+    }
+
+    #[tokio::test]
+    async fn test_team_weekly_schedule_default_date() {
+        let client = Client::new().unwrap();
+
+        let _ = client.team_weekly_schedule("MTL", None).await;
     }
 }
