@@ -1,14 +1,5 @@
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum NHLApiErrorCode {
-    ResourceNotFound,
-    RateLimitExceeded,
-    ServerError,
-    BadRequest,
-    Unauthorized,
-}
-
 #[derive(Error, Debug)]
 pub enum NHLApiError {
     #[error("Resource not found: {message}")]
@@ -30,7 +21,6 @@ pub enum NHLApiError {
     ApiError {
         message: String,
         status_code: u16,
-        error_code: Option<NHLApiErrorCode>,
     },
 
     #[error("HTTP request failed: {0}")]

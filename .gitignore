@@ -21,3 +21,7 @@ target
 .idea/
 
 CLAUDE.md
+.claude
+
+tarpaulin-report.html
+
