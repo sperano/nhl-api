@@ -1,4 +1,6 @@
 use crate::types::common::LocalizedString;
+use crate::types::enums::{Handedness, HomeRoad, Position};
+use crate::types::game_type::GameType;
 use serde::{Deserialize, Serialize};
 
 /// Player landing page data - comprehensive player profile
@@ -20,7 +22,7 @@ pub struct PlayerLanding {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sweater_number: Option<i32>,
 
-    pub position: String,
+    pub position: Position,
     pub headshot: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -39,7 +41,7 @@ pub struct PlayerLanding {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub birth_country: Option<String>,
 
-    pub shoots_catches: String,
+    pub shoots_catches: Handedness,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub draft_details: Option<DraftDetails>,
@@ -167,9 +169,13 @@ pub struct PlayerStats {
 #[serde(rename_all = "camelCase")]
 pub struct SeasonTotal {
     pub season: i32,
-    pub game_type_id: i32,
+    #[serde(rename = "gameTypeId")]
+    pub game_type: GameType,
     pub league_abbrev: String,
     pub team_name: LocalizedString,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub team_common_name: Option<LocalizedString>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sequence: Option<i32>,
@@ -214,7 +220,7 @@ pub struct GameLog {
     pub game_id: i64,
     pub game_date: String,
     pub team_abbrev: String,
-    pub home_road_flag: String,
+    pub home_road_flag: HomeRoad,
     pub opponent_abbrev: String,
     pub goals: i32,
     pub assists: i32,
@@ -241,7 +247,8 @@ pub struct GameLog {
 pub struct PlayerGameLog {
     pub player_id: i64,
     pub season: i32,
-    pub game_type_id: i32,
+    #[serde(rename = "gameTypeId")]
+    pub game_type: GameType,
     pub game_log: Vec<GameLog>,
 }
 
@@ -252,7 +259,8 @@ pub struct PlayerSearchResult {
     #[serde(rename = "playerId")]
     pub player_id: String,
     pub name: String,
-    pub position_code: String,
+    #[serde(rename = "positionCode")]
+    pub position: Position,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team_id: Option<String>,
@@ -342,7 +350,7 @@ mod tests {
         let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
         assert_eq!(result.player_id, "8478402");
         assert_eq!(result.name, "Connor McDavid");
-        assert_eq!(result.position_code, "C");
+        assert_eq!(result.position, Position::Center);
         assert!(result.active);
     }
 }

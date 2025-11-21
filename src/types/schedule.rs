@@ -3,13 +3,14 @@ use std::fmt;
 
 use super::common::LocalizedString;
 use super::game_state::GameState;
+use super::game_type::GameType;
 
 /// Schedule game information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ScheduleGame {
     pub id: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "gameDate", skip_serializing_if = "Option::is_none")]
     pub game_date: Option<String>,
     #[serde(rename = "startTimeUTC")]
@@ -108,7 +109,7 @@ pub struct DailyScores {
 pub struct GameScore {
     pub id: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "gameState")]
     pub game_state: GameState,
     #[serde(rename = "awayTeam")]
@@ -189,7 +190,7 @@ mod tests {
     /// Builder for creating test ScheduleGame instances
     struct ScheduleGameBuilder {
         id: i64,
-        game_type: i32,
+        game_type: GameType,
         game_date: Option<String>,
         start_time_utc: String,
         away_team: ScheduleTeam,
@@ -201,7 +202,7 @@ mod tests {
         fn new(away_abbrev: &str, home_abbrev: &str) -> Self {
             Self {
                 id: 2023020001,
-                game_type: 2,
+                game_type: GameType::RegularSeason,
                 game_date: None,
                 start_time_utc: "23:00:00Z".to_string(),
                 away_team: TeamBuilder::new(away_abbrev).id(7).build(),
@@ -255,7 +256,7 @@ mod tests {
     /// Builder for creating test GameScore instances
     struct GameScoreBuilder {
         id: i64,
-        game_type: i32,
+        game_type: GameType,
         game_state: GameState,
         away_team: ScheduleTeam,
         home_team: ScheduleTeam,
@@ -265,7 +266,7 @@ mod tests {
         fn new(away_abbrev: &str, home_abbrev: &str) -> Self {
             Self {
                 id: 2023020001,
-                game_type: 2,
+                game_type: GameType::RegularSeason,
                 game_state: GameState::Future,
                 away_team: TeamBuilder::new(away_abbrev).id(7).build(),
                 home_team: TeamBuilder::new(home_abbrev).id(10).build(),

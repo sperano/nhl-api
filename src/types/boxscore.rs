@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::common::LocalizedString;
+use super::enums::{GoalieDecision, PeriodType, Position};
 use super::game_state::GameState;
+use super::game_type::GameType;
 
 /// Boxscore response with detailed game and player statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,7 +11,7 @@ pub struct Boxscore {
     pub id: i64,
     pub season: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
     pub limited_scoring: bool,
     #[serde(rename = "gameDate")]
@@ -70,7 +72,7 @@ pub struct SpecialEvent {
 pub struct PeriodDescriptor {
     pub number: i32,
     #[serde(rename = "periodType")]
-    pub period_type: String,
+    pub period_type: PeriodType,
     #[serde(rename = "maxRegulationPeriods")]
     pub max_regulation_periods: i32,
 }
@@ -166,8 +168,9 @@ impl TeamGameStats {
     }
 
     fn add_faceoff_stats(team_stats: &mut TeamGameStats, skater: &SkaterStats) {
-        // Only count faceoffs for centers (positions with 'C')
-        if skater.position.contains('C') && skater.faceoff_winning_pctg > 0.0 {
+        // TODO: Revisit this logic - not sure only counting centers for faceoffs is correct.
+        // Wings can also take faceoffs in certain situations.
+        if skater.position == Position::Center && skater.faceoff_winning_pctg > 0.0 {
             // Estimate total faceoffs using shifts as a proxy for faceoff participation
             let estimated_faceoffs = skater.shifts;
             team_stats.faceoff_total += estimated_faceoffs;
@@ -211,7 +214,7 @@ pub struct SkaterStats {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
-    pub position: String,
+    pub position: Position,
     pub goals: i32,
     pub assists: i32,
     pub points: i32,
@@ -240,7 +243,7 @@ pub struct GoalieStats {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
-    pub position: String,
+    pub position: Position,
     #[serde(rename = "evenStrengthShotsAgainst")]
     pub even_strength_shots_against: String,
     #[serde(rename = "powerPlayShotsAgainst")]
@@ -266,7 +269,7 @@ pub struct GoalieStats {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub starter: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub decision: Option<String>,
+    pub decision: Option<GoalieDecision>,
     #[serde(rename = "shotsAgainst")]
     pub shots_against: i32,
     pub saves: i32,
@@ -342,7 +345,7 @@ mod tests {
         let boxscore: Boxscore = serde_json::from_str(json).unwrap();
         assert_eq!(boxscore.id, 2024020001);
         assert_eq!(boxscore.season, 20242025);
-        assert_eq!(boxscore.game_type, 2);
+        assert_eq!(boxscore.game_type, GameType::RegularSeason);
         assert_eq!(boxscore.game_state, GameState::Live);
         assert_eq!(boxscore.away_team.abbrev, "NJD");
         assert_eq!(boxscore.home_team.abbrev, "BUF");
@@ -381,7 +384,7 @@ mod tests {
         assert_eq!(stats.player_id, 8480002);
         assert_eq!(stats.sweater_number, 13);
         assert_eq!(stats.name.default, "N. Hischier");
-        assert_eq!(stats.position, "C");
+        assert_eq!(stats.position, Position::Center);
         assert_eq!(stats.goals, 1);
         assert_eq!(stats.assists, 2);
         assert_eq!(stats.points, 3);
@@ -417,13 +420,13 @@ mod tests {
         assert_eq!(stats.player_id, 8474593);
         assert_eq!(stats.sweater_number, 25);
         assert_eq!(stats.name.default, "J. Markstrom");
-        assert_eq!(stats.position, "G");
+        assert_eq!(stats.position, Position::Goalie);
         assert_eq!(stats.save_pctg, Some(0.967));
         assert_eq!(stats.goals_against, 1);
         assert_eq!(stats.saves, 30);
         assert_eq!(stats.shots_against, 31);
         assert_eq!(stats.starter, Some(true));
-        assert_eq!(stats.decision, Some("W".to_string()));
+        assert_eq!(stats.decision, Some(GoalieDecision::Win));
     }
 
     #[test]
@@ -468,7 +471,7 @@ mod tests {
 
         let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
         assert_eq!(period.number, 3);
-        assert_eq!(period.period_type, "REG");
+        assert_eq!(period.period_type, PeriodType::Regulation);
         assert_eq!(period.max_regulation_periods, 3);
     }
 
@@ -482,7 +485,7 @@ mod tests {
 
         let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
         assert_eq!(period.number, 4);
-        assert_eq!(period.period_type, "OT");
+        assert_eq!(period.period_type, PeriodType::Overtime);
     }
 
     #[test]
@@ -807,7 +810,7 @@ mod tests {
                     player_id: 1,
                     sweater_number: 13,
                     name: LocalizedString { default: "Player 1".to_string() },
-                    position: "C".to_string(),
+                    position: Position::Center,
                     goals: 1,
                     assists: 2,
                     points: 3,
@@ -829,7 +832,7 @@ mod tests {
                     player_id: 2,
                     sweater_number: 44,
                     name: LocalizedString { default: "Player 2".to_string() },
-                    position: "D".to_string(),
+                    position: Position::Defense,
                     goals: 0,
                     assists: 1,
                     points: 1,
@@ -869,7 +872,7 @@ mod tests {
                     player_id: 1,
                     sweater_number: 35,
                     name: LocalizedString { default: "Goalie 1".to_string() },
-                    position: "G".to_string(),
+                    position: Position::Goalie,
                     even_strength_shots_against: "20/22".to_string(),
                     power_play_shots_against: "3/5".to_string(),
                     shorthanded_shots_against: "0/0".to_string(),
@@ -882,7 +885,7 @@ mod tests {
                     goals_against: 4,
                     toi: "60:00".to_string(),
                     starter: Some(true),
-                    decision: Some("L".to_string()),
+                    decision: Some(GoalieDecision::Loss),
                     shots_against: 27,
                     saves: 23,
                 },
