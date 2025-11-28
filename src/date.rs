@@ -82,13 +82,11 @@ pub struct Season {
 }
 
 impl Season {
-    #[allow(dead_code)]
     /// Create a new season from the starting year
     pub fn new(start_year: u16) -> Self {
         Self { start_year }
     }
 
-    #[allow(dead_code)]
     /// Create a season from start and end years (e.g., 2023, 2024)
     pub fn from_years(start_year: u16, end_year: u16) -> Self {
         debug_assert_eq!(
@@ -110,9 +108,8 @@ impl Season {
         format!("{}{}", self.start_year, self.end_year())
     }
 
-    #[allow(dead_code)]
     /// Parse from API string format (YYYYYYYY)
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         if s.len() != 8 {
             return None;
         }
@@ -124,7 +121,6 @@ impl Season {
         Some(Self { start_year })
     }
 
-    #[allow(dead_code)]
     /// Get the current NHL season based on the current date
     /// NHL seasons typically start in October
     pub fn current() -> Self {
@@ -142,6 +138,29 @@ impl Season {
 impl fmt::Display for Season {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_api_string())
+    }
+}
+
+impl From<i32> for Season {
+    /// Create a Season from an i32 season ID (e.g., 20232024)
+    fn from(season_id: i32) -> Self {
+        let start_year = (season_id / 10000) as u16;
+        Self { start_year }
+    }
+}
+
+impl From<i64> for Season {
+    /// Create a Season from an i64 season ID (e.g., 20232024)
+    fn from(season_id: i64) -> Self {
+        let start_year = (season_id / 10000) as u16;
+        Self { start_year }
+    }
+}
+
+impl From<u16> for Season {
+    /// Create a Season from a u16 starting year (e.g., 2023)
+    fn from(start_year: u16) -> Self {
+        Self::new(start_year)
     }
 }
 
