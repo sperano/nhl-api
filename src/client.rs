@@ -5,7 +5,7 @@ use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::GameId;
 use crate::types::{
     Boxscore, ClubStats, DailySchedule, DailyScores, Franchise, FranchisesResponse, GameMatchup,
-    GameStory, PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster,
+    GameStory, GameType, PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster,
     SeasonGameTypes, SeasonInfo, SeasonSeriesMatchup, SeasonsResponse, ShiftChart, Standing,
     StandingsResponse, Team, TeamScheduleResponse, WeeklyScheduleResponse,
 };
@@ -216,17 +216,17 @@ impl Client {
     /// # Arguments
     /// * `player_id` - NHL player ID
     /// * `season` - Season in YYYYYYYY format (e.g., 20232024)
-    /// * `game_type` - 2 for regular season, 3 for playoffs
+    /// * `game_type` - Game type (RegularSeason, Playoffs, etc.)
     pub async fn player_game_log(
         &self,
         player_id: i64,
         season: i32,
-        game_type: i32,
+        game_type: GameType,
     ) -> Result<PlayerGameLog, NHLApiError> {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("player/{}/game-log/{}/{}", player_id, season, game_type),
+                &format!("player/{}/game-log/{}/{}", player_id, season, game_type.to_int()),
                 None,
             )
             .await
@@ -272,14 +272,14 @@ impl Client {
     /// # Arguments
     /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
     /// * `season` - Season in YYYYYYYY format (e.g., 20242025)
-    /// * `game_type` - Game type: 2 for regular season, 3 for playoffs
+    /// * `game_type` - Game type (RegularSeason, Playoffs, etc.)
     ///
     /// # Example
     /// ```no_run
-    /// # use nhl_api::Client;
+    /// # use nhl_api::{Client, GameType};
     /// # async fn example() -> Result<(), nhl_api::NHLApiError> {
     /// let client = Client::new()?;
-    /// let stats = client.club_stats("MTL", 20242025, 2).await?;
+    /// let stats = client.club_stats("MTL", 20242025, GameType::RegularSeason).await?;
     /// println!("Skaters: {}, Goalies: {}", stats.skaters.len(), stats.goalies.len());
     /// # Ok(())
     /// # }
@@ -288,12 +288,12 @@ impl Client {
         &self,
         team_abbr: &str,
         season: i32,
-        game_type: i32,
+        game_type: GameType,
     ) -> Result<ClubStats, NHLApiError> {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("club-stats/{}/{}/{}", team_abbr, season, game_type),
+                &format!("club-stats/{}/{}/{}", team_abbr, season, game_type.to_int()),
                 None,
             )
             .await
@@ -516,7 +516,7 @@ mod tests {
                     games: vec![
                         ScheduleGame {
                             id: 2023020001,
-                            game_type: 2,
+                            game_type: GameType::RegularSeason,
                             game_date: Some("2024-01-08".to_string()),
                             start_time_utc: "2024-01-08T23:00:00Z".to_string(),
                             away_team: ScheduleTeam {

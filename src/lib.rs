@@ -6,34 +6,67 @@ mod http_client;
 mod ids;
 mod types;
 
+// Client
 pub use client::Client;
-pub use types::Boxscore;
-pub use types::ClubStats;
-pub use types::TeamGameStats;
-pub use types::Conference;
-pub use types::DailySchedule;
-pub use types::Division;
-pub use types::GameClock;
-pub use types::AssistSummary;
-pub use types::GameMatchup;
-pub use types::GameSummary;
-pub use types::GoalSummary;
-pub use types::GoalieStats;
-pub use types::LocalizedString;
-pub use types::PeriodDescriptor;
-pub use types::PeriodScoring;
-pub use types::PlayByPlay;
-pub use types::PlayerGameLog;
-pub use types::PlayerLanding;
-pub use types::PlayerSearchResult;
-pub use types::SeasonTotal;
-pub use types::ScheduleGame;
-pub use types::ScheduleTeam;
-pub use types::SkaterStats;
-pub use types::Standing;
-pub use types::TeamPlayerStats;
+
+// Config
 pub use config::ClientConfig;
-pub use date::GameDate;
+
+// Date and Season
+pub use date::{GameDate, Season};
+
+// Error types
 pub use error::NHLApiError;
+
+// IDs
 pub use ids::GameId;
-pub use types::GameState;
+
+// Common types
+pub use types::{Conference, Division, Franchise, FranchisesResponse, LocalizedString, Roster, RosterPlayer, Team};
+
+// Boxscore types
+pub use types::{
+    Boxscore, BoxscoreTeam, GameClock, GoalieStats, PlayerByGameStats, PeriodDescriptor,
+    SkaterStats, SpecialEvent, TeamGameStats, TeamPlayerStats, TvBroadcast,
+};
+
+// Club stats types
+pub use types::{ClubGoalieStats, ClubSkaterStats, ClubStats, SeasonGameTypes};
+
+// Game center types
+pub use types::{
+    AssistSummary, GameMatchup, GameOutcome, GameStory, GameSummary, GoalSummary, MatchupTeam,
+    PenaltyPlayer, PenaltySummary, PeriodPenalties, PeriodScoring, PlayByPlay, PlayEvent,
+    PlayEventDetails, RosterSpot, ScratchedPlayer, SeasonSeriesMatchup, SeriesGame,
+    SeriesGameInfo, SeriesTeam, SeriesWins, ShiftChart, ShiftEntry, ShootoutAttempt, StoryTeam,
+    TeamGameInfo, ThreeStar,
+};
+
+// Game state types
+pub use types::{GameState, ParseGameStateError};
+
+// Game type
+pub use types::GameType;
+
+// Enum types
+pub use types::{
+    DefendingSide, GameScheduleState, GoalieDecision, Handedness, HomeRoad,
+    ParseDefendingSideError, ParseGameScheduleStateError, ParseGoalieDecisionError,
+    ParseHandednessError, ParseHomeRoadError, ParsePeriodTypeError, ParsePositionError,
+    ParseZoneCodeError, PeriodType, Position, ZoneCode,
+};
+
+// Player types
+pub use types::{
+    Award, AwardSeason, CareerTotals, DraftDetails, FeaturedStats, GameLog, PlayerGameLog,
+    PlayerLanding, PlayerSearchResult, PlayerStats, SeasonTotal,
+};
+
+// Schedule types
+pub use types::{
+    DailySchedule, DailyScores, GameDay, GameScore, ScheduleGame, ScheduleTeam,
+    TeamScheduleResponse, WeeklyScheduleResponse,
+};
+
+// Standings types
+pub use types::{SeasonInfo, SeasonsResponse, Standing, StandingsResponse};

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::common::LocalizedString;
+use super::enums::Position;
+use super::game_type::GameType;
 
 /// Skater season statistics for a team
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -14,7 +16,7 @@ pub struct ClubSkaterStats {
     #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
     #[serde(rename = "positionCode")]
-    pub position_code: String,
+    pub position: Position,
     #[serde(rename = "gamesPlayed")]
     pub games_played: i32,
     pub goals: i32,
@@ -118,7 +120,7 @@ pub struct ClubStats {
     #[serde(rename = "season")]
     pub season: String,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     pub skaters: Vec<ClubSkaterStats>,
     pub goalies: Vec<ClubGoalieStats>,
 }
@@ -128,7 +130,38 @@ pub struct ClubStats {
 pub struct SeasonGameTypes {
     pub season: i32,
     #[serde(rename = "gameTypes")]
-    pub game_types: Vec<i32>,
+    #[serde(with = "game_types_vec")]
+    pub game_types: Vec<GameType>,
+}
+
+mod game_types_vec {
+    use super::GameType;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(game_types: &[GameType], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(game_types.len()))?;
+        for gt in game_types {
+            seq.serialize_element(&gt.to_int())?;
+        }
+        seq.end()
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<GameType>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let ints = Vec::<i32>::deserialize(deserializer)?;
+        ints.into_iter()
+            .map(|i| {
+                GameType::from_int(i)
+                    .ok_or_else(|| serde::de::Error::custom(format!("Unknown game type: {}", i)))
+            })
+            .collect()
+    }
 }
 
 impl fmt::Display for SeasonGameTypes {
@@ -136,11 +169,7 @@ impl fmt::Display for SeasonGameTypes {
         let game_types_str: Vec<String> = self
             .game_types
             .iter()
-            .map(|gt| match gt {
-                2 => "Regular Season".to_string(),
-                3 => "Playoffs".to_string(),
-                _ => format!("Game Type {}", gt),
-            })
+            .map(|gt| gt.to_string())
             .collect();
         write!(f, "{}: {}", self.season, game_types_str.join(", "))
     }
@@ -183,7 +212,7 @@ mod tests {
         assert_eq!(stats.player_id, 8475233);
         assert_eq!(stats.first_name.default, "David");
         assert_eq!(stats.last_name.default, "Savard");
-        assert_eq!(stats.position_code, "D");
+        assert_eq!(stats.position, Position::Defense);
         assert_eq!(stats.games_played, 75);
         assert_eq!(stats.goals, 1);
         assert_eq!(stats.assists, 14);
@@ -289,7 +318,7 @@ mod tests {
 
         let stats: ClubStats = serde_json::from_str(json).unwrap();
         assert_eq!(stats.season, "20242025");
-        assert_eq!(stats.game_type, 2);
+        assert_eq!(stats.game_type, GameType::RegularSeason);
         assert_eq!(stats.skaters.len(), 1);
         assert_eq!(stats.goalies.len(), 1);
     }
@@ -303,14 +332,14 @@ mod tests {
 
         let season: SeasonGameTypes = serde_json::from_str(json).unwrap();
         assert_eq!(season.season, 20242025);
-        assert_eq!(season.game_types, vec![2, 3]);
+        assert_eq!(season.game_types, vec![GameType::RegularSeason, GameType::Playoffs]);
     }
 
     #[test]
     fn test_season_game_types_display() {
         let season = SeasonGameTypes {
             season: 20242025,
-            game_types: vec![2, 3],
+            game_types: vec![GameType::RegularSeason, GameType::Playoffs],
         };
         assert_eq!(format!("{}", season), "20242025: Regular Season, Playoffs");
     }
@@ -319,7 +348,7 @@ mod tests {
     fn test_season_game_types_display_regular_only() {
         let season = SeasonGameTypes {
             season: 20232024,
-            game_types: vec![2],
+            game_types: vec![GameType::RegularSeason],
         };
         assert_eq!(format!("{}", season), "20232024: Regular Season");
     }
@@ -335,7 +364,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position_code: "D".to_string(),
+            position: Position::Defense,
             games_played: 75,
             goals: 1,
             assists: 14,
@@ -409,58 +438,44 @@ mod tests {
     }
 
     #[test]
-    fn test_season_game_types_display_with_unknown_type() {
-        // Test the _ => format!("Game Type {}", gt) branch on line 142
+    fn test_season_game_types_display_with_all_star() {
         let season = SeasonGameTypes {
             season: 20242025,
-            game_types: vec![2, 3, 4],
+            game_types: vec![GameType::RegularSeason, GameType::Playoffs, GameType::AllStar],
         };
         assert_eq!(
             format!("{}", season),
-            "20242025: Regular Season, Playoffs, Game Type 4"
+            "20242025: Regular Season, Playoffs, All-Star"
         );
     }
 
     #[test]
-    fn test_season_game_types_display_only_unknown_types() {
-        // Test with only unknown game types
-        let season = SeasonGameTypes {
-            season: 20232024,
-            game_types: vec![1, 5],
-        };
-        assert_eq!(format!("{}", season), "20232024: Game Type 1, Game Type 5");
-    }
-
-    #[test]
     fn test_season_game_types_display_preseason() {
-        // Test with game type 1 (typically preseason)
         let season = SeasonGameTypes {
             season: 20242025,
-            game_types: vec![1],
+            game_types: vec![GameType::Preseason],
         };
-        assert_eq!(format!("{}", season), "20242025: Game Type 1");
+        assert_eq!(format!("{}", season), "20242025: Preseason");
     }
 
     #[test]
     fn test_season_game_types_display_all_star() {
-        // Test with game type 4 (typically all-star game)
         let season = SeasonGameTypes {
             season: 20232024,
-            game_types: vec![4],
+            game_types: vec![GameType::AllStar],
         };
-        assert_eq!(format!("{}", season), "20232024: Game Type 4");
+        assert_eq!(format!("{}", season), "20232024: All-Star");
     }
 
     #[test]
     fn test_season_game_types_display_mixed_order() {
-        // Test with mixed known and unknown types in different order
         let season = SeasonGameTypes {
             season: 20242025,
-            game_types: vec![1, 2, 4, 3],
+            game_types: vec![GameType::Preseason, GameType::RegularSeason, GameType::AllStar, GameType::Playoffs],
         };
         assert_eq!(
             format!("{}", season),
-            "20242025: Game Type 1, Regular Season, Game Type 4, Playoffs"
+            "20242025: Preseason, Regular Season, All-Star, Playoffs"
         );
     }
 }

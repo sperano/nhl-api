@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use super::boxscore::{BoxscoreTeam, GameClock, PeriodDescriptor, SpecialEvent, TvBroadcast};
 use super::common::LocalizedString;
+use super::enums::{DefendingSide, GameScheduleState, PeriodType, Position, ZoneCode};
+use super::game_state::GameState;
+use super::game_type::GameType;
 
 /// Play by play response with all game events
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,7 +12,7 @@ pub struct PlayByPlay {
     pub id: i64,
     pub season: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
     pub limited_scoring: bool,
     #[serde(rename = "gameDate")]
@@ -26,9 +29,9 @@ pub struct PlayByPlay {
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
-    pub game_schedule_state: String,
+    pub game_schedule_state: GameScheduleState,
     #[serde(rename = "periodDescriptor")]
     pub period_descriptor: PeriodDescriptor,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -64,7 +67,7 @@ pub struct PlayByPlay {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameOutcome {
     #[serde(rename = "lastPeriodType")]
-    pub last_period_type: String,
+    pub last_period_type: PeriodType,
 }
 
 /// Individual play event in the game
@@ -81,7 +84,7 @@ pub struct PlayEvent {
     #[serde(rename = "situationCode")]
     pub situation_code: String,
     #[serde(rename = "homeTeamDefendingSide")]
-    pub home_team_defending_side: String,
+    pub home_team_defending_side: DefendingSide,
     #[serde(rename = "typeCode")]
     pub type_code: i32,
     #[serde(rename = "typeDescKey")]
@@ -106,7 +109,7 @@ pub struct PlayEventDetails {
     pub y_coord: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "zoneCode")]
-    pub zone_code: Option<String>,
+    pub zone_code: Option<ZoneCode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "eventOwnerTeamId")]
     pub event_owner_team_id: Option<i64>,
@@ -217,7 +220,7 @@ pub struct RosterSpot {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     #[serde(rename = "positionCode")]
-    pub position_code: String,
+    pub position: Position,
     pub headshot: String,
 }
 
@@ -227,7 +230,7 @@ pub struct GameMatchup {
     pub id: i64,
     pub season: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
     pub limited_scoring: bool,
     #[serde(rename = "gameDate")]
@@ -248,9 +251,9 @@ pub struct GameMatchup {
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
-    pub game_schedule_state: String,
+    pub game_schedule_state: GameScheduleState,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "specialEvent")]
     pub special_event: Option<SpecialEvent>,
@@ -360,7 +363,7 @@ pub struct GoalSummary {
     #[serde(default)]
     pub assists: Vec<AssistSummary>,
     #[serde(rename = "homeTeamDefendingSide")]
-    pub home_team_defending_side: String,
+    pub home_team_defending_side: DefendingSide,
     #[serde(rename = "isHome")]
     pub is_home: bool,
 }
@@ -413,7 +416,7 @@ pub struct ThreeStar {
     pub name: LocalizedString,
     #[serde(rename = "sweaterNo")]
     pub sweater_no: i32,
-    pub position: String,
+    pub position: Position,
     // Skater stats
     #[serde(skip_serializing_if = "Option::is_none")]
     pub goals: Option<i32>,
@@ -539,7 +542,7 @@ pub struct SeriesGame {
     pub id: i64,
     pub season: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "gameDate")]
     pub game_date: String,
     #[serde(rename = "startTimeUTC")]
@@ -549,9 +552,9 @@ pub struct SeriesGame {
     #[serde(rename = "venueUTCOffset")]
     pub venue_utc_offset: String,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
-    pub game_schedule_state: String,
+    pub game_schedule_state: GameScheduleState,
     #[serde(rename = "awayTeam")]
     pub away_team: SeriesTeam,
     #[serde(rename = "homeTeam")]
@@ -617,7 +620,7 @@ pub struct GameStory {
     pub id: i64,
     pub season: i64,
     #[serde(rename = "gameType")]
-    pub game_type: i32,
+    pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
     pub limited_scoring: bool,
     #[serde(rename = "gameDate")]
@@ -636,9 +639,9 @@ pub struct GameStory {
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
     #[serde(rename = "gameState")]
-    pub game_state: String,
+    pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
-    pub game_schedule_state: String,
+    pub game_schedule_state: GameScheduleState,
     #[serde(rename = "awayTeam")]
     pub away_team: StoryTeam,
     #[serde(rename = "homeTeam")]
@@ -837,7 +840,7 @@ mod tests {
         let details = event.details.unwrap();
         assert_eq!(details.winning_player_id, Some(8480002));
         assert_eq!(details.losing_player_id, Some(8478043));
-        assert_eq!(details.zone_code, Some("N".to_string()));
+        assert_eq!(details.zone_code, Some(ZoneCode::Neutral));
     }
 
     #[test]
@@ -858,14 +861,14 @@ mod tests {
         assert_eq!(roster_spot.first_name.default, "Jacob");
         assert_eq!(roster_spot.last_name.default, "Markstrom");
         assert_eq!(roster_spot.sweater_number, 25);
-        assert_eq!(roster_spot.position_code, "G");
+        assert_eq!(roster_spot.position, Position::Goalie);
     }
 
     #[test]
     fn test_game_outcome_deserialization() {
         let json = r#"{"lastPeriodType": "REG"}"#;
         let outcome: GameOutcome = serde_json::from_str(json).unwrap();
-        assert_eq!(outcome.last_period_type, "REG");
+        assert_eq!(outcome.last_period_type, PeriodType::Regulation);
     }
 
     #[test]

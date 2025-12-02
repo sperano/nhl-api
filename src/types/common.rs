@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use super::enums::{Handedness, Position};
+
 /// Localized string (NHL API returns {default: "value"})
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct LocalizedString {
@@ -88,9 +90,9 @@ pub struct RosterPlayer {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     #[serde(rename = "positionCode")]
-    pub position_code: String,
+    pub position: Position,
     #[serde(rename = "shootsCatches")]
-    pub shoots_catches: String,
+    pub shoots_catches: Handedness,
     #[serde(rename = "heightInInches")]
     pub height_in_inches: i32,
     #[serde(rename = "weightInPounds")]
