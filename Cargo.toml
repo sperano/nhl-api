@@ -1,6 +1,6 @@
 [package]
 name = "nhl_api"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 description = "An NHL stats and scores API client"
 license = "GPL-3.0-or-later"

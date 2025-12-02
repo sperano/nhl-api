@@ -67,9 +67,8 @@ impl<'de> Deserialize<'de> for GameType {
         D: Deserializer<'de>,
     {
         let value = i32::deserialize(deserializer)?;
-        Self::from_int(value).ok_or_else(|| {
-            serde::de::Error::custom(format!("Unknown game type: {}", value))
-        })
+        Self::from_int(value)
+            .ok_or_else(|| serde::de::Error::custom(format!("Unknown game type: {}", value)))
     }
 }
 
@@ -105,22 +104,13 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        assert_eq!(
-            serde_json::to_string(&GameType::Preseason).unwrap(),
-            "1"
-        );
+        assert_eq!(serde_json::to_string(&GameType::Preseason).unwrap(), "1");
         assert_eq!(
             serde_json::to_string(&GameType::RegularSeason).unwrap(),
             "2"
         );
-        assert_eq!(
-            serde_json::to_string(&GameType::Playoffs).unwrap(),
-            "3"
-        );
-        assert_eq!(
-            serde_json::to_string(&GameType::AllStar).unwrap(),
-            "4"
-        );
+        assert_eq!(serde_json::to_string(&GameType::Playoffs).unwrap(), "3");
+        assert_eq!(serde_json::to_string(&GameType::AllStar).unwrap(), "4");
     }
 
     #[test]

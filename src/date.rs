@@ -164,6 +164,14 @@ impl From<u16> for Season {
     }
 }
 
+impl FromStr for Season {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s).ok_or(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -222,9 +230,9 @@ mod tests {
         assert_eq!(season.start_year, 2023);
         assert_eq!(season.end_year(), 2024);
 
-        // Invalid formats should return None
-        assert!(Season::from_str("2023").is_none());
-        assert!(Season::from_str("20232025").is_none()); // Not consecutive years
+        // Invalid formats should return Err
+        assert!(Season::from_str("2023").is_err());
+        assert!(Season::from_str("20232025").is_err()); // Not consecutive years
     }
 
     #[test]
@@ -331,23 +339,23 @@ mod tests {
     #[test]
     fn test_season_from_str_edge_cases() {
         // Empty string
-        assert!(Season::from_str("").is_none());
+        assert!(Season::from_str("").is_err());
 
         // Too short
-        assert!(Season::from_str("2023").is_none());
-        assert!(Season::from_str("202324").is_none());
+        assert!(Season::from_str("2023").is_err());
+        assert!(Season::from_str("202324").is_err());
 
         // Too long
-        assert!(Season::from_str("202320240").is_none());
+        assert!(Season::from_str("202320240").is_err());
 
         // Non-numeric characters
-        assert!(Season::from_str("abcd efgh").is_none());
-        assert!(Season::from_str("2023abcd").is_none());
+        assert!(Season::from_str("abcd efgh").is_err());
+        assert!(Season::from_str("2023abcd").is_err());
 
         // Years not consecutive
-        assert!(Season::from_str("20232025").is_none());
-        assert!(Season::from_str("20232023").is_none());
-        assert!(Season::from_str("20242023").is_none());
+        assert!(Season::from_str("20232025").is_err());
+        assert!(Season::from_str("20232023").is_err());
+        assert!(Season::from_str("20242023").is_err());
 
         // Valid edge cases
         let season = Season::from_str("19992000").unwrap();
@@ -469,5 +477,205 @@ mod tests {
         // Should be equivalent to adding all at once
         let direct = date.add_days(6);
         assert_eq!(result.to_api_string(), direct.to_api_string());
+    }
+
+    #[test]
+    fn test_season_from_i32() {
+        // Standard season ID
+        let season: Season = 20232024_i32.into();
+        assert_eq!(season.start_year, 2023);
+        assert_eq!(season.end_year(), 2024);
+
+        // Earlier season
+        let season: Season = 19992000_i32.into();
+        assert_eq!(season.start_year, 1999);
+        assert_eq!(season.end_year(), 2000);
+
+        // Very early season
+        let season: Season = 19171918_i32.into();
+        assert_eq!(season.start_year, 1917);
+
+        // Future season
+        let season: Season = 20502051_i32.into();
+        assert_eq!(season.start_year, 2050);
+    }
+
+    #[test]
+    fn test_season_from_i64() {
+        // Standard season ID
+        let season: Season = 20232024_i64.into();
+        assert_eq!(season.start_year, 2023);
+        assert_eq!(season.end_year(), 2024);
+
+        // Earlier season
+        let season: Season = 19992000_i64.into();
+        assert_eq!(season.start_year, 1999);
+
+        // Test that i64 handles the same values correctly
+        let season_i32: Season = 20232024_i32.into();
+        let season_i64: Season = 20232024_i64.into();
+        assert_eq!(season_i32, season_i64);
+    }
+
+    #[test]
+    fn test_season_from_u16() {
+        // Standard starting year
+        let season: Season = 2023_u16.into();
+        assert_eq!(season.start_year, 2023);
+        assert_eq!(season.end_year(), 2024);
+        assert_eq!(season.to_api_string(), "20232024");
+
+        // Earlier year
+        let season: Season = 1999_u16.into();
+        assert_eq!(season.start_year, 1999);
+
+        // Verify it's equivalent to Season::new
+        let from_new = Season::new(2023);
+        let from_u16: Season = 2023_u16.into();
+        assert_eq!(from_new, from_u16);
+    }
+
+    #[test]
+    fn test_season_hash() {
+        use std::collections::HashSet;
+
+        let season1 = Season::new(2023);
+        let season2 = Season::new(2023);
+        let season3 = Season::new(2024);
+
+        let mut set = HashSet::new();
+        set.insert(season1);
+        set.insert(season2); // Should not add duplicate
+        set.insert(season3);
+
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&Season::new(2023)));
+        assert!(set.contains(&Season::new(2024)));
+        assert!(!set.contains(&Season::new(2022)));
+    }
+
+    #[test]
+    fn test_season_copy() {
+        let season1 = Season::new(2023);
+        let season2 = season1; // Copy, not move
+
+        // Both should still be usable
+        assert_eq!(season1.start_year, 2023);
+        assert_eq!(season2.start_year, 2023);
+        assert_eq!(season1, season2);
+    }
+
+    #[test]
+    fn test_season_eq() {
+        let season1 = Season::new(2023);
+        let season2 = Season::new(2023);
+        let season3 = Season::new(2024);
+
+        // Test Eq (reflexive, symmetric, transitive)
+        assert_eq!(season1, season1); // Reflexive
+        assert_eq!(season1, season2); // Symmetric
+        assert_eq!(season2, season1);
+        assert_ne!(season1, season3);
+        assert_ne!(season3, season1);
+    }
+
+    #[test]
+    fn test_season_parse_non_numeric() {
+        // Non-numeric in first half
+        assert!(Season::parse("abcd2024").is_none());
+
+        // Non-numeric in second half
+        assert!(Season::parse("2023abcd").is_none());
+
+        // Special characters
+        assert!(Season::parse("2023-024").is_none());
+        assert!(Season::parse("2023/024").is_none());
+
+        // Spaces
+        assert!(Season::parse("2023 024").is_none());
+        assert!(Season::parse(" 2032024").is_none());
+    }
+
+    #[test]
+    fn test_game_date_clone() {
+        let date = GameDate::from_ymd(2024, 10, 19).unwrap();
+        let cloned = date.clone();
+
+        assert_eq!(date, cloned);
+        assert_eq!(date.to_api_string(), cloned.to_api_string());
+
+        let now = GameDate::Now;
+        let now_cloned = now.clone();
+        assert_eq!(now, now_cloned);
+    }
+
+    #[test]
+    fn test_game_date_debug() {
+        let date = GameDate::from_ymd(2024, 10, 19).unwrap();
+        let debug_str = format!("{:?}", date);
+        assert!(debug_str.contains("Date"));
+        assert!(debug_str.contains("2024"));
+
+        let now = GameDate::Now;
+        let debug_str = format!("{:?}", now);
+        assert_eq!(debug_str, "Now");
+    }
+
+    #[test]
+    fn test_season_debug() {
+        let season = Season::new(2023);
+        let debug_str = format!("{:?}", season);
+        assert!(debug_str.contains("Season"));
+        assert!(debug_str.contains("2023"));
+    }
+
+    #[test]
+    fn test_season_clone() {
+        let season = Season::new(2023);
+        let cloned = season.clone();
+
+        assert_eq!(season, cloned);
+        assert_eq!(season.start_year, cloned.start_year);
+    }
+
+    #[test]
+    fn test_season_parse_boundary_years() {
+        // Year 0000 (invalid but parseable)
+        assert!(Season::parse("00000001").is_some());
+
+        // Maximum u16 boundary (9999 -> 10000 would overflow end_year check)
+        // 99999999 would have start 9999, end 9999, which is not +1
+        assert!(Season::parse("99999999").is_none());
+
+        // Valid high year
+        let season = Season::parse("99989999").unwrap();
+        assert_eq!(season.start_year, 9998);
+    }
+
+    #[test]
+    fn test_game_date_as_date_now_variant() {
+        // This tests the as_date method indirectly through add_days
+        // when starting from Now
+        let now = GameDate::Now;
+        let tomorrow = now.add_days(1);
+        let yesterday_from_tomorrow = tomorrow.add_days(-1);
+
+        // The dates should match (both resolve to "today")
+        let today = GameDate::today();
+        assert_eq!(
+            yesterday_from_tomorrow.to_api_string(),
+            today.to_api_string()
+        );
+    }
+
+    #[test]
+    fn test_season_from_years_equivalence() {
+        // Verify from_years produces same result as new
+        let from_years = Season::from_years(2023, 2024);
+        let from_new = Season::new(2023);
+
+        assert_eq!(from_years, from_new);
+        assert_eq!(from_years.start_year, from_new.start_year);
+        assert_eq!(from_years.end_year(), from_new.end_year());
     }
 }

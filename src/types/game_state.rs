@@ -246,10 +246,7 @@ mod tests {
             serde_json::to_string(&GameState::Final).unwrap(),
             r#""FINAL""#
         );
-        assert_eq!(
-            serde_json::to_string(&GameState::Off).unwrap(),
-            r#""OFF""#
-        );
+        assert_eq!(serde_json::to_string(&GameState::Off).unwrap(), r#""OFF""#);
         assert_eq!(
             serde_json::to_string(&GameState::Postponed).unwrap(),
             r#""PPD""#

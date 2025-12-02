@@ -18,10 +18,7 @@ pub enum NHLApiError {
     Unauthorized { message: String, status_code: u16 },
 
     #[error("NHL API error: {message}")]
-    ApiError {
-        message: String,
-        status_code: u16,
-    },
+    ApiError { message: String, status_code: u16 },
 
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),

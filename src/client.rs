@@ -55,20 +55,29 @@ impl Client {
         self.league_standings_for_date(&GameDate::default()).await
     }
 
-    pub async fn league_standings_for_date(&self, date: &GameDate) -> Result<Vec<Standing>, NHLApiError> {
+    pub async fn league_standings_for_date(
+        &self,
+        date: &GameDate,
+    ) -> Result<Vec<Standing>, NHLApiError> {
         Ok(self
             .fetch_standings_data(&date.to_api_string())
             .await?
             .standings)
     }
 
-    pub async fn league_standings_for_season(&self, season_id: i64) -> Result<Vec<Standing>, NHLApiError> {
+    pub async fn league_standings_for_season(
+        &self,
+        season_id: i64,
+    ) -> Result<Vec<Standing>, NHLApiError> {
         let seasons = self.season_standing_manifest().await?;
         let season_data = seasons
             .iter()
             .find(|s| s.id == season_id)
             .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season_id)))?;
-        Ok(self.fetch_standings_data(&season_data.standings_end).await?.standings)
+        Ok(self
+            .fetch_standings_data(&season_data.standings_end)
+            .await?
+            .standings)
     }
 
     /// Gets metadata for all NHL seasons.
@@ -102,7 +111,10 @@ impl Client {
         self.fetch_gamecenter(game_id, "boxscore").await
     }
 
-    pub async fn play_by_play(&self, game_id: impl Into<GameId>) -> Result<PlayByPlay, NHLApiError> {
+    pub async fn play_by_play(
+        &self,
+        game_id: impl Into<GameId>,
+    ) -> Result<PlayByPlay, NHLApiError> {
         self.fetch_gamecenter(game_id, "play-by-play").await
     }
 
@@ -112,7 +124,10 @@ impl Client {
     }
 
     /// Fetch season series matchup data including head-to-head records
-    pub async fn season_series(&self, game_id: impl Into<GameId>) -> Result<SeasonSeriesMatchup, NHLApiError> {
+    pub async fn season_series(
+        &self,
+        game_id: impl Into<GameId>,
+    ) -> Result<SeasonSeriesMatchup, NHLApiError> {
         self.fetch_gamecenter(game_id, "right-rail").await
     }
 
@@ -144,7 +159,10 @@ impl Client {
             .await
     }
 
-    async fn fetch_weekly_schedule(&self, date_string: &str) -> Result<WeeklyScheduleResponse, NHLApiError> {
+    async fn fetch_weekly_schedule(
+        &self,
+        date_string: &str,
+    ) -> Result<WeeklyScheduleResponse, NHLApiError> {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -175,7 +193,10 @@ impl Client {
         }
     }
 
-    pub async fn daily_schedule(&self, date: Option<GameDate>) -> Result<DailySchedule, NHLApiError> {
+    pub async fn daily_schedule(
+        &self,
+        date: Option<GameDate>,
+    ) -> Result<DailySchedule, NHLApiError> {
         let date = Self::resolve_date_or(date, GameDate::today());
         let date_string = date.to_api_string();
         let schedule_data = self.fetch_weekly_schedule(&date_string).await?;
@@ -186,7 +207,10 @@ impl Client {
     ///
     /// # Arguments
     /// * `date` - Optional GameDate. If None, defaults to "now".
-    pub async fn weekly_schedule(&self, date: Option<GameDate>) -> Result<WeeklyScheduleResponse, NHLApiError> {
+    pub async fn weekly_schedule(
+        &self,
+        date: Option<GameDate>,
+    ) -> Result<WeeklyScheduleResponse, NHLApiError> {
         let date = Self::resolve_date_or(date, GameDate::default());
         self.client
             .get_json(
@@ -226,7 +250,12 @@ impl Client {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("player/{}/game-log/{}/{}", player_id, season, game_type.to_int()),
+                &format!(
+                    "player/{}/game-log/{}/{}",
+                    player_id,
+                    season,
+                    game_type.to_int()
+                ),
                 None,
             )
             .await
@@ -319,7 +348,10 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn club_stats_season(&self, team_abbr: &str) -> Result<Vec<SeasonGameTypes>, NHLApiError> {
+    pub async fn club_stats_season(
+        &self,
+        team_abbr: &str,
+    ) -> Result<Vec<SeasonGameTypes>, NHLApiError> {
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -462,12 +494,10 @@ mod tests {
         let weekly_response = WeeklyScheduleResponse {
             next_start_date: "2024-01-15".to_string(),
             previous_start_date: "2024-01-01".to_string(),
-            game_week: vec![
-                crate::types::schedule::GameDay {
-                    date: "2024-01-08".to_string(),
-                    games: vec![],
-                },
-            ],
+            game_week: vec![crate::types::schedule::GameDay {
+                date: "2024-01-08".to_string(),
+                games: vec![],
+            }],
         };
 
         let result = client.extract_daily_schedule(weekly_response, "2024-01-08".to_string());
@@ -485,12 +515,10 @@ mod tests {
         let weekly_response = WeeklyScheduleResponse {
             next_start_date: "2024-01-15".to_string(),
             previous_start_date: "2024-01-01".to_string(),
-            game_week: vec![
-                crate::types::schedule::GameDay {
-                    date: "2024-01-08".to_string(),
-                    games: vec![],
-                },
-            ],
+            game_week: vec![crate::types::schedule::GameDay {
+                date: "2024-01-08".to_string(),
+                games: vec![],
+            }],
         };
 
         let result = client.extract_daily_schedule(weekly_response, "2024-01-09".to_string());
@@ -510,34 +538,30 @@ mod tests {
         let weekly_response = WeeklyScheduleResponse {
             next_start_date: "2024-01-15".to_string(),
             previous_start_date: "2024-01-01".to_string(),
-            game_week: vec![
-                crate::types::schedule::GameDay {
-                    date: "2024-01-08".to_string(),
-                    games: vec![
-                        ScheduleGame {
-                            id: 2023020001,
-                            game_type: GameType::RegularSeason,
-                            game_date: Some("2024-01-08".to_string()),
-                            start_time_utc: "2024-01-08T23:00:00Z".to_string(),
-                            away_team: ScheduleTeam {
-                                id: 8,
-                                abbrev: "MTL".to_string(),
-                                logo: "logo.png".to_string(),
-                                score: Some(2),
-                                place_name: None,
-                            },
-                            home_team: ScheduleTeam {
-                                id: 6,
-                                abbrev: "BOS".to_string(),
-                                logo: "logo.png".to_string(),
-                                score: Some(3),
-                                place_name: None,
-                            },
-                            game_state: GameState::Final,
-                        },
-                    ],
-                },
-            ],
+            game_week: vec![crate::types::schedule::GameDay {
+                date: "2024-01-08".to_string(),
+                games: vec![ScheduleGame {
+                    id: 2023020001,
+                    game_type: GameType::RegularSeason,
+                    game_date: Some("2024-01-08".to_string()),
+                    start_time_utc: "2024-01-08T23:00:00Z".to_string(),
+                    away_team: ScheduleTeam {
+                        id: 8,
+                        abbrev: "MTL".to_string(),
+                        logo: "logo.png".to_string(),
+                        score: Some(2),
+                        place_name: None,
+                    },
+                    home_team: ScheduleTeam {
+                        id: 6,
+                        abbrev: "BOS".to_string(),
+                        logo: "logo.png".to_string(),
+                        score: Some(3),
+                        place_name: None,
+                    },
+                    game_state: GameState::Final,
+                }],
+            }],
         };
 
         let result = client.extract_daily_schedule(weekly_response, "2024-01-08".to_string());
@@ -579,13 +603,9 @@ mod tests {
     }
 
     #[test]
-    fn test_into_game_id_accepts_game_id() {
-        // Verify that methods accepting impl Into<GameId> work with GameId
+    fn test_game_id_from_i64() {
+        // Verify that GameId can be created from i64
         let game_id = GameId::from(2023020001);
-
-        // This should compile - GameId can convert into itself
-        let converted: GameId = game_id.into();
-        assert_eq!(converted.as_i64(), 2023020001);
+        assert_eq!(game_id.as_i64(), 2023020001);
     }
-
 }
