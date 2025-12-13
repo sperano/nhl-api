@@ -1,10 +1,164 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use super::boxscore::{BoxscoreTeam, GameClock, PeriodDescriptor, SpecialEvent, TvBroadcast};
 use super::common::LocalizedString;
 use super::enums::{DefendingSide, GameScheduleState, PeriodType, Position, ZoneCode};
 use super::game_state::GameState;
 use super::game_type::GameType;
+
+/// Type of play event in a game
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PlayEventType {
+    #[serde(rename = "game-start")]
+    GameStart,
+    #[serde(rename = "period-start")]
+    PeriodStart,
+    #[serde(rename = "period-end")]
+    PeriodEnd,
+    #[serde(rename = "game-end")]
+    GameEnd,
+    Faceoff,
+    Hit,
+    Giveaway,
+    Takeaway,
+    #[serde(rename = "shot-on-goal")]
+    ShotOnGoal,
+    #[serde(rename = "missed-shot")]
+    MissedShot,
+    #[serde(rename = "blocked-shot")]
+    BlockedShot,
+    Goal,
+    Penalty,
+    Stoppage,
+    #[serde(rename = "delayed-penalty")]
+    DelayedPenalty,
+    #[serde(rename = "failed-shot-attempt")]
+    FailedShotAttempt,
+    #[serde(rename = "shootout-complete")]
+    ShootoutComplete,
+    #[serde(other)]
+    Unknown,
+}
+
+impl PlayEventType {
+    /// Returns true if this event is a scoring chance (shot, goal, missed shot, blocked shot)
+    pub fn is_scoring_chance(&self) -> bool {
+        matches!(
+            self,
+            Self::ShotOnGoal | Self::Goal | Self::MissedShot | Self::BlockedShot
+        )
+    }
+
+    /// Returns true if this event affects the score
+    pub fn is_goal(&self) -> bool {
+        matches!(self, Self::Goal)
+    }
+
+    /// Returns true if this is a period boundary event
+    pub fn is_period_boundary(&self) -> bool {
+        matches!(
+            self,
+            Self::PeriodStart | Self::PeriodEnd | Self::GameStart | Self::GameEnd
+        )
+    }
+}
+
+impl fmt::Display for PlayEventType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::GameStart => write!(f, "Game Start"),
+            Self::PeriodStart => write!(f, "Period Start"),
+            Self::PeriodEnd => write!(f, "Period End"),
+            Self::GameEnd => write!(f, "Game End"),
+            Self::Faceoff => write!(f, "Faceoff"),
+            Self::Hit => write!(f, "Hit"),
+            Self::Giveaway => write!(f, "Giveaway"),
+            Self::Takeaway => write!(f, "Takeaway"),
+            Self::ShotOnGoal => write!(f, "Shot on Goal"),
+            Self::MissedShot => write!(f, "Missed Shot"),
+            Self::BlockedShot => write!(f, "Blocked Shot"),
+            Self::Goal => write!(f, "Goal"),
+            Self::Penalty => write!(f, "Penalty"),
+            Self::Stoppage => write!(f, "Stoppage"),
+            Self::DelayedPenalty => write!(f, "Delayed Penalty"),
+            Self::FailedShotAttempt => write!(f, "Failed Shot Attempt"),
+            Self::ShootoutComplete => write!(f, "Shootout Complete"),
+            Self::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
+/// Parsed game situation from situation code
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GameSituation {
+    /// Number of away team skaters on ice (1-6)
+    pub away_skaters: u8,
+    /// Whether away team has goalie in net
+    pub away_goalie_in: bool,
+    /// Number of home team skaters on ice (1-6)
+    pub home_skaters: u8,
+    /// Whether home team has goalie in net
+    pub home_goalie_in: bool,
+}
+
+impl GameSituation {
+    /// Parse a situation code string (e.g., "1551")
+    pub fn from_code(code: &str) -> Option<Self> {
+        if code.len() != 4 {
+            return None;
+        }
+
+        let chars: Vec<char> = code.chars().collect();
+
+        Some(Self {
+            away_goalie_in: chars[0] == '1',
+            away_skaters: chars[1].to_digit(10)? as u8,
+            home_skaters: chars[2].to_digit(10)? as u8,
+            home_goalie_in: chars[3] == '1',
+        })
+    }
+
+    /// Returns true if this is even strength (5v5, 4v4, or 3v3)
+    pub fn is_even_strength(&self) -> bool {
+        self.away_skaters == self.home_skaters
+    }
+
+    /// Returns true if away team has a power play
+    pub fn is_away_power_play(&self) -> bool {
+        self.away_skaters > self.home_skaters
+    }
+
+    /// Returns true if home team has a power play
+    pub fn is_home_power_play(&self) -> bool {
+        self.home_skaters > self.away_skaters
+    }
+
+    /// Returns true if either team has pulled their goalie
+    pub fn is_empty_net(&self) -> bool {
+        !self.away_goalie_in || !self.home_goalie_in
+    }
+
+    /// Returns the strength description (e.g., "5v5", "5v4 PP", "6v5 EN")
+    pub fn strength_description(&self) -> String {
+        let base = format!("{}v{}", self.away_skaters, self.home_skaters);
+
+        if !self.away_goalie_in || !self.home_goalie_in {
+            format!("{} EN", base)
+        } else if self.away_skaters != self.home_skaters {
+            format!("{} PP", base)
+        } else {
+            base
+        }
+    }
+}
+
+impl fmt::Display for GameSituation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.strength_description())
+    }
+}
 
 /// Play by play response with all game events
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +217,63 @@ pub struct PlayByPlay {
     pub summary: Option<GameSummary>,
 }
 
+impl PlayByPlay {
+    /// Get the most recent N plays (most recent first)
+    pub fn recent_plays(&self, count: usize) -> Vec<&PlayEvent> {
+        self.plays.iter().rev().take(count).collect()
+    }
+
+    /// Get all goals in the game
+    pub fn goals(&self) -> Vec<&PlayEvent> {
+        self.plays
+            .iter()
+            .filter(|p| p.type_desc_key == PlayEventType::Goal)
+            .collect()
+    }
+
+    /// Get all penalties in the game
+    pub fn penalties(&self) -> Vec<&PlayEvent> {
+        self.plays
+            .iter()
+            .filter(|p| p.type_desc_key == PlayEventType::Penalty)
+            .collect()
+    }
+
+    /// Get all shots (on goal, missed, blocked)
+    pub fn shots(&self) -> Vec<&PlayEvent> {
+        self.plays
+            .iter()
+            .filter(|p| p.type_desc_key.is_scoring_chance())
+            .collect()
+    }
+
+    /// Get plays for a specific period
+    pub fn plays_in_period(&self, period: i32) -> Vec<&PlayEvent> {
+        self.plays
+            .iter()
+            .filter(|p| p.period_descriptor.number == period)
+            .collect()
+    }
+
+    /// Get a player from the roster by ID
+    pub fn get_player(&self, player_id: i64) -> Option<&RosterSpot> {
+        self.roster_spots.iter().find(|p| p.player_id == player_id)
+    }
+
+    /// Get all players for a team
+    pub fn team_roster(&self, team_id: i64) -> Vec<&RosterSpot> {
+        self.roster_spots
+            .iter()
+            .filter(|p| p.team_id == team_id)
+            .collect()
+    }
+
+    /// Get the current game situation from the latest play
+    pub fn current_situation(&self) -> Option<GameSituation> {
+        self.plays.last()?.situation()
+    }
+}
+
 /// Game outcome information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameOutcome {
@@ -88,7 +299,7 @@ pub struct PlayEvent {
     #[serde(rename = "typeCode")]
     pub type_code: i32,
     #[serde(rename = "typeDescKey")]
-    pub type_desc_key: String,
+    pub type_desc_key: PlayEventType,
     #[serde(rename = "sortOrder")]
     pub sort_order: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -96,6 +307,13 @@ pub struct PlayEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pptReplayUrl")]
     pub ppt_replay_url: Option<String>,
+}
+
+impl PlayEvent {
+    /// Parse the situation code into a GameSituation
+    pub fn situation(&self) -> Option<GameSituation> {
+        GameSituation::from_code(&self.situation_code)
+    }
 }
 
 /// Details for a play event (varies by event type)
@@ -124,6 +342,11 @@ pub struct PlayEventDetails {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "goalieInNetId")]
     pub goalie_in_net_id: Option<i64>,
+
+    // Blocked shot details
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "blockingPlayerId")]
+    pub blocking_player_id: Option<i64>,
 
     // Goal details
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -713,7 +936,7 @@ mod tests {
 
         let event: PlayEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.event_id, 274);
-        assert_eq!(event.type_desc_key, "goal");
+        assert_eq!(event.type_desc_key, PlayEventType::Goal);
         assert_eq!(event.time_in_period, "08:39");
 
         let details = event.details.unwrap();
@@ -756,7 +979,7 @@ mod tests {
 
         let event: PlayEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.event_id, 135);
-        assert_eq!(event.type_desc_key, "penalty");
+        assert_eq!(event.type_desc_key, PlayEventType::Penalty);
 
         let details = event.details.unwrap();
         assert_eq!(details.type_code, Some("MIN".to_string()));
@@ -797,7 +1020,7 @@ mod tests {
 
         let event: PlayEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.event_id, 103);
-        assert_eq!(event.type_desc_key, "shot-on-goal");
+        assert_eq!(event.type_desc_key, PlayEventType::ShotOnGoal);
 
         let details = event.details.unwrap();
         assert_eq!(details.shot_type, Some("wrist".to_string()));
@@ -835,7 +1058,7 @@ mod tests {
 
         let event: PlayEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.event_id, 151);
-        assert_eq!(event.type_desc_key, "faceoff");
+        assert_eq!(event.type_desc_key, PlayEventType::Faceoff);
 
         let details = event.details.unwrap();
         assert_eq!(details.winning_player_id, Some(8480002));
@@ -947,5 +1170,144 @@ mod tests {
         assert_eq!(chart.data[0].player_id, 8474593);
         assert_eq!(chart.data[0].first_name, "Jacob");
         assert_eq!(chart.data[0].last_name, "Markstrom");
+    }
+
+    #[test]
+    fn test_play_event_blocked_shot_deserialization() {
+        let json = r#"{
+            "eventId": 63,
+            "periodDescriptor": {
+                "number": 1,
+                "periodType": "REG",
+                "maxRegulationPeriods": 3
+            },
+            "timeInPeriod": "01:15",
+            "timeRemaining": "18:45",
+            "situationCode": "1551",
+            "homeTeamDefendingSide": "right",
+            "typeCode": 508,
+            "typeDescKey": "blocked-shot",
+            "sortOrder": 24,
+            "details": {
+                "xCoord": -73,
+                "yCoord": 28,
+                "zoneCode": "D",
+                "blockingPlayerId": 8481568,
+                "shootingPlayerId": 8479323,
+                "eventOwnerTeamId": 3,
+                "reason": "blocked"
+            }
+        }"#;
+
+        let event: PlayEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.type_desc_key, PlayEventType::BlockedShot);
+
+        let details = event.details.unwrap();
+        assert_eq!(details.blocking_player_id, Some(8481568));
+        assert_eq!(details.shooting_player_id, Some(8479323));
+    }
+
+    #[test]
+    fn test_play_event_type_serialization() {
+        assert_eq!(
+            serde_json::to_string(&PlayEventType::Goal).unwrap(),
+            "\"goal\""
+        );
+        assert_eq!(
+            serde_json::to_string(&PlayEventType::ShotOnGoal).unwrap(),
+            "\"shot-on-goal\""
+        );
+        assert_eq!(
+            serde_json::to_string(&PlayEventType::BlockedShot).unwrap(),
+            "\"blocked-shot\""
+        );
+    }
+
+    #[test]
+    fn test_play_event_type_helper_methods() {
+        assert!(PlayEventType::Goal.is_goal());
+        assert!(!PlayEventType::ShotOnGoal.is_goal());
+
+        assert!(PlayEventType::Goal.is_scoring_chance());
+        assert!(PlayEventType::ShotOnGoal.is_scoring_chance());
+        assert!(PlayEventType::MissedShot.is_scoring_chance());
+        assert!(PlayEventType::BlockedShot.is_scoring_chance());
+        assert!(!PlayEventType::Hit.is_scoring_chance());
+
+        assert!(PlayEventType::PeriodStart.is_period_boundary());
+        assert!(PlayEventType::PeriodEnd.is_period_boundary());
+        assert!(PlayEventType::GameStart.is_period_boundary());
+        assert!(PlayEventType::GameEnd.is_period_boundary());
+        assert!(!PlayEventType::Goal.is_period_boundary());
+    }
+
+    #[test]
+    fn test_play_event_type_display() {
+        assert_eq!(format!("{}", PlayEventType::Goal), "Goal");
+        assert_eq!(format!("{}", PlayEventType::ShotOnGoal), "Shot on Goal");
+        assert_eq!(format!("{}", PlayEventType::BlockedShot), "Blocked Shot");
+    }
+
+    #[test]
+    fn test_game_situation_from_code() {
+        let situation = GameSituation::from_code("1551").unwrap();
+        assert_eq!(situation.away_skaters, 5);
+        assert_eq!(situation.home_skaters, 5);
+        assert!(situation.away_goalie_in);
+        assert!(situation.home_goalie_in);
+        assert!(situation.is_even_strength());
+        assert!(!situation.is_away_power_play());
+        assert!(!situation.is_home_power_play());
+        assert!(!situation.is_empty_net());
+        assert_eq!(situation.strength_description(), "5v5");
+    }
+
+    #[test]
+    fn test_game_situation_power_play() {
+        let away_pp = GameSituation::from_code("1541").unwrap();
+        assert_eq!(away_pp.away_skaters, 5);
+        assert_eq!(away_pp.home_skaters, 4);
+        assert!(away_pp.is_away_power_play());
+        assert!(!away_pp.is_home_power_play());
+        assert_eq!(away_pp.strength_description(), "5v4 PP");
+
+        let home_pp = GameSituation::from_code("1451").unwrap();
+        assert_eq!(home_pp.away_skaters, 4);
+        assert_eq!(home_pp.home_skaters, 5);
+        assert!(!home_pp.is_away_power_play());
+        assert!(home_pp.is_home_power_play());
+        assert_eq!(home_pp.strength_description(), "4v5 PP");
+    }
+
+    #[test]
+    fn test_game_situation_empty_net() {
+        let away_en = GameSituation::from_code("0651").unwrap();
+        assert_eq!(away_en.away_skaters, 6);
+        assert_eq!(away_en.home_skaters, 5);
+        assert!(!away_en.away_goalie_in);
+        assert!(away_en.home_goalie_in);
+        assert!(away_en.is_empty_net());
+        assert_eq!(away_en.strength_description(), "6v5 EN");
+
+        let home_en = GameSituation::from_code("1560").unwrap();
+        assert_eq!(home_en.away_skaters, 5);
+        assert_eq!(home_en.home_skaters, 6);
+        assert!(home_en.away_goalie_in);
+        assert!(!home_en.home_goalie_in);
+        assert!(home_en.is_empty_net());
+        assert_eq!(home_en.strength_description(), "5v6 EN");
+    }
+
+    #[test]
+    fn test_game_situation_invalid_code() {
+        assert!(GameSituation::from_code("155").is_none());
+        assert!(GameSituation::from_code("15512").is_none());
+        assert!(GameSituation::from_code("abcd").is_none());
+    }
+
+    #[test]
+    fn test_game_situation_display() {
+        let situation = GameSituation::from_code("1551").unwrap();
+        assert_eq!(format!("{}", situation), "5v5");
     }
 }
