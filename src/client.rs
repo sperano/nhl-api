@@ -247,7 +247,8 @@ impl Client {
         season: i32,
         game_type: GameType,
     ) -> Result<PlayerGameLog, NHLApiError> {
-        self.client
+        let mut game_log: PlayerGameLog = self
+            .client
             .get_json(
                 Endpoint::ApiWebV1,
                 &format!(
@@ -258,7 +259,10 @@ impl Client {
                 ),
                 None,
             )
-            .await
+            .await?;
+        // The API doesn't include player_id in the response, so we set it from the parameter
+        game_log.player_id = player_id;
+        Ok(game_log)
     }
 
     /// Search for players by name

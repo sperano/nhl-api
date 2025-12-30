@@ -227,6 +227,7 @@ pub struct GameLog {
     pub points: i32,
     pub plus_minus: i32,
     pub power_play_goals: i32,
+    pub power_play_points: i32,
     pub shots: i32,
     pub shifts: i32,
     pub toi: String,
@@ -245,10 +246,16 @@ pub struct GameLog {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerGameLog {
+    /// The player ID is not in the API response, we track it ourselves
+    #[serde(skip)]
     pub player_id: i64,
+
+    #[serde(rename = "seasonId")]
     pub season: i32,
+
     #[serde(rename = "gameTypeId")]
     pub game_type: GameType,
+
     pub game_log: Vec<GameLog>,
 }
 

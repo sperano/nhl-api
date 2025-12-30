@@ -204,8 +204,9 @@ pub struct PlayByPlay {
     pub display_period: i32,
     #[serde(rename = "maxPeriods")]
     pub max_periods: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "gameOutcome")]
-    pub game_outcome: GameOutcome,
+    pub game_outcome: Option<GameOutcome>,
     #[serde(default)]
     pub plays: Vec<PlayEvent>,
     #[serde(rename = "rosterSpots", default)]
@@ -1243,9 +1244,24 @@ mod tests {
 
     #[test]
     fn test_play_event_type_display() {
-        assert_eq!(format!("{}", PlayEventType::Goal), "Goal");
+        assert_eq!(format!("{}", PlayEventType::GameStart), "Game Start");
+        assert_eq!(format!("{}", PlayEventType::PeriodStart), "Period Start");
+        assert_eq!(format!("{}", PlayEventType::PeriodEnd), "Period End");
+        assert_eq!(format!("{}", PlayEventType::GameEnd), "Game End");
+        assert_eq!(format!("{}", PlayEventType::Faceoff), "Faceoff");
+        assert_eq!(format!("{}", PlayEventType::Hit), "Hit");
+        assert_eq!(format!("{}", PlayEventType::Giveaway), "Giveaway");
+        assert_eq!(format!("{}", PlayEventType::Takeaway), "Takeaway");
         assert_eq!(format!("{}", PlayEventType::ShotOnGoal), "Shot on Goal");
+        assert_eq!(format!("{}", PlayEventType::MissedShot), "Missed Shot");
         assert_eq!(format!("{}", PlayEventType::BlockedShot), "Blocked Shot");
+        assert_eq!(format!("{}", PlayEventType::Goal), "Goal");
+        assert_eq!(format!("{}", PlayEventType::Penalty), "Penalty");
+        assert_eq!(format!("{}", PlayEventType::Stoppage), "Stoppage");
+        assert_eq!(format!("{}", PlayEventType::DelayedPenalty), "Delayed Penalty");
+        assert_eq!(format!("{}", PlayEventType::FailedShotAttempt), "Failed Shot Attempt");
+        assert_eq!(format!("{}", PlayEventType::ShootoutComplete), "Shootout Complete");
+        assert_eq!(format!("{}", PlayEventType::Unknown), "Unknown");
     }
 
     #[test]
