@@ -13,7 +13,7 @@ pub use client::Client;
 pub use config::ClientConfig;
 
 // Date and Season
-pub use date::{GameDate, Season};
+pub use date::{GameDate, Season, SeasonError};
 
 // Error types
 pub use error::NHLApiError;
