@@ -2,7 +2,7 @@ use crate::config::ClientConfig;
 use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
-use crate::ids::GameId;
+use crate::ids::{GameId, PlayerId};
 use crate::types::{
     Boxscore, ClubStats, DailySchedule, DailyScores, Franchise, FranchisesResponse, GameMatchup,
     GameStory, GameType, PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster,
@@ -76,7 +76,7 @@ impl Client {
         let seasons = self.season_standing_manifest().await?;
         let season_data = seasons
             .iter()
-            .find(|s| s.id == season_id)
+            .find(|s| i64::from(s.id) == season_id)
             .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season_id)))?;
         Ok(self
             .fetch_standings_data(&season_data.standings_end)
@@ -229,7 +229,11 @@ impl Client {
     ///
     /// # Arguments
     /// * `player_id` - NHL player ID (7-digit integer)
-    pub async fn player_landing(&self, player_id: i64) -> Result<PlayerLanding, NHLApiError> {
+    pub async fn player_landing(
+        &self,
+        player_id: impl Into<PlayerId>,
+    ) -> Result<PlayerLanding, NHLApiError> {
+        let player_id = player_id.into();
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
@@ -247,10 +251,11 @@ impl Client {
     /// * `game_type` - Game type (RegularSeason, Playoffs, etc.)
     pub async fn player_game_log(
         &self,
-        player_id: i64,
+        player_id: impl Into<PlayerId>,
         season: i32,
         game_type: GameType,
     ) -> Result<PlayerGameLog, NHLApiError> {
+        let player_id = player_id.into();
         let mut game_log: PlayerGameLog = self
             .client
             .get_json(
@@ -455,6 +460,7 @@ impl Client {
 mod tests {
     use super::*;
     use crate::date::GameDate;
+    use crate::ids::TeamId;
     use chrono::NaiveDate;
 
     // ===== Client Construction Tests =====
@@ -591,19 +597,19 @@ mod tests {
             game_week: vec![crate::types::schedule::GameDay {
                 date: "2024-01-08".to_string(),
                 games: vec![ScheduleGame {
-                    id: 2023020001,
+                    id: GameId::new(2023020001),
                     game_type: GameType::RegularSeason,
                     game_date: Some("2024-01-08".to_string()),
                     start_time_utc: "2024-01-08T23:00:00Z".to_string(),
                     away_team: ScheduleTeam {
-                        id: 8,
+                        id: TeamId::new(8),
                         abbrev: "MTL".to_string(),
                         logo: "logo.png".to_string(),
                         score: Some(2),
                         place_name: None,
                     },
                     home_team: ScheduleTeam {
-                        id: 6,
+                        id: TeamId::new(6),
                         abbrev: "BOS".to_string(),
                         logo: "logo.png".to_string(),
                         score: Some(3),
@@ -619,7 +625,7 @@ mod tests {
         assert_eq!(result.date, "2024-01-08");
         assert_eq!(result.number_of_games, 1);
         assert_eq!(result.games.len(), 1);
-        assert_eq!(result.games[0].id, 2023020001);
+        assert_eq!(result.games[0].id, GameId::new(2023020001));
     }
 
     #[test]

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use crate::date::Season;
+use crate::ids::PlayerId;
 
 use super::common::LocalizedString;
 use super::enums::{empty_string_as_none, Position};
@@ -11,7 +12,7 @@ use super::game_type::GameType;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ClubSkaterStats {
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     pub headshot: String,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
@@ -72,7 +73,7 @@ impl fmt::Display for ClubSkaterStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ClubGoalieStats {
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     pub headshot: String,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
@@ -218,7 +219,7 @@ mod tests {
         }"#;
 
         let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, 8475233);
+        assert_eq!(stats.player_id, PlayerId::new(8475233));
         assert_eq!(stats.first_name.default, "David");
         assert_eq!(stats.last_name.default, "Savard");
         assert_eq!(stats.position, Some(Position::Defense));
@@ -319,7 +320,7 @@ mod tests {
         }"#;
 
         let stats: ClubGoalieStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, 8478470);
+        assert_eq!(stats.player_id, PlayerId::new(8478470));
         assert_eq!(stats.first_name.default, "Sam");
         assert_eq!(stats.last_name.default, "Montembeault");
         assert_eq!(stats.games_played, 62);
@@ -327,6 +328,61 @@ mod tests {
         assert_eq!(stats.losses, 24);
         assert_eq!(stats.overtime_losses, 7);
         assert_eq!(stats.shutouts, 4);
+    }
+
+    /// `ClubSkaterStats.player_id`/`ClubGoalieStats.player_id` accept
+    /// numeric-string forms too (1.3).
+    #[test]
+    fn test_club_stats_player_id_deserializes_from_numeric_string() {
+        let skater_json = r#"{
+            "playerId": "8475233",
+            "headshot": "test.png",
+            "firstName": {"default": "David"},
+            "lastName": {"default": "Savard"},
+            "positionCode": "D",
+            "gamesPlayed": 0,
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "penaltyMinutes": 0,
+            "powerPlayGoals": 0,
+            "shorthandedGoals": 0,
+            "gameWinningGoals": 0,
+            "overtimeGoals": 0,
+            "shots": 0,
+            "shootingPctg": 0.0,
+            "avgTimeOnIcePerGame": 0.0,
+            "avgShiftsPerGame": 0.0,
+            "faceoffWinPctg": 0.0
+        }"#;
+        let skater: ClubSkaterStats = serde_json::from_str(skater_json).unwrap();
+        assert_eq!(skater.player_id, PlayerId::new(8475233));
+
+        let goalie_json = r#"{
+            "playerId": "8478470",
+            "headshot": "test.png",
+            "firstName": {"default": "Sam"},
+            "lastName": {"default": "Montembeault"},
+            "gamesPlayed": 0,
+            "gamesStarted": 0,
+            "wins": 0,
+            "losses": 0,
+            "overtimeLosses": 0,
+            "goalsAgainstAverage": 0.0,
+            "savePercentage": 0.0,
+            "shotsAgainst": 0,
+            "saves": 0,
+            "goalsAgainst": 0,
+            "shutouts": 0,
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "penaltyMinutes": 0,
+            "timeOnIce": 0
+        }"#;
+        let goalie: ClubGoalieStats = serde_json::from_str(goalie_json).unwrap();
+        assert_eq!(goalie.player_id, PlayerId::new(8478470));
     }
 
     #[test]
@@ -455,7 +511,7 @@ mod tests {
     #[test]
     fn test_skater_stats_display() {
         let stats = ClubSkaterStats {
-            player_id: 8475233,
+            player_id: PlayerId::new(8475233),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "David".to_string(),
@@ -490,7 +546,7 @@ mod tests {
     #[test]
     fn test_goalie_stats_display() {
         let stats = ClubGoalieStats {
-            player_id: 8478470,
+            player_id: PlayerId::new(8478470),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "Sam".to_string(),
@@ -590,7 +646,7 @@ mod tests {
     #[test]
     fn test_club_skater_stats_clone() {
         let stats = ClubSkaterStats {
-            player_id: 8475233,
+            player_id: PlayerId::new(8475233),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "David".to_string(),
@@ -624,7 +680,7 @@ mod tests {
     #[test]
     fn test_club_skater_stats_debug() {
         let stats = ClubSkaterStats {
-            player_id: 8475233,
+            player_id: PlayerId::new(8475233),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "David".to_string(),
@@ -659,7 +715,7 @@ mod tests {
     #[test]
     fn test_club_goalie_stats_clone() {
         let stats = ClubGoalieStats {
-            player_id: 8478470,
+            player_id: PlayerId::new(8478470),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "Sam".to_string(),
@@ -693,7 +749,7 @@ mod tests {
     #[test]
     fn test_club_goalie_stats_debug() {
         let stats = ClubGoalieStats {
-            player_id: 8478470,
+            player_id: PlayerId::new(8478470),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "Sam".to_string(),
@@ -819,7 +875,7 @@ mod tests {
     #[test]
     fn test_club_skater_stats_serialization_roundtrip() {
         let stats = ClubSkaterStats {
-            player_id: 8475233,
+            player_id: PlayerId::new(8475233),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "David".to_string(),
@@ -853,7 +909,7 @@ mod tests {
     #[test]
     fn test_club_goalie_stats_serialization_roundtrip() {
         let stats = ClubGoalieStats {
-            player_id: 8478470,
+            player_id: PlayerId::new(8478470),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "Sam".to_string(),
@@ -908,7 +964,7 @@ mod tests {
     #[test]
     fn test_skater_stats_equality() {
         let stats1 = ClubSkaterStats {
-            player_id: 8475233,
+            player_id: PlayerId::new(8475233),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "David".to_string(),
@@ -945,7 +1001,7 @@ mod tests {
     #[test]
     fn test_goalie_stats_equality() {
         let stats1 = ClubGoalieStats {
-            player_id: 8478470,
+            player_id: PlayerId::new(8478470),
             headshot: "test.png".to_string(),
             first_name: LocalizedString {
                 default: "Sam".to_string(),

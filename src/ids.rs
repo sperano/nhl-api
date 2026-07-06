@@ -14,7 +14,7 @@ macro_rules! numeric_id {
         $name:ident, $visitor:ident, $type_name:literal
     ) => {
         $(#[$meta])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub struct $name(i64);
 
         impl $name {
@@ -295,6 +295,16 @@ mod tests {
     fn test_game_id_const() {
         const GAME_ID: GameId = GameId::new(2023020001);
         assert_eq!(GAME_ID.as_i64(), 2023020001);
+    }
+
+    /// `Default` is needed so `#[serde(skip)]` fields (e.g.
+    /// `PlayerGameLog.player_id`, populated manually by the client rather
+    /// than the API response) can deserialize without it.
+    #[test]
+    fn test_game_id_default() {
+        assert_eq!(GameId::default().as_i64(), 0);
+        assert_eq!(PlayerId::default().as_i64(), 0);
+        assert_eq!(TeamId::default().as_i64(), 0);
     }
 
     #[test]

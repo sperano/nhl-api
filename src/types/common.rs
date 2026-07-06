@@ -2,6 +2,8 @@ use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::ids::PlayerId;
+
 use super::enums::{empty_string_as_none, Handedness, Position};
 
 /// Number of inches in a foot, used by [`RosterPlayer::height_feet_inches`].
@@ -95,7 +97,7 @@ pub struct Roster {
 /// Individual player in a team roster
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RosterPlayer {
-    pub id: i64,
+    pub id: PlayerId,
     pub headshot: String,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
@@ -446,6 +448,31 @@ mod tests {
         let player: RosterPlayer = serde_json::from_str(json).unwrap();
         assert_eq!(player.position, Some(Position::Center));
         assert_eq!(player.shoots_catches, Some(Handedness::Left));
+        assert_eq!(player.id, PlayerId::new(1));
+    }
+
+    /// `RosterPlayer.id` accepts a numeric-string form too (1.3).
+    #[test]
+    fn test_roster_player_id_deserializes_from_numeric_string() {
+        let json = r#"{
+            "id": "8478402",
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "firstName": {"default": "Connor"},
+            "lastName": {"default": "McDavid"},
+            "sweaterNumber": 97,
+            "positionCode": "C",
+            "shootsCatches": "L",
+            "heightInInches": 73,
+            "weightInPounds": 193,
+            "heightInCentimeters": 185,
+            "weightInKilograms": 88,
+            "birthDate": "1997-01-13",
+            "birthCity": {"default": "Richmond Hill"},
+            "birthCountry": "CAN"
+        }"#;
+
+        let player: RosterPlayer = serde_json::from_str(json).unwrap();
+        assert_eq!(player.id, PlayerId::new(8478402));
     }
 
     #[test]
@@ -481,7 +508,7 @@ mod tests {
     /// overridden per test via struct-update syntax.
     fn sample_roster_player() -> RosterPlayer {
         RosterPlayer {
-            id: 8478402,
+            id: PlayerId::new(8478402),
             headshot: "https://assets.nhle.com/mugs/nhl/default.png".to_string(),
             first_name: LocalizedString {
                 default: "Connor".to_string(),

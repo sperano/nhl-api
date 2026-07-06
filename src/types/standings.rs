@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::date::Season;
+
 use super::common::{Conference, Division, LocalizedString, Team};
 
 /// Standing entry for a team
@@ -110,7 +112,7 @@ pub struct StandingsResponse {
 /// Season manifest entry
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SeasonInfo {
-    pub id: i64,
+    pub id: Season,
     #[serde(rename = "standingsStart")]
     pub standings_start: String,
     #[serde(rename = "standingsEnd")]
@@ -594,5 +596,56 @@ mod tests {
 
         let team = standing.to_team();
         assert_eq!(team.place_name.default, "Vegas Golden Knights");
+    }
+
+    #[test]
+    fn test_season_info_deserialization() {
+        let json = r#"{
+            "id": 20242025,
+            "standingsStart": "2024-10-04",
+            "standingsEnd": "2025-04-17"
+        }"#;
+
+        let season_info: SeasonInfo = serde_json::from_str(json).unwrap();
+        assert_eq!(season_info.id, Season::new(2024));
+        assert_eq!(season_info.standings_start, "2024-10-04");
+        assert_eq!(season_info.standings_end, "2025-04-17");
+    }
+
+    /// `SeasonInfo.id` is typed `Season`, which accepts the API's string
+    /// forms (e.g. `"20242025"`) as well as the plain-integer form (1.1).
+    #[test]
+    fn test_season_info_id_deserializes_from_string_form() {
+        let json = r#"{
+            "id": "20242025",
+            "standingsStart": "2024-10-04",
+            "standingsEnd": "2025-04-17"
+        }"#;
+
+        let season_info: SeasonInfo = serde_json::from_str(json).unwrap();
+        assert_eq!(season_info.id, Season::new(2024));
+    }
+
+    #[test]
+    fn test_seasons_response_deserialization() {
+        let json = r#"{
+            "seasons": [
+                {
+                    "id": 20242025,
+                    "standingsStart": "2024-10-04",
+                    "standingsEnd": "2025-04-17"
+                },
+                {
+                    "id": 20232024,
+                    "standingsStart": "2023-10-10",
+                    "standingsEnd": "2024-04-18"
+                }
+            ]
+        }"#;
+
+        let response: SeasonsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.seasons.len(), 2);
+        assert_eq!(response.seasons[0].id, Season::new(2024));
+        assert_eq!(response.seasons[1].id, Season::new(2023));
     }
 }

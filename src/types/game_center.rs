@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::date::Season;
+use crate::ids::{GameId, PlayerId, TeamId};
+
 use super::boxscore::{BoxscoreTeam, GameClock, PeriodDescriptor, SpecialEvent, TvBroadcast};
 use super::common::LocalizedString;
 use super::enums::{
@@ -190,8 +193,8 @@ impl fmt::Display for GameSituation {
 /// Play by play response with all game events
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayByPlay {
-    pub id: i64,
-    pub season: i64,
+    pub id: GameId,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
@@ -283,12 +286,14 @@ impl PlayByPlay {
     }
 
     /// Get a player from the roster by ID
-    pub fn get_player(&self, player_id: i64) -> Option<&RosterSpot> {
+    pub fn get_player(&self, player_id: impl Into<PlayerId>) -> Option<&RosterSpot> {
+        let player_id = player_id.into();
         self.roster_spots.iter().find(|p| p.player_id == player_id)
     }
 
     /// Get all players for a team
-    pub fn team_roster(&self, team_id: i64) -> Vec<&RosterSpot> {
+    pub fn team_roster(&self, team_id: impl Into<TeamId>) -> Vec<&RosterSpot> {
+        let team_id = team_id.into();
         self.roster_spots
             .iter()
             .filter(|p| p.team_id == team_id)
@@ -371,7 +376,7 @@ pub struct PlayEventDetails {
     pub zone_code: Option<ZoneCode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "eventOwnerTeamId")]
-    pub event_owner_team_id: Option<i64>,
+    pub event_owner_team_id: Option<TeamId>,
 
     // Shot details
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -379,32 +384,32 @@ pub struct PlayEventDetails {
     pub shot_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shootingPlayerId")]
-    pub shooting_player_id: Option<i64>,
+    pub shooting_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "goalieInNetId")]
-    pub goalie_in_net_id: Option<i64>,
+    pub goalie_in_net_id: Option<PlayerId>,
 
     // Blocked shot details
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "blockingPlayerId")]
-    pub blocking_player_id: Option<i64>,
+    pub blocking_player_id: Option<PlayerId>,
 
     // Goal details
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "scoringPlayerId")]
-    pub scoring_player_id: Option<i64>,
+    pub scoring_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "scoringPlayerTotal")]
     pub scoring_player_total: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "assist1PlayerId")]
-    pub assist1_player_id: Option<i64>,
+    pub assist1_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "assist1PlayerTotal")]
     pub assist1_player_total: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "assist2PlayerId")]
-    pub assist2_player_id: Option<i64>,
+    pub assist2_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "assist2PlayerTotal")]
     pub assist2_player_total: Option<i32>,
@@ -435,31 +440,31 @@ pub struct PlayEventDetails {
     pub duration: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "committedByPlayerId")]
-    pub committed_by_player_id: Option<i64>,
+    pub committed_by_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "drawnByPlayerId")]
-    pub drawn_by_player_id: Option<i64>,
+    pub drawn_by_player_id: Option<PlayerId>,
 
     // Hit details
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "hittingPlayerId")]
-    pub hitting_player_id: Option<i64>,
+    pub hitting_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "hitteePlayerId")]
-    pub hittee_player_id: Option<i64>,
+    pub hittee_player_id: Option<PlayerId>,
 
     // Faceoff details
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "winningPlayerId")]
-    pub winning_player_id: Option<i64>,
+    pub winning_player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "losingPlayerId")]
-    pub losing_player_id: Option<i64>,
+    pub losing_player_id: Option<PlayerId>,
 
     // General details
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "playerId")]
-    pub player_id: Option<i64>,
+    pub player_id: Option<PlayerId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -474,9 +479,9 @@ pub struct PlayEventDetails {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RosterSpot {
     #[serde(rename = "teamId")]
-    pub team_id: i64,
+    pub team_id: TeamId,
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
@@ -498,8 +503,8 @@ pub struct RosterSpot {
 /// Game matchup/landing response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameMatchup {
-    pub id: i64,
-    pub season: i64,
+    pub id: GameId,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
@@ -551,7 +556,7 @@ pub struct GameMatchup {
 /// Team information in game matchup
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MatchupTeam {
-    pub id: i64,
+    pub id: TeamId,
     #[serde(rename = "commonName")]
     pub common_name: LocalizedString,
     pub abbrev: String,
@@ -596,7 +601,7 @@ pub struct GoalSummary {
     pub event_id: i64,
     pub strength: String,
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
@@ -648,7 +653,7 @@ pub struct GoalSummary {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AssistSummary {
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
@@ -665,7 +670,7 @@ pub struct AssistSummary {
 pub struct ShootoutAttempt {
     pub sequence: i32,
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: LocalizedString,
     #[serde(rename = "firstName")]
@@ -685,7 +690,7 @@ pub struct ShootoutAttempt {
 pub struct ThreeStar {
     pub star: i32,
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: String,
     pub headshot: String,
@@ -782,14 +787,14 @@ pub struct ShiftEntry {
     #[serde(rename = "firstName")]
     pub first_name: String,
     #[serde(rename = "gameId")]
-    pub game_id: i64,
+    pub game_id: GameId,
     #[serde(rename = "hexValue")]
     pub hex_value: String,
     #[serde(rename = "lastName")]
     pub last_name: String,
     pub period: i32,
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "shiftNumber")]
     pub shift_number: i32,
     #[serde(rename = "startTime")]
@@ -797,7 +802,7 @@ pub struct ShiftEntry {
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: String,
     #[serde(rename = "teamId")]
-    pub team_id: i64,
+    pub team_id: TeamId,
     #[serde(rename = "teamName")]
     pub team_name: String,
     #[serde(rename = "typeCode")]
@@ -818,8 +823,8 @@ pub struct SeasonSeriesMatchup {
 /// Individual game in the season series
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SeriesGame {
-    pub id: i64,
-    pub season: i64,
+    pub id: GameId,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "gameDate")]
@@ -849,7 +854,7 @@ pub struct SeriesGame {
 /// Team information in season series
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SeriesTeam {
-    pub id: i64,
+    pub id: TeamId,
     pub abbrev: String,
     pub logo: String,
     pub score: i32,
@@ -886,7 +891,7 @@ pub struct TeamGameInfo {
 /// Scratched player information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ScratchedPlayer {
-    pub id: i64,
+    pub id: PlayerId,
     #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
@@ -896,8 +901,8 @@ pub struct ScratchedPlayer {
 /// Game story
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameStory {
-    pub id: i64,
-    pub season: i64,
+    pub id: GameId,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
@@ -942,7 +947,7 @@ pub struct GameStory {
 /// Team information in game story
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StoryTeam {
-    pub id: i64,
+    pub id: TeamId,
     pub name: LocalizedString,
     pub abbrev: String,
     #[serde(rename = "placeName")]
@@ -996,9 +1001,9 @@ mod tests {
         assert_eq!(event.time_in_period, "08:39");
 
         let details = event.details.unwrap();
-        assert_eq!(details.scoring_player_id, Some(8476474));
+        assert_eq!(details.scoring_player_id, Some(PlayerId::new(8476474)));
         assert_eq!(details.scoring_player_total, Some(1));
-        assert_eq!(details.assist1_player_id, Some(8480192));
+        assert_eq!(details.assist1_player_id, Some(PlayerId::new(8480192)));
         assert_eq!(details.away_score, Some(1));
         assert_eq!(details.home_score, Some(0));
         assert_eq!(details.shot_type, Some("snap".to_string()));
@@ -1041,8 +1046,8 @@ mod tests {
         assert_eq!(details.type_code, Some("MIN".to_string()));
         assert_eq!(details.desc_key, Some("slashing".to_string()));
         assert_eq!(details.duration, Some(2));
-        assert_eq!(details.committed_by_player_id, Some(8475287));
-        assert_eq!(details.drawn_by_player_id, Some(8479420));
+        assert_eq!(details.committed_by_player_id, Some(PlayerId::new(8475287)));
+        assert_eq!(details.drawn_by_player_id, Some(PlayerId::new(8479420)));
     }
 
     #[test]
@@ -1080,8 +1085,8 @@ mod tests {
 
         let details = event.details.unwrap();
         assert_eq!(details.shot_type, Some("wrist".to_string()));
-        assert_eq!(details.shooting_player_id, Some(8483495));
-        assert_eq!(details.goalie_in_net_id, Some(8480045));
+        assert_eq!(details.shooting_player_id, Some(PlayerId::new(8483495)));
+        assert_eq!(details.goalie_in_net_id, Some(PlayerId::new(8480045)));
         assert_eq!(details.away_sog, Some(1));
         assert_eq!(details.home_sog, Some(0));
     }
@@ -1117,8 +1122,8 @@ mod tests {
         assert_eq!(event.type_desc_key, PlayEventType::Faceoff);
 
         let details = event.details.unwrap();
-        assert_eq!(details.winning_player_id, Some(8480002));
-        assert_eq!(details.losing_player_id, Some(8478043));
+        assert_eq!(details.winning_player_id, Some(PlayerId::new(8480002)));
+        assert_eq!(details.losing_player_id, Some(PlayerId::new(8478043)));
         assert_eq!(details.zone_code, Some(ZoneCode::Neutral));
     }
 
@@ -1271,8 +1276,8 @@ mod tests {
         }"#;
 
         let roster_spot: RosterSpot = serde_json::from_str(json).unwrap();
-        assert_eq!(roster_spot.team_id, 1);
-        assert_eq!(roster_spot.player_id, 8474593);
+        assert_eq!(roster_spot.team_id, TeamId::new(1));
+        assert_eq!(roster_spot.player_id, PlayerId::new(8474593));
         assert_eq!(roster_spot.first_name.default, "Jacob");
         assert_eq!(roster_spot.last_name.default, "Markstrom");
         assert_eq!(roster_spot.sweater_number, 25);
@@ -1309,6 +1314,25 @@ mod tests {
 
         let roster_spot: RosterSpot = serde_json::from_str(json).unwrap();
         assert_eq!(roster_spot.position, None);
+    }
+
+    /// `RosterSpot.team_id`/`player_id` accept numeric strings as well as
+    /// integers (1.3).
+    #[test]
+    fn test_roster_spot_ids_deserialize_from_numeric_strings() {
+        let json = r#"{
+            "teamId": "1",
+            "playerId": "8474593",
+            "firstName": {"default": "Jacob"},
+            "lastName": {"default": "Markstrom"},
+            "sweaterNumber": 25,
+            "positionCode": "G",
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/NJD/8474593.png"
+        }"#;
+
+        let roster_spot: RosterSpot = serde_json::from_str(json).unwrap();
+        assert_eq!(roster_spot.team_id, TeamId::new(1));
+        assert_eq!(roster_spot.player_id, PlayerId::new(8474593));
     }
 
     #[test]
@@ -1372,15 +1396,15 @@ mod tests {
         assert_eq!(shift.event_description, None);
         assert_eq!(shift.event_number, 101);
         assert_eq!(shift.first_name, "Jacob");
-        assert_eq!(shift.game_id, 2024020001);
+        assert_eq!(shift.game_id, GameId::new(2024020001));
         assert_eq!(shift.hex_value, "#C8102E");
         assert_eq!(shift.last_name, "Markstrom");
         assert_eq!(shift.period, 1);
-        assert_eq!(shift.player_id, 8474593);
+        assert_eq!(shift.player_id, PlayerId::new(8474593));
         assert_eq!(shift.shift_number, 1);
         assert_eq!(shift.start_time, "00:00");
         assert_eq!(shift.team_abbrev, "NJD");
-        assert_eq!(shift.team_id, 1);
+        assert_eq!(shift.team_id, TeamId::new(1));
         assert_eq!(shift.team_name, "New Jersey Devils");
         assert_eq!(shift.type_code, 517);
     }
@@ -1414,7 +1438,7 @@ mod tests {
 
         let chart: ShiftChart = serde_json::from_str(json).unwrap();
         assert_eq!(chart.data.len(), 1);
-        assert_eq!(chart.data[0].player_id, 8474593);
+        assert_eq!(chart.data[0].player_id, PlayerId::new(8474593));
         assert_eq!(chart.data[0].first_name, "Jacob");
         assert_eq!(chart.data[0].last_name, "Markstrom");
     }
@@ -1450,8 +1474,8 @@ mod tests {
         assert_eq!(event.type_desc_key, PlayEventType::BlockedShot);
 
         let details = event.details.unwrap();
-        assert_eq!(details.blocking_player_id, Some(8481568));
-        assert_eq!(details.shooting_player_id, Some(8479323));
+        assert_eq!(details.blocking_player_id, Some(PlayerId::new(8481568)));
+        assert_eq!(details.shooting_player_id, Some(PlayerId::new(8479323)));
     }
 
     #[test]
@@ -1754,6 +1778,17 @@ mod tests {
         assert_eq!(pbp.reg_periods, 3);
     }
 
+    /// `PlayByPlay.id`/`season` accept numeric-string forms, matching the
+    /// `GameId`/`Season` serde support from 1.1/1.3.
+    #[test]
+    fn test_play_by_play_id_and_season_deserialize_from_numeric_strings() {
+        let json = play_by_play_json("").replacen("2024020444", "\"2024020444\"", 1);
+        let json = json.replacen("20242025", "\"20242025\"", 1);
+        let pbp: PlayByPlay = serde_json::from_str(&json).unwrap();
+        assert_eq!(pbp.id, GameId::new(2024020444));
+        assert_eq!(pbp.season, Season::new(2024));
+    }
+
     #[test]
     fn test_game_summary_missing_shootout_and_three_stars() {
         let json = r#"{
@@ -1796,6 +1831,6 @@ mod tests {
         assert_eq!(summary.shootout.len(), 1);
         assert!(summary.shootout[0].game_winner);
         assert_eq!(summary.three_stars.len(), 1);
-        assert_eq!(summary.three_stars[0].player_id, 8478402);
+        assert_eq!(summary.three_stars[0].player_id, PlayerId::new(8478402));
     }
 }

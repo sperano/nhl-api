@@ -1,3 +1,5 @@
+use crate::date::Season;
+use crate::ids::{GameId, PlayerId, TeamId};
 use crate::types::common::LocalizedString;
 use crate::types::enums::{empty_string_as_none, Handedness, HomeRoad, Position};
 use crate::types::game_type::GameType;
@@ -7,11 +9,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerLanding {
-    pub player_id: i64,
+    pub player_id: PlayerId,
     pub is_active: bool,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub current_team_id: Option<i32>,
+    pub current_team_id: Option<TeamId>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub current_team_abbrev: Option<String>,
@@ -86,7 +88,7 @@ pub struct DraftDetails {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FeaturedStats {
-    pub season: i32,
+    pub season: Season,
     pub regular_season: PlayerStats,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -174,7 +176,7 @@ pub struct PlayerStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SeasonTotal {
-    pub season: i32,
+    pub season: Season,
     #[serde(rename = "gameTypeId")]
     pub game_type: GameType,
     pub league_abbrev: String,
@@ -216,14 +218,14 @@ pub struct Award {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AwardSeason {
-    pub season_id: i32,
+    pub season_id: Season,
 }
 
 /// Game log entry for a single game
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GameLog {
-    pub game_id: i64,
+    pub game_id: GameId,
     pub game_date: String,
     pub team_abbrev: String,
     pub home_road_flag: HomeRoad,
@@ -254,10 +256,10 @@ pub struct GameLog {
 pub struct PlayerGameLog {
     /// The player ID is not in the API response, we track it ourselves
     #[serde(skip)]
-    pub player_id: i64,
+    pub player_id: PlayerId,
 
     #[serde(rename = "seasonId")]
-    pub season: i32,
+    pub season: Season,
 
     #[serde(rename = "gameTypeId")]
     pub game_type: GameType,
@@ -270,7 +272,7 @@ pub struct PlayerGameLog {
 #[serde(rename_all = "camelCase")]
 pub struct PlayerSearchResult {
     #[serde(rename = "playerId")]
-    pub player_id: String,
+    pub player_id: PlayerId,
     pub name: String,
     /// `None` when the API returns an empty position code.
     #[serde(
@@ -282,7 +284,7 @@ pub struct PlayerSearchResult {
     pub position: Option<Position>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub team_id: Option<String>,
+    pub team_id: Option<TeamId>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team_abbrev: Option<String>,
@@ -367,10 +369,28 @@ mod tests {
         }"#;
 
         let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
-        assert_eq!(result.player_id, "8478402");
+        assert_eq!(result.player_id, PlayerId::new(8478402));
+        assert_eq!(result.team_id, Some(TeamId::new(22)));
         assert_eq!(result.name, "Connor McDavid");
         assert_eq!(result.position, Some(Position::Center));
         assert!(result.active);
+    }
+
+    /// `PlayerSearchResult.player_id`/`team_id` also accept plain-integer
+    /// forms (the search endpoint normally returns numeric strings, but the
+    /// `PlayerId`/`TeamId` deserializer accepts either, 1.3).
+    #[test]
+    fn test_player_search_result_ids_deserialize_from_integer_form() {
+        let json = r#"{
+            "playerId": 8478402,
+            "name": "Connor McDavid",
+            "teamId": 22,
+            "active": true
+        }"#;
+
+        let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
+        assert_eq!(result.player_id, PlayerId::new(8478402));
+        assert_eq!(result.team_id, Some(TeamId::new(22)));
     }
 
     #[test]
@@ -481,5 +501,143 @@ mod tests {
             !serialized.contains("shootsCatches"),
             "expected shootsCatches to be omitted: {serialized}"
         );
+    }
+
+    #[test]
+    fn test_featured_stats_deserialization() {
+        let json = r#"{
+            "season": 20242025,
+            "regularSeason": {"gamesPlayed": 10, "goals": 5}
+        }"#;
+
+        let stats: FeaturedStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.season, Season::new(2024));
+        assert_eq!(stats.regular_season.games_played, Some(10));
+    }
+
+    /// `FeaturedStats.season` accepts the API's string forms as well as the
+    /// plain-integer form (1.1).
+    #[test]
+    fn test_featured_stats_season_deserializes_from_string_form() {
+        let json = r#"{
+            "season": "20242025",
+            "regularSeason": {}
+        }"#;
+
+        let stats: FeaturedStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.season, Season::new(2024));
+    }
+
+    #[test]
+    fn test_season_total_deserialization() {
+        let json = r#"{
+            "season": 20232024,
+            "gameTypeId": 2,
+            "leagueAbbrev": "NHL",
+            "teamName": {"default": "Edmonton Oilers"},
+            "gamesPlayed": 82,
+            "goals": 64,
+            "assists": 68
+        }"#;
+
+        let total: SeasonTotal = serde_json::from_str(json).unwrap();
+        assert_eq!(total.season, Season::new(2023));
+        assert_eq!(total.game_type, GameType::RegularSeason);
+        assert_eq!(total.games_played, 82);
+        assert_eq!(total.goals, Some(64));
+    }
+
+    #[test]
+    fn test_award_season_deserialization() {
+        let json = r#"{"seasonId": 20142015}"#;
+        let award_season: AwardSeason = serde_json::from_str(json).unwrap();
+        assert_eq!(award_season.season_id, Season::new(2014));
+    }
+
+    /// `AwardSeason.season_id` accepts the API's string forms too (1.1).
+    #[test]
+    fn test_award_season_id_deserializes_from_string_form() {
+        let json = r#"{"seasonId": "20142015"}"#;
+        let award_season: AwardSeason = serde_json::from_str(json).unwrap();
+        assert_eq!(award_season.season_id, Season::new(2014));
+    }
+
+    #[test]
+    fn test_award_deserialization() {
+        let json = r#"{
+            "trophy": {"default": "Hart Memorial Trophy"},
+            "seasons": [{"seasonId": 20142015}, {"seasonId": 20162017}]
+        }"#;
+
+        let award: Award = serde_json::from_str(json).unwrap();
+        assert_eq!(award.trophy.default, "Hart Memorial Trophy");
+        assert_eq!(award.seasons.len(), 2);
+        assert_eq!(award.seasons[0].season_id, Season::new(2014));
+    }
+
+    #[test]
+    fn test_game_log_deserialization() {
+        let json = r#"{
+            "gameId": 2023020001,
+            "gameDate": "2023-10-10",
+            "teamAbbrev": "EDM",
+            "homeRoadFlag": "H",
+            "opponentAbbrev": "VAN",
+            "goals": 1,
+            "assists": 2,
+            "points": 3,
+            "plusMinus": 1,
+            "powerPlayGoals": 0,
+            "powerPlayPoints": 1,
+            "shots": 4,
+            "shifts": 22,
+            "toi": "20:15"
+        }"#;
+
+        let game_log: GameLog = serde_json::from_str(json).unwrap();
+        assert_eq!(game_log.game_id, GameId::new(2023020001));
+        assert_eq!(game_log.goals, 1);
+        assert_eq!(game_log.points, 3);
+    }
+
+    /// `GameLog.game_id` accepts a numeric-string form too (1.3).
+    #[test]
+    fn test_game_log_game_id_deserializes_from_numeric_string() {
+        let json = r#"{
+            "gameId": "2023020001",
+            "gameDate": "2023-10-10",
+            "teamAbbrev": "EDM",
+            "homeRoadFlag": "H",
+            "opponentAbbrev": "VAN",
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "powerPlayGoals": 0,
+            "powerPlayPoints": 0,
+            "shots": 0,
+            "shifts": 0,
+            "toi": "00:00"
+        }"#;
+
+        let game_log: GameLog = serde_json::from_str(json).unwrap();
+        assert_eq!(game_log.game_id, GameId::new(2023020001));
+    }
+
+    #[test]
+    fn test_player_game_log_deserialization() {
+        let json = r#"{
+            "seasonId": 20232024,
+            "gameTypeId": 2,
+            "gameLog": []
+        }"#;
+
+        let mut game_log: PlayerGameLog = serde_json::from_str(json).unwrap();
+        // Not present in the API response; the client sets it from the request parameter.
+        assert_eq!(game_log.player_id, PlayerId::default());
+        game_log.player_id = PlayerId::new(8478402);
+        assert_eq!(game_log.player_id, PlayerId::new(8478402));
+        assert_eq!(game_log.season, Season::new(2023));
+        assert_eq!(game_log.game_type, GameType::RegularSeason);
     }
 }

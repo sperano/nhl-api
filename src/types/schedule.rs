@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::ids::{GameId, TeamId};
+
 use super::common::LocalizedString;
 use super::game_state::GameState;
 use super::game_type::GameType;
@@ -8,7 +10,7 @@ use super::game_type::GameType;
 /// Schedule game information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ScheduleGame {
-    pub id: i64,
+    pub id: GameId,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "gameDate", skip_serializing_if = "Option::is_none")]
@@ -44,7 +46,7 @@ impl fmt::Display for ScheduleGame {
 /// Team information in schedule
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ScheduleTeam {
-    pub id: i64,
+    pub id: TeamId,
     pub abbrev: String,
     #[serde(rename = "placeName")]
     pub place_name: Option<LocalizedString>,
@@ -107,7 +109,7 @@ pub struct DailyScores {
 /// Individual game score
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameScore {
-    pub id: i64,
+    pub id: GameId,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "gameState")]
@@ -178,7 +180,7 @@ mod tests {
 
         fn build(self) -> ScheduleTeam {
             ScheduleTeam {
-                id: self.id,
+                id: TeamId::new(self.id),
                 abbrev: self.abbrev,
                 place_name: self.place_name,
                 logo: self.logo,
@@ -242,7 +244,7 @@ mod tests {
 
         fn build(self) -> ScheduleGame {
             ScheduleGame {
-                id: self.id,
+                id: GameId::new(self.id),
                 game_type: self.game_type,
                 game_date: self.game_date,
                 start_time_utc: self.start_time_utc,
@@ -296,7 +298,7 @@ mod tests {
 
         fn build(self) -> GameScore {
             GameScore {
-                id: self.id,
+                id: GameId::new(self.id),
                 game_type: self.game_type,
                 game_state: self.game_state,
                 away_team: self.away_team,
@@ -369,10 +371,37 @@ mod tests {
         }"#;
 
         let game: ScheduleGame = serde_json::from_str(json).unwrap();
-        assert_eq!(game.id, 2024020001);
+        assert_eq!(game.id, GameId::new(2024020001));
         assert_eq!(game.game_date, None);
         assert_eq!(game.away_team.abbrev, "BUF");
         assert_eq!(game.home_team.abbrev, "TOR");
+    }
+
+    /// `ScheduleGame.id`/`ScheduleTeam.id` accept numeric-string forms as well
+    /// as integers (1.3).
+    #[test]
+    fn test_schedule_game_ids_deserialize_from_numeric_strings() {
+        let json = r#"{
+            "id": "2024020001",
+            "gameType": 2,
+            "startTimeUTC": "23:00:00Z",
+            "awayTeam": {
+                "id": "7",
+                "abbrev": "BUF",
+                "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"
+            },
+            "homeTeam": {
+                "id": "10",
+                "abbrev": "TOR",
+                "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
+            },
+            "gameState": "FUT"
+        }"#;
+
+        let game: ScheduleGame = serde_json::from_str(json).unwrap();
+        assert_eq!(game.id, GameId::new(2024020001));
+        assert_eq!(game.away_team.id, TeamId::new(7));
+        assert_eq!(game.home_team.id, TeamId::new(10));
     }
 
     #[test]

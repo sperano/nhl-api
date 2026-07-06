@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::date::Season;
+use crate::ids::{GameId, PlayerId, TeamId};
+
 use super::common::LocalizedString;
 use super::enums::{empty_string_as_none, GameScheduleState, GoalieDecision, PeriodType, Position};
 use super::game_state::GameState;
@@ -8,8 +11,8 @@ use super::game_type::GameType;
 /// Boxscore response with detailed game and player statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Boxscore {
-    pub id: i64,
-    pub season: i64,
+    pub id: GameId,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     #[serde(rename = "limitedScoring")]
@@ -89,7 +92,7 @@ pub struct PeriodDescriptor {
 /// Team information in boxscore
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BoxscoreTeam {
-    pub id: i64,
+    pub id: TeamId,
     #[serde(rename = "commonName")]
     pub common_name: LocalizedString,
     pub abbrev: String,
@@ -208,7 +211,7 @@ impl TeamGameStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SkaterStats {
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
@@ -240,7 +243,7 @@ pub struct SkaterStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GoalieStats {
     #[serde(rename = "playerId")]
-    pub player_id: i64,
+    pub player_id: PlayerId,
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
@@ -347,8 +350,8 @@ mod tests {
         }"#;
 
         let boxscore: Boxscore = serde_json::from_str(json).unwrap();
-        assert_eq!(boxscore.id, 2024020001);
-        assert_eq!(boxscore.season, 20242025);
+        assert_eq!(boxscore.id, GameId::new(2024020001));
+        assert_eq!(boxscore.season, Season::new(2024));
         assert_eq!(boxscore.game_type, GameType::RegularSeason);
         assert_eq!(boxscore.game_state, GameState::Live);
         assert_eq!(boxscore.game_schedule_state, GameScheduleState::Ok);
@@ -444,7 +447,7 @@ mod tests {
         }"#;
 
         let stats: SkaterStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, 8480002);
+        assert_eq!(stats.player_id, PlayerId::new(8480002));
         assert_eq!(stats.sweater_number, 13);
         assert_eq!(stats.name.default, "N. Hischier");
         assert_eq!(stats.position, Some(Position::Center));
@@ -480,7 +483,7 @@ mod tests {
         }"#;
 
         let stats: GoalieStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, 8474593);
+        assert_eq!(stats.player_id, PlayerId::new(8474593));
         assert_eq!(stats.sweater_number, 25);
         assert_eq!(stats.name.default, "J. Markstrom");
         assert_eq!(stats.position, Some(Position::Goalie));
@@ -723,11 +726,119 @@ mod tests {
         }"#;
 
         let team: BoxscoreTeam = serde_json::from_str(json).unwrap();
-        assert_eq!(team.id, 8);
+        assert_eq!(team.id, TeamId::new(8));
         assert_eq!(team.common_name.default, "Canadiens");
         assert_eq!(team.abbrev, "MTL");
         assert_eq!(team.score, 3);
         assert_eq!(team.sog, 28);
+    }
+
+    /// The NHL API sometimes returns numeric ID fields as strings; `GameId`,
+    /// `TeamId`, `PlayerId`, and `Season` all accept both forms (1.1/1.3).
+    #[test]
+    fn test_boxscore_ids_and_season_deserialize_from_numeric_strings() {
+        let json = r#"{
+            "id": "2024020001",
+            "season": "20242025",
+            "gameType": 2,
+            "limitedScoring": false,
+            "gameDate": "2024-10-04",
+            "venue": {"default": "Test Arena"},
+            "venueLocation": {"default": "Test City"},
+            "startTimeUTC": "2024-10-04T19:00:00Z",
+            "easternUTCOffset": "-04:00",
+            "venueUTCOffset": "-04:00",
+            "tvBroadcasts": [],
+            "gameState": "LIVE",
+            "gameScheduleState": "OK",
+            "periodDescriptor": {},
+            "awayTeam": {
+                "id": "1",
+                "commonName": {"default": "Devils"},
+                "abbrev": "NJD",
+                "score": 0,
+                "sog": 0,
+                "logo": "https://assets.nhle.com/logos/nhl/svg/NJD_light.svg",
+                "darkLogo": "https://assets.nhle.com/logos/nhl/svg/NJD_dark.svg",
+                "placeName": {"default": "New Jersey"},
+                "placeNameWithPreposition": {"default": "New Jersey"}
+            },
+            "homeTeam": {
+                "id": "7",
+                "commonName": {"default": "Sabres"},
+                "abbrev": "BUF",
+                "score": 0,
+                "sog": 0,
+                "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg",
+                "darkLogo": "https://assets.nhle.com/logos/nhl/svg/BUF_dark.svg",
+                "placeName": {"default": "Buffalo"},
+                "placeNameWithPreposition": {"default": "Buffalo"}
+            },
+            "clock": {
+                "timeRemaining": "20:00",
+                "secondsRemaining": 1200,
+                "running": false,
+                "inIntermission": false
+            },
+            "playerByGameStats": {
+                "awayTeam": {"forwards": [], "defense": [], "goalies": []},
+                "homeTeam": {"forwards": [], "defense": [], "goalies": []}
+            }
+        }"#;
+
+        let boxscore: Boxscore = serde_json::from_str(json).unwrap();
+        assert_eq!(boxscore.id, GameId::new(2024020001));
+        assert_eq!(boxscore.season, Season::new(2024));
+        assert_eq!(boxscore.away_team.id, TeamId::new(1));
+        assert_eq!(boxscore.home_team.id, TeamId::new(7));
+    }
+
+    /// `SkaterStats.player_id`/`GoalieStats.player_id` also accept numeric
+    /// strings.
+    #[test]
+    fn test_skater_and_goalie_stats_player_id_deserializes_from_numeric_string() {
+        let skater_json = r#"{
+            "playerId": "8480002",
+            "sweaterNumber": 13,
+            "name": {"default": "N. Hischier"},
+            "position": "C",
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "pim": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "sog": 0,
+            "faceoffWinningPctg": 0.0,
+            "toi": "00:00",
+            "blockedShots": 0,
+            "shifts": 0,
+            "giveaways": 0,
+            "takeaways": 0
+        }"#;
+        let skater: SkaterStats = serde_json::from_str(skater_json).unwrap();
+        assert_eq!(skater.player_id, PlayerId::new(8480002));
+
+        let goalie_json = r#"{
+            "playerId": "8474593",
+            "sweaterNumber": 25,
+            "name": {"default": "J. Markstrom"},
+            "position": "G",
+            "evenStrengthShotsAgainst": "0/0",
+            "powerPlayShotsAgainst": "0/0",
+            "shorthandedShotsAgainst": "0/0",
+            "saveShotsAgainst": "0/0",
+            "evenStrengthGoalsAgainst": 0,
+            "powerPlayGoalsAgainst": 0,
+            "shorthandedGoalsAgainst": 0,
+            "goalsAgainst": 0,
+            "toi": "00:00",
+            "shotsAgainst": 0,
+            "saves": 0
+        }"#;
+        let goalie: GoalieStats = serde_json::from_str(goalie_json).unwrap();
+        assert_eq!(goalie.player_id, PlayerId::new(8474593));
     }
 
     #[test]
@@ -941,7 +1052,7 @@ mod tests {
         }"#;
 
         let stats: GoalieStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, 8475123);
+        assert_eq!(stats.player_id, PlayerId::new(8475123));
         assert_eq!(stats.save_pctg, None);
         assert_eq!(stats.pim, None);
         assert_eq!(stats.starter, None);
@@ -981,7 +1092,7 @@ mod tests {
         assert_eq!(stats.forwards.len(), 1);
         assert_eq!(stats.defense.len(), 0);
         assert_eq!(stats.goalies.len(), 0);
-        assert_eq!(stats.forwards[0].player_id, 8480002);
+        assert_eq!(stats.forwards[0].player_id, PlayerId::new(8480002));
     }
 
     #[test]
@@ -1026,7 +1137,7 @@ mod tests {
     fn test_team_game_stats_from_skaters() {
         let team_stats = TeamPlayerStats {
             forwards: vec![SkaterStats {
-                player_id: 1,
+                player_id: PlayerId::new(1),
                 sweater_number: 13,
                 name: LocalizedString {
                     default: "Player 1".to_string(),
@@ -1048,7 +1159,7 @@ mod tests {
                 takeaways: 3,
             }],
             defense: vec![SkaterStats {
-                player_id: 2,
+                player_id: PlayerId::new(2),
                 sweater_number: 44,
                 name: LocalizedString {
                     default: "Player 2".to_string(),
@@ -1088,7 +1199,7 @@ mod tests {
             forwards: vec![],
             defense: vec![],
             goalies: vec![GoalieStats {
-                player_id: 1,
+                player_id: PlayerId::new(1),
                 sweater_number: 35,
                 name: LocalizedString {
                     default: "Goalie 1".to_string(),
