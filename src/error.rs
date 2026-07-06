@@ -23,8 +23,12 @@ pub enum NHLApiError {
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),
 
-    #[error("JSON parsing failed: {0}")]
-    JsonError(#[from] serde_json::Error),
+    #[error("unmarshaling response from {url}: {source}")]
+    JsonError {
+        url: String,
+        #[source]
+        source: serde_json::Error,
+    },
 
     #[error("{0}")]
     Other(String),

@@ -28,6 +28,10 @@ impl Endpoint {
     }
 }
 
+/// Upper bound on how much of a non-2xx response body is read into an error
+/// message, so a large (or hostile) body can't be slurped into memory whole.
+const MAX_ERROR_BODY_BYTES: usize = 4096;
+
 pub struct HttpClient {
     client: Client,
 }
@@ -48,8 +52,12 @@ impl HttpClient {
         Ok(Self { client })
     }
 
-    fn error_from_status(status_code: u16, url: &str) -> NHLApiError {
-        let message = format!("Request to {} failed", url);
+    fn error_from_status(status_code: u16, url: &str, body_snippet: &str) -> NHLApiError {
+        let message = if body_snippet.is_empty() {
+            format!("Request to {} failed", url)
+        } else {
+            format!("Request to {} failed: {}", url, body_snippet)
+        };
 
         macro_rules! error_variant {
             ($variant:ident) => {
@@ -83,13 +91,27 @@ impl HttpClient {
         }
     }
 
-    fn handle_response(&self, response: Response, url: &str) -> Result<Response, NHLApiError> {
+    async fn handle_response(
+        &self,
+        response: Response,
+        url: &str,
+    ) -> Result<Response, NHLApiError> {
         let status = response.status();
         if status.is_success() {
             return Ok(response);
         }
 
-        Err(Self::error_from_status(status.as_u16(), url))
+        // Bounded, best-effort read: a body we can't read (or that's empty)
+        // still yields a usable error, just without the extra detail.
+        let body = response.bytes().await.unwrap_or_default();
+        let truncated_len = body.len().min(MAX_ERROR_BODY_BYTES);
+        let snippet = String::from_utf8_lossy(&body[..truncated_len]);
+
+        Err(Self::error_from_status(
+            status.as_u16(),
+            url,
+            snippet.trim(),
+        ))
     }
 
     pub async fn get_json<T: serde::de::DeserializeOwned>(
@@ -112,9 +134,14 @@ impl HttpClient {
         let response = request.send().await?;
         debug!(status = %response.status(), url = %full_url, "Received HTTP response");
 
-        let response = self.handle_response(response, resource)?;
+        let response = self.handle_response(response, resource).await?;
 
-        let json = response.json::<T>().await?;
+        let body_text = response.text().await?;
+        let json =
+            serde_json::from_str::<T>(&body_text).map_err(|source| NHLApiError::JsonError {
+                url: full_url.clone(),
+                source,
+            })?;
         debug!(url = %full_url, "Successfully deserialized response");
         Ok(json)
     }
@@ -291,7 +318,7 @@ mod tests {
         expected_variant: fn(&NHLApiError) -> bool,
         expected_message_contains: &str,
     ) {
-        let error = HttpClient::error_from_status(status_code, "/test/resource");
+        let error = HttpClient::error_from_status(status_code, "/test/resource", "");
 
         assert!(
             expected_variant(&error),
@@ -518,10 +545,89 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            NHLApiError::ResourceNotFound { status_code, .. } => {
+            NHLApiError::ResourceNotFound {
+                status_code,
+                message,
+            } => {
                 assert_eq!(status_code, 404);
+                // Empty body: message keeps the pre-4.1 shape, no trailing colon/snippet.
+                assert_eq!(message, "Request to missing failed");
             }
             _ => panic!("Expected ResourceNotFound error"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_json_404_with_error_body_included_in_message() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/missing-player")
+            .with_status(404)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"error": "player not found", "code": "NOT_FOUND"}"#)
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default();
+        let http_client = HttpClient::new(config).unwrap();
+
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "missing-player", None).await;
+
+        match result.unwrap_err() {
+            NHLApiError::ResourceNotFound { message, .. } => {
+                assert!(
+                    message.contains(r#"{"error": "player not found", "code": "NOT_FOUND"}"#),
+                    "expected message to contain the response body snippet, got: {}",
+                    message
+                );
+            }
+            other => panic!("Expected ResourceNotFound error, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_json_error_body_truncated_to_cap() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        // One byte over the cap, all ASCII so byte length == char length and
+        // trimming doesn't change the count (no whitespace).
+        let oversized_body = "a".repeat(MAX_ERROR_BODY_BYTES + 1);
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/huge-error")
+            .with_status(400)
+            .with_body(&oversized_body)
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default();
+        let http_client = HttpClient::new(config).unwrap();
+
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "huge-error", None).await;
+
+        match result.unwrap_err() {
+            NHLApiError::BadRequest { message, .. } => {
+                let snippet_len = message.len() - "Request to huge-error failed: ".len();
+                assert_eq!(
+                    snippet_len, MAX_ERROR_BODY_BYTES,
+                    "expected the body snippet to be truncated to the {}-byte cap",
+                    MAX_ERROR_BODY_BYTES
+                );
+            }
+            other => panic!("Expected BadRequest error, got {:?}", other),
         }
     }
 
@@ -551,8 +657,18 @@ mod tests {
         let result: Result<TestResponse, NHLApiError> =
             http_client.get_json(endpoint, "bad-json", None).await;
 
-        // Should fail during deserialization
-        assert!(result.is_err());
+        // Should fail during deserialization, and the wrapped error carries
+        // the request URL (so callers can tell which endpoint misbehaved).
+        match result.unwrap_err() {
+            NHLApiError::JsonError { url, .. } => {
+                assert!(
+                    url.contains("bad-json"),
+                    "expected JSON error url to contain the request path, got: {}",
+                    url
+                );
+            }
+            other => panic!("Expected JsonError, got {:?}", other),
+        }
     }
 
     #[tokio::test]
@@ -633,7 +749,7 @@ mod tests {
         let response = http_client.client.get(server.url()).send().await.unwrap();
 
         // Test handle_response with successful response
-        let result = http_client.handle_response(response, "/test");
+        let result = http_client.handle_response(response, "/test").await;
         assert!(result.is_ok());
     }
 
@@ -652,7 +768,9 @@ mod tests {
         let http_client = HttpClient::new(config).unwrap();
         let response = http_client.client.get(server.url()).send().await.unwrap();
 
-        let result = http_client.handle_response(response, "/test/resource");
+        let result = http_client
+            .handle_response(response, "/test/resource")
+            .await;
         assert!(result.is_err(), "Expected error response for 404 status");
 
         // Verify it's the right error type (details are tested in error_from_status tests)
