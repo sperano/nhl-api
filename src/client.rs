@@ -11,6 +11,10 @@ use crate::types::{
 };
 use std::collections::HashMap;
 
+/// Number of results [`Client::search_player`] requests when the caller passes
+/// no explicit limit.
+const DEFAULT_SEARCH_LIMIT: i32 = 20;
+
 pub struct Client {
     client: HttpClient,
 }
@@ -269,19 +273,36 @@ impl Client {
     ///
     /// # Arguments
     /// * `query` - Search query (player name or partial name)
-    /// * `limit` - Maximum number of results to return (default 20)
+    /// * `limit` - Maximum number of results to return (defaults to
+    ///   [`DEFAULT_SEARCH_LIMIT`] when `None`)
     pub async fn search_player(
         &self,
+        query: &str,
+        limit: Option<i32>,
+    ) -> Result<Vec<PlayerSearchResult>, NHLApiError> {
+        self.search_player_at(Endpoint::SearchV1, query, limit)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::search_player`], split out so the
+    /// query-building (notably the [`DEFAULT_SEARCH_LIMIT`] fallback) can be
+    /// exercised against a mock server.
+    async fn search_player_at(
+        &self,
+        endpoint: Endpoint,
         query: &str,
         limit: Option<i32>,
     ) -> Result<Vec<PlayerSearchResult>, NHLApiError> {
         let mut params = HashMap::new();
         params.insert("culture".to_string(), "en-us".to_string());
         params.insert("q".to_string(), query.to_string());
-        params.insert("limit".to_string(), limit.unwrap_or(20).to_string());
+        params.insert(
+            "limit".to_string(),
+            limit.unwrap_or(DEFAULT_SEARCH_LIMIT).to_string(),
+        );
 
         self.client
-            .get_json(Endpoint::SearchV1, "search/player", Some(params))
+            .get_json(endpoint, "search/player", Some(params))
             .await
     }
 
@@ -457,6 +478,7 @@ mod tests {
             timeout: std::time::Duration::from_secs(60),
             follow_redirects: false,
             ssl_verify: true,
+            ..Default::default()
         };
         let client = Client::with_config(config);
         assert!(client.is_ok());
@@ -489,6 +511,30 @@ mod tests {
         let resolved = Client::resolve_date_or(None, GameDate::today());
         // Should be today's date, not "now"
         assert_ne!(resolved.to_api_string(), "now");
+    }
+
+    #[tokio::test]
+    async fn test_search_player_defaults_limit_to_twenty() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/search/player")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "limit".into(),
+                DEFAULT_SEARCH_LIMIT.to_string(),
+            ))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body("[]")
+            .create_async()
+            .await;
+
+        let client = Client::new().unwrap();
+        let result = client
+            .search_player_at(Endpoint::Custom(server.url()), "gretzky", None)
+            .await;
+
+        assert!(result.is_ok(), "search should succeed: {:?}", result.err());
+        mock.assert_async().await;
     }
 
     #[test]

@@ -1,5 +1,6 @@
-use crate::config::ClientConfig;
+use crate::config::{ClientConfig, DEFAULT_USER_AGENT};
 use crate::error::NHLApiError;
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
 use reqwest::{Client, Response};
 use std::collections::HashMap;
 use tracing::debug;
@@ -38,11 +39,37 @@ pub struct HttpClient {
 
 impl HttpClient {
     pub fn new(config: ClientConfig) -> Result<Self, NHLApiError> {
-        let mut client_builder = Client::builder()
-            .timeout(config.timeout)
-            .danger_accept_invalid_certs(!config.ssl_verify);
+        let ClientConfig {
+            timeout,
+            ssl_verify,
+            follow_redirects,
+            user_agent,
+            client,
+        } = config;
 
-        if config.follow_redirects {
+        // Escape hatch: a caller-supplied client is used verbatim. All
+        // transport-shaping options and the default headers below are the
+        // caller's responsibility in that case (see `ClientConfig` docs).
+        if let Some(client) = client {
+            return Ok(Self { client });
+        }
+
+        let user_agent = user_agent.as_deref().unwrap_or(DEFAULT_USER_AGENT);
+        let mut headers = HeaderMap::new();
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        headers.insert(
+            USER_AGENT,
+            HeaderValue::from_str(user_agent).map_err(|_| {
+                NHLApiError::Other(format!("invalid User-Agent header: {:?}", user_agent))
+            })?,
+        );
+
+        let mut client_builder = Client::builder()
+            .timeout(timeout)
+            .danger_accept_invalid_certs(!ssl_verify)
+            .default_headers(headers);
+
+        if follow_redirects {
             client_builder = client_builder.redirect(reqwest::redirect::Policy::limited(10));
         } else {
             client_builder = client_builder.redirect(reqwest::redirect::Policy::none());
@@ -291,6 +318,7 @@ mod tests {
             timeout: Duration::from_secs(120),
             follow_redirects: false,
             ssl_verify: false,
+            ..Default::default()
         });
     }
 
@@ -777,6 +805,127 @@ mod tests {
         assert!(
             matches!(result.unwrap_err(), NHLApiError::ResourceNotFound { .. }),
             "Expected ResourceNotFound error"
+        );
+    }
+
+    // ===== Header / config surface tests (step 4.2) =====
+
+    #[tokio::test]
+    async fn test_get_json_sends_default_user_agent() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/ua")
+            .match_header("user-agent", DEFAULT_USER_AGENT)
+            .with_status(200)
+            .with_body("{}")
+            .create_async()
+            .await;
+
+        let http_client = HttpClient::new(ClientConfig::default()).unwrap();
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "ua", None).await;
+
+        assert!(result.is_ok(), "default User-Agent header should match");
+    }
+
+    #[tokio::test]
+    async fn test_get_json_sends_custom_user_agent() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        const CUSTOM_UA: &str = "my-app/4.2";
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/ua")
+            .match_header("user-agent", CUSTOM_UA)
+            .with_status(200)
+            .with_body("{}")
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default().with_user_agent(CUSTOM_UA);
+        let http_client = HttpClient::new(config).unwrap();
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "ua", None).await;
+
+        assert!(result.is_ok(), "custom User-Agent header should match");
+    }
+
+    #[tokio::test]
+    async fn test_get_json_sends_accept_json_header() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/accept")
+            .match_header("accept", "application/json")
+            .with_status(200)
+            .with_body("{}")
+            .create_async()
+            .await;
+
+        let http_client = HttpClient::new(ClientConfig::default()).unwrap();
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "accept", None).await;
+
+        assert!(
+            result.is_ok(),
+            "Accept: application/json header should be sent"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_json_uses_injected_http_client() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        // The mock only matches when a header the *injected* client sets is
+        // present — proving the injected client (not a library-built one) is
+        // the one actually issuing the request.
+        const MARKER_HEADER: &str = "x-injected-marker";
+        const MARKER_VALUE: &str = "present";
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/injected")
+            .match_header(MARKER_HEADER, MARKER_VALUE)
+            .with_status(200)
+            .with_body("{}")
+            .create_async()
+            .await;
+
+        let mut default_headers = HeaderMap::new();
+        default_headers.insert(MARKER_HEADER, HeaderValue::from_static(MARKER_VALUE));
+        let injected = Client::builder()
+            .default_headers(default_headers)
+            .build()
+            .unwrap();
+
+        let config = ClientConfig::default().with_http_client(injected);
+        let http_client = HttpClient::new(config).unwrap();
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "injected", None).await;
+
+        assert!(
+            result.is_ok(),
+            "the injected client's marker header should reach the server"
         );
     }
 }
