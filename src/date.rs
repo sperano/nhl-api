@@ -37,9 +37,9 @@ pub enum GameDate {
 }
 
 impl GameDate {
-    /// Create a GameDate from today's date
+    /// Create a GameDate from today's date (UTC).
     pub fn today() -> Self {
-        Self::Date(chrono::Local::now().date_naive())
+        Self::Date(chrono::Utc::now().date_naive())
     }
 
     /// Create a GameDate from a specific date
@@ -60,10 +60,10 @@ impl GameDate {
         }
     }
 
-    /// Convert to a concrete date (resolves "now" to today's date)
+    /// Convert to a concrete date (resolves "now" to today's date, UTC).
     fn as_date(&self) -> NaiveDate {
         match self {
-            Self::Now => chrono::Local::now().date_naive(),
+            Self::Now => chrono::Utc::now().date_naive(),
             Self::Date(date) => *date,
         }
     }
@@ -95,6 +95,25 @@ impl From<NaiveDate> for GameDate {
 impl fmt::Display for GameDate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_api_string())
+    }
+}
+
+impl serde::Serialize for GameDate {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_api_string())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for GameDate {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
     }
 }
 
@@ -195,8 +214,12 @@ impl Season {
     ///
     /// NHL seasons typically start in October, so dates before October belong
     /// to the season that started the previous calendar year.
+    ///
+    /// Uses UTC rather than the local system timezone so the result is
+    /// independent of the machine's timezone configuration (the NHL API
+    /// itself is timezone-agnostic about date boundaries).
     pub fn current() -> Self {
-        let now = chrono::Local::now().date_naive();
+        let now = chrono::Utc::now().date_naive();
         let year = now.year() as u16;
         // If it's before October, we're still in the previous season
         if now.month() < 10 {
@@ -948,5 +971,64 @@ mod tests {
         assert_eq!(from_years, from_new);
         assert_eq!(from_years.start_year(), from_new.start_year());
         assert_eq!(from_years.end_year(), from_new.end_year());
+    }
+
+    #[test]
+    fn test_game_date_today_no_panic() {
+        // today() must not panic; avoid asserting the wall-clock value itself
+        // (a midnight-crossing test run would make an exact assertion flaky).
+        let today = GameDate::today();
+        assert!(matches!(today, GameDate::Date(_)));
+    }
+
+    #[test]
+    fn test_season_current_no_panic() {
+        // current() must not panic and must always produce a conventional
+        // cross-year season; avoid asserting the wall-clock year itself.
+        let season = Season::current();
+        assert_eq!(season.end_year(), season.start_year() + 1);
+    }
+
+    #[test]
+    fn test_game_date_serde_round_trip_now() {
+        let date = GameDate::Now;
+        let json = serde_json::to_string(&date).unwrap();
+        assert_eq!(json, "\"now\"");
+
+        let de: GameDate = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, date);
+    }
+
+    #[test]
+    fn test_game_date_serde_round_trip_date() {
+        let date = GameDate::from_ymd(2024, 10, 19).unwrap();
+        let json = serde_json::to_string(&date).unwrap();
+        assert_eq!(json, "\"2024-10-19\"");
+
+        let de: GameDate = serde_json::from_str(&json).unwrap();
+        assert_eq!(de, date);
+    }
+
+    #[test]
+    fn test_game_date_serde_rejects_invalid_month() {
+        // Month 13 doesn't exist; chrono's parser rejects it, and that
+        // rejection should surface as a deserialize error.
+        assert!(serde_json::from_str::<GameDate>("\"2024-13-40\"").is_err());
+    }
+
+    #[test]
+    fn test_game_date_serde_rejects_zero_month_and_day() {
+        // Month/day 00 are not valid calendar values.
+        assert!(serde_json::from_str::<GameDate>("\"2024-00-00\"").is_err());
+    }
+
+    #[test]
+    fn test_game_date_serde_rejects_non_string() {
+        assert!(serde_json::from_str::<GameDate>("12345").is_err());
+    }
+
+    #[test]
+    fn test_game_date_serde_rejects_garbage_string() {
+        assert!(serde_json::from_str::<GameDate>("\"not-a-date\"").is_err());
     }
 }
