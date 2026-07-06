@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use crate::date::Season;
+
 use super::common::LocalizedString;
 use super::enums::{empty_string_as_none, Position};
 use super::game_type::GameType;
@@ -124,7 +126,7 @@ impl fmt::Display for ClubGoalieStats {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ClubStats {
     #[serde(rename = "season")]
-    pub season: String,
+    pub season: Season,
     #[serde(rename = "gameType")]
     pub game_type: GameType,
     pub skaters: Vec<ClubSkaterStats>,
@@ -134,7 +136,7 @@ pub struct ClubStats {
 /// Season game type availability for a team
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SeasonGameTypes {
-    pub season: i32,
+    pub season: Season,
     #[serde(rename = "gameTypes")]
     #[serde(with = "game_types_vec")]
     pub game_types: Vec<GameType>,
@@ -173,7 +175,12 @@ mod game_types_vec {
 impl fmt::Display for SeasonGameTypes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let game_types_str: Vec<String> = self.game_types.iter().map(|gt| gt.to_string()).collect();
-        write!(f, "{}: {}", self.season, game_types_str.join(", "))
+        write!(
+            f,
+            "{}: {}",
+            self.season.to_api_string(),
+            game_types_str.join(", ")
+        )
     }
 }
 
@@ -378,10 +385,28 @@ mod tests {
         }"#;
 
         let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.season, "20242025");
+        assert_eq!(stats.season, Season::new(2024));
         assert_eq!(stats.game_type, GameType::RegularSeason);
         assert_eq!(stats.skaters.len(), 1);
         assert_eq!(stats.goalies.len(), 1);
+    }
+
+    /// `ClubStats.season` is typed `Season`, which accepts the API's string
+    /// form (e.g. `"20242025"`) as well as the plain-integer form.
+    #[test]
+    fn test_club_stats_season_deserializes_from_string_and_int_forms() {
+        let from_string: ClubStats = serde_json::from_str(
+            r#"{"season": "20242025", "gameType": 2, "skaters": [], "goalies": []}"#,
+        )
+        .unwrap();
+        assert_eq!(from_string.season, Season::new(2024));
+        assert_eq!(from_string.season.to_api_string(), "20242025");
+
+        let from_int: ClubStats = serde_json::from_str(
+            r#"{"season": 20242025, "gameType": 2, "skaters": [], "goalies": []}"#,
+        )
+        .unwrap();
+        assert_eq!(from_int.season, Season::new(2024));
     }
 
     #[test]
@@ -392,17 +417,27 @@ mod tests {
         }"#;
 
         let season: SeasonGameTypes = serde_json::from_str(json).unwrap();
-        assert_eq!(season.season, 20242025);
+        assert_eq!(season.season, Season::new(2024));
         assert_eq!(
             season.game_types,
             vec![GameType::RegularSeason, GameType::Playoffs]
         );
     }
 
+    /// The API's `club-stats-season` endpoint returns `season` as a plain
+    /// integer, but `Season`'s string forms must also deserialize here since
+    /// the type is shared across endpoints with differing shapes (1.1).
+    #[test]
+    fn test_season_game_types_season_deserializes_from_string_form() {
+        let json = r#"{"season": "20242025", "gameTypes": [2]}"#;
+        let season: SeasonGameTypes = serde_json::from_str(json).unwrap();
+        assert_eq!(season.season, Season::new(2024));
+    }
+
     #[test]
     fn test_season_game_types_display() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason, GameType::Playoffs],
         };
         assert_eq!(format!("{}", season), "20242025: Regular Season, Playoffs");
@@ -411,7 +446,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_regular_only() {
         let season = SeasonGameTypes {
-            season: 20232024,
+            season: Season::new(2023),
             game_types: vec![GameType::RegularSeason],
         };
         assert_eq!(format!("{}", season), "20232024: Regular Season");
@@ -504,7 +539,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_with_all_star() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![
                 GameType::RegularSeason,
                 GameType::Playoffs,
@@ -520,7 +555,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_preseason() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::Preseason],
         };
         assert_eq!(format!("{}", season), "20242025: Preseason");
@@ -529,7 +564,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_all_star() {
         let season = SeasonGameTypes {
-            season: 20232024,
+            season: Season::new(2023),
             game_types: vec![GameType::AllStar],
         };
         assert_eq!(format!("{}", season), "20232024: All-Star");
@@ -538,7 +573,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_mixed_order() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![
                 GameType::Preseason,
                 GameType::RegularSeason,
@@ -716,13 +751,14 @@ mod tests {
         let stats: ClubStats = serde_json::from_str(json).unwrap();
         let debug_str = format!("{:?}", stats);
         assert!(debug_str.contains("ClubStats"));
-        assert!(debug_str.contains("20242025"));
+        assert!(debug_str.contains("2024"));
+        assert!(debug_str.contains("2025"));
     }
 
     #[test]
     fn test_season_game_types_clone() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason, GameType::Playoffs],
         };
 
@@ -733,13 +769,14 @@ mod tests {
     #[test]
     fn test_season_game_types_debug() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason],
         };
 
         let debug_str = format!("{:?}", season);
         assert!(debug_str.contains("SeasonGameTypes"));
-        assert!(debug_str.contains("20242025"));
+        assert!(debug_str.contains("2024"));
+        assert!(debug_str.contains("2025"));
     }
 
     #[test]
@@ -747,15 +784,15 @@ mod tests {
         use std::collections::HashSet;
 
         let season1 = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason],
         };
         let season2 = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason],
         };
         let season3 = SeasonGameTypes {
-            season: 20232024,
+            season: Season::new(2023),
             game_types: vec![GameType::RegularSeason],
         };
 
@@ -770,7 +807,7 @@ mod tests {
     #[test]
     fn test_season_game_types_serialization_roundtrip() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason, GameType::Playoffs],
         };
 
@@ -862,7 +899,7 @@ mod tests {
     #[test]
     fn test_season_game_types_display_empty() {
         let season = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![],
         };
         assert_eq!(format!("{}", season), "20242025: ");
@@ -945,7 +982,7 @@ mod tests {
     #[test]
     fn test_club_stats_equality() {
         let stats1 = ClubStats {
-            season: "20242025".to_string(),
+            season: Season::new(2024),
             game_type: GameType::RegularSeason,
             skaters: vec![],
             goalies: vec![],
@@ -962,17 +999,17 @@ mod tests {
     #[test]
     fn test_season_game_types_equality() {
         let season1 = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason],
         };
 
         let season2 = SeasonGameTypes {
-            season: 20242025,
+            season: Season::new(2024),
             game_types: vec![GameType::RegularSeason],
         };
 
         let season3 = SeasonGameTypes {
-            season: 20232024,
+            season: Season::new(2023),
             game_types: vec![GameType::RegularSeason],
         };
 
@@ -983,7 +1020,7 @@ mod tests {
     #[test]
     fn test_club_stats_serialization_roundtrip() {
         let stats = ClubStats {
-            season: "20242025".to_string(),
+            season: Season::new(2024),
             game_type: GameType::RegularSeason,
             skaters: vec![],
             goalies: vec![],
