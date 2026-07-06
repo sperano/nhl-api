@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::common::LocalizedString;
-use super::enums::{empty_string_as_none, GoalieDecision, PeriodType, Position};
+use super::enums::{empty_string_as_none, GameScheduleState, GoalieDecision, PeriodType, Position};
 use super::game_state::GameState;
 use super::game_type::GameType;
 
@@ -30,7 +30,7 @@ pub struct Boxscore {
     #[serde(rename = "gameState")]
     pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
-    pub game_schedule_state: String,
+    pub game_schedule_state: GameScheduleState,
     #[serde(rename = "periodDescriptor")]
     pub period_descriptor: PeriodDescriptor,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -351,6 +351,7 @@ mod tests {
         assert_eq!(boxscore.season, 20242025);
         assert_eq!(boxscore.game_type, GameType::RegularSeason);
         assert_eq!(boxscore.game_state, GameState::Live);
+        assert_eq!(boxscore.game_schedule_state, GameScheduleState::Ok);
         assert_eq!(boxscore.away_team.abbrev, "NJD");
         assert_eq!(boxscore.home_team.abbrev, "BUF");
         assert_eq!(boxscore.away_team.score, 2);
@@ -359,6 +360,64 @@ mod tests {
         assert_eq!(boxscore.clock.seconds_remaining, 615);
         assert!(boxscore.clock.running);
         assert_eq!(boxscore.period_descriptor.number, 2);
+    }
+
+    /// `gameScheduleState` is typed `GameScheduleState`, matching the sibling
+    /// `PlayByPlay`/`GameMatchup`/`GameStory` types; a cancelled game reports
+    /// `"CNCL"`.
+    #[test]
+    fn test_boxscore_deserialization_cancelled_game() {
+        let json = r#"{
+            "id": 2024020002,
+            "season": 20242025,
+            "gameType": 2,
+            "limitedScoring": false,
+            "gameDate": "2024-10-05",
+            "venue": {"default": "Test Arena"},
+            "venueLocation": {"default": "Test City"},
+            "startTimeUTC": "2024-10-05T19:00:00Z",
+            "easternUTCOffset": "-04:00",
+            "venueUTCOffset": "-04:00",
+            "tvBroadcasts": [],
+            "gameState": "OFF",
+            "gameScheduleState": "CNCL",
+            "periodDescriptor": {},
+            "awayTeam": {
+                "id": 1,
+                "commonName": {"default": "Devils"},
+                "abbrev": "NJD",
+                "score": 0,
+                "sog": 0,
+                "logo": "https://assets.nhle.com/logos/nhl/svg/NJD_light.svg",
+                "darkLogo": "https://assets.nhle.com/logos/nhl/svg/NJD_dark.svg",
+                "placeName": {"default": "New Jersey"},
+                "placeNameWithPreposition": {"default": "New Jersey"}
+            },
+            "homeTeam": {
+                "id": 7,
+                "commonName": {"default": "Sabres"},
+                "abbrev": "BUF",
+                "score": 0,
+                "sog": 0,
+                "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg",
+                "darkLogo": "https://assets.nhle.com/logos/nhl/svg/BUF_dark.svg",
+                "placeName": {"default": "Buffalo"},
+                "placeNameWithPreposition": {"default": "Buffalo"}
+            },
+            "clock": {
+                "timeRemaining": "20:00",
+                "secondsRemaining": 1200,
+                "running": false,
+                "inIntermission": false
+            },
+            "playerByGameStats": {
+                "awayTeam": {"forwards": [], "defense": [], "goalies": []},
+                "homeTeam": {"forwards": [], "defense": [], "goalies": []}
+            }
+        }"#;
+
+        let boxscore: Boxscore = serde_json::from_str(json).unwrap();
+        assert_eq!(boxscore.game_schedule_state, GameScheduleState::Cancelled);
     }
 
     #[test]
