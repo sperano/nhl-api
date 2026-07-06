@@ -2,6 +2,8 @@ mod client;
 mod config;
 mod date;
 mod error;
+#[cfg(feature = "fixtures")]
+pub mod fixtures;
 mod http_client;
 mod ids;
 mod types;

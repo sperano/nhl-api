@@ -8,6 +8,11 @@ repository = "https://github.com/sperano/nhl-api"
 homepage = "https://github.com/sperano/nhl-api"
 documentation = "https://docs.rs/nhl-api"
 
+[features]
+# Test fixture constructors (`nhl_api::fixtures`) for downstream consumers'
+# own tests. Off by default: fixtures are not part of the core API surface.
+fixtures = []
+
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 thiserror = "1.0"

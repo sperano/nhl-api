@@ -191,7 +191,7 @@ impl fmt::Display for GameSituation {
 }
 
 /// Play by play response with all game events
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PlayByPlay {
     pub id: GameId,
     pub season: Season,
@@ -322,7 +322,7 @@ pub struct GameOutcome {
 }
 
 /// Individual play event in the game
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PlayEvent {
     #[serde(rename = "eventId")]
     pub event_id: i64,
@@ -765,7 +765,7 @@ pub struct PenaltyPlayer {
 }
 
 /// Shift chart data
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ShiftChart {
     pub data: Vec<ShiftEntry>,
 }
@@ -810,7 +810,7 @@ pub struct ShiftEntry {
 }
 
 /// Season series matchup
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SeasonSeriesMatchup {
     #[serde(rename = "seasonSeries")]
     pub season_series: Vec<SeriesGame>,
@@ -899,7 +899,7 @@ pub struct ScratchedPlayer {
 }
 
 /// Game story
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameStory {
     pub id: GameId,
     pub season: Season,

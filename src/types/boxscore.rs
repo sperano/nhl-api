@@ -9,7 +9,7 @@ use super::game_state::GameState;
 use super::game_type::GameType;
 
 /// Boxscore response with detailed game and player statistics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Boxscore {
     pub id: GameId,
     pub season: Season,
@@ -120,7 +120,7 @@ pub struct GameClock {
 }
 
 /// Player statistics organized by team
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PlayerByGameStats {
     #[serde(rename = "awayTeam")]
     pub away_team: TeamPlayerStats,
@@ -129,7 +129,7 @@ pub struct PlayerByGameStats {
 }
 
 /// Team's player statistics grouped by position
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TeamPlayerStats {
     #[serde(default)]
     pub forwards: Vec<SkaterStats>,
