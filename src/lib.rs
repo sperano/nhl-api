@@ -19,7 +19,7 @@ pub use date::{GameDate, Season, SeasonError};
 pub use error::NHLApiError;
 
 // IDs
-pub use ids::GameId;
+pub use ids::{GameId, PlayerId, TeamId};
 
 // Common types
 pub use types::{
