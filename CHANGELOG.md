@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.1
+
+### Changed
+
+- Removed the internal backport planning document from the repository and the
+  published crate package. No code changes.
+
 ## 0.8.0
 
 A large backport of robustness improvements, bug fixes, and new features
