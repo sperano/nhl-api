@@ -507,10 +507,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterDetail, NHLApiError> {
+        self.edge_skater_detail_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_detail_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-detail/{}/{}/{}",
                     player_id,
@@ -529,10 +542,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterSpeedDetail, NHLApiError> {
+        self.edge_skater_speed_detail_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_speed_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_speed_detail_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterSpeedDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-skating-speed-detail/{}/{}/{}",
                     player_id,
@@ -551,10 +577,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterDistanceDetail, NHLApiError> {
+        self.edge_skater_distance_detail_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_distance_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_distance_detail_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterDistanceDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-skating-distance-detail/{}/{}/{}",
                     player_id,
@@ -573,10 +612,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterShotSpeedDetail, NHLApiError> {
+        self.edge_skater_shot_speed_detail_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_shot_speed_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_shot_speed_detail_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterShotSpeedDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-shot-speed-detail/{}/{}/{}",
                     player_id,
@@ -595,10 +647,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterShotLocationDetail, NHLApiError> {
+        self.edge_skater_shot_location_detail_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_shot_location_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_shot_location_detail_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterShotLocationDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-shot-location-detail/{}/{}/{}",
                     player_id,
@@ -620,10 +685,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterZoneTimeDetail, NHLApiError> {
+        self.edge_skater_zone_time_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_zone_time`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_zone_time_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterZoneTimeDetail, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-zone-time/{}/{}/{}",
                     player_id,
@@ -642,10 +720,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterComparison, NHLApiError> {
+        self.edge_skater_comparison_at(Endpoint::ApiWebV1, player_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_comparison`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_comparison_at(
+        &self,
+        endpoint: Endpoint,
+        player_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterComparison, NHLApiError> {
         let player_id = player_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-comparison/{}/{}/{}",
                     player_id,
@@ -663,9 +754,21 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeSkaterLanding, NHLApiError> {
+        self.edge_skater_landing_at(Endpoint::ApiWebV1, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_skater_landing`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_skater_landing_at(
+        &self,
+        endpoint: Endpoint,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeSkaterLanding, NHLApiError> {
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/skater-landing/{}/{}",
                     season.to_api_string(),
@@ -683,10 +786,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalieDetail, NHLApiError> {
+        self.edge_goalie_detail_at(Endpoint::ApiWebV1, goalie_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_detail_at(
+        &self,
+        endpoint: Endpoint,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieDetail, NHLApiError> {
         let goalie_id = goalie_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-detail/{}/{}/{}",
                     goalie_id,
@@ -705,10 +821,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalie5v5Detail, NHLApiError> {
+        self.edge_goalie_5v5_detail_at(Endpoint::ApiWebV1, goalie_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_5v5_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_5v5_detail_at(
+        &self,
+        endpoint: Endpoint,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalie5v5Detail, NHLApiError> {
         let goalie_id = goalie_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-5v5-detail/{}/{}/{}",
                     goalie_id,
@@ -727,10 +856,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalieShotLocationDetail, NHLApiError> {
+        self.edge_goalie_shot_location_detail_at(Endpoint::ApiWebV1, goalie_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_shot_location_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_shot_location_detail_at(
+        &self,
+        endpoint: Endpoint,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieShotLocationDetail, NHLApiError> {
         let goalie_id = goalie_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-shot-location-detail/{}/{}/{}",
                     goalie_id,
@@ -752,10 +894,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalieSavePctgDetail, NHLApiError> {
+        self.edge_goalie_save_pctg_detail_at(Endpoint::ApiWebV1, goalie_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_save_pctg_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_save_pctg_detail_at(
+        &self,
+        endpoint: Endpoint,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieSavePctgDetail, NHLApiError> {
         let goalie_id = goalie_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-save-percentage-detail/{}/{}/{}",
                     goalie_id,
@@ -774,10 +929,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalieComparison, NHLApiError> {
+        self.edge_goalie_comparison_at(Endpoint::ApiWebV1, goalie_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_comparison`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_comparison_at(
+        &self,
+        endpoint: Endpoint,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieComparison, NHLApiError> {
         let goalie_id = goalie_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-comparison/{}/{}/{}",
                     goalie_id,
@@ -795,9 +963,21 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeGoalieLanding, NHLApiError> {
+        self.edge_goalie_landing_at(Endpoint::ApiWebV1, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_goalie_landing`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_goalie_landing_at(
+        &self,
+        endpoint: Endpoint,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieLanding, NHLApiError> {
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/goalie-landing/{}/{}",
                     season.to_api_string(),
@@ -818,10 +998,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamDetail, NHLApiError> {
+        self.edge_team_detail_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_detail_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamDetail, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-detail/{}/{}/{}",
                     team_id,
@@ -840,10 +1033,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamSpeedDetail, NHLApiError> {
+        self.edge_team_speed_detail_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_speed_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_speed_detail_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamSpeedDetail, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-skating-speed-detail/{}/{}/{}",
                     team_id,
@@ -862,10 +1068,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamDistanceDetail, NHLApiError> {
+        self.edge_team_distance_detail_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_distance_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_distance_detail_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamDistanceDetail, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-skating-distance-detail/{}/{}/{}",
                     team_id,
@@ -884,10 +1103,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamShotSpeedDetail, NHLApiError> {
+        self.edge_team_shot_speed_detail_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_shot_speed_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_shot_speed_detail_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamShotSpeedDetail, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-shot-speed-detail/{}/{}/{}",
                     team_id,
@@ -906,10 +1138,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamShotLocationDetail, NHLApiError> {
+        self.edge_team_shot_location_detail_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_shot_location_detail`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_shot_location_detail_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamShotLocationDetail, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-shot-location-detail/{}/{}/{}",
                     team_id,
@@ -933,10 +1178,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamZoneTimeDetails, NHLApiError> {
+        self.edge_team_zone_time_details_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_zone_time_details`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_zone_time_details_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamZoneTimeDetails, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-zone-time-details/{}/{}/{}",
                     team_id,
@@ -955,10 +1213,23 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamComparison, NHLApiError> {
+        self.edge_team_comparison_at(Endpoint::ApiWebV1, team_id, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_comparison`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_comparison_at(
+        &self,
+        endpoint: Endpoint,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamComparison, NHLApiError> {
         let team_id = team_id.into();
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-comparison/{}/{}/{}",
                     team_id,
@@ -976,9 +1247,21 @@ impl Client {
         season: Season,
         game_type: GameType,
     ) -> Result<EdgeTeamLanding, NHLApiError> {
+        self.edge_team_landing_at(Endpoint::ApiWebV1, season, game_type)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::edge_team_landing`], split out so the
+    /// path construction can be exercised against a mock server.
+    async fn edge_team_landing_at(
+        &self,
+        endpoint: Endpoint,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamLanding, NHLApiError> {
         self.client
             .get_json(
-                Endpoint::ApiWebV1,
+                endpoint,
                 &format!(
                     "edge/team-landing/{}/{}",
                     season.to_api_string(),
@@ -996,6 +1279,8 @@ mod tests {
     use crate::date::GameDate;
     use crate::ids::TeamId;
     use chrono::NaiveDate;
+    use std::future::Future;
+    use std::pin::Pin;
 
     // ===== Client Construction Tests =====
 
@@ -1288,5 +1573,625 @@ mod tests {
         assert_eq!(result.games[0].game_state, GameState::Off);
         assert_eq!(result.games[1].game_type, GameType::Playoffs);
         assert_eq!(result.games[1].id, GameId::new(2023030111));
+    }
+
+    // ===== Edge contract tables (step 6.6) =====
+    //
+    // Every Edge client method is exercised by both tables below via a single
+    // `EdgeCase` entry. Adding a 23rd Edge method without adding a call fn +
+    // entry here is conspicuous: the method itself compiles fine, but neither
+    // the path-contract test nor the 404-propagation test will cover it.
+
+    type EdgeMethodFuture<'a> = Pin<Box<dyn Future<Output = Result<(), NHLApiError>> + 'a>>;
+    type EdgeMethodFn = for<'a> fn(&'a Client, Endpoint) -> EdgeMethodFuture<'a>;
+
+    struct EdgeCase {
+        name: &'static str,
+        path: String,
+        call: EdgeMethodFn,
+    }
+
+    // Shared fixtures: 2024-2025 regular season -> APIString "20242025", GameType.to_int() 2.
+    const EDGE_TEST_PLAYER_ID: i64 = 8478402;
+    const EDGE_TEST_TEAM_ID: i64 = 22;
+
+    fn edge_test_season() -> Season {
+        Season::new(2024)
+    }
+
+    const EDGE_TEST_GAME_TYPE: GameType = GameType::RegularSeason;
+
+    fn edge_skater_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_speed_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_speed_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_distance_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_distance_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_shot_speed_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_shot_speed_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_shot_location_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_shot_location_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_zone_time_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_zone_time_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_comparison_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_comparison_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_skater_landing_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_skater_landing_at(endpoint, edge_test_season(), EDGE_TEST_GAME_TYPE)
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_5v5_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_5v5_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_shot_location_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_shot_location_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_save_pctg_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_save_pctg_detail_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_comparison_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_comparison_at(
+                    endpoint,
+                    PlayerId::new(EDGE_TEST_PLAYER_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_goalie_landing_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_goalie_landing_at(endpoint, edge_test_season(), EDGE_TEST_GAME_TYPE)
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_detail_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_speed_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_speed_detail_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_distance_detail_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_distance_detail_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_shot_speed_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_shot_speed_detail_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_shot_location_detail_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_shot_location_detail_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_zone_time_details_call(
+        client: &Client,
+        endpoint: Endpoint,
+    ) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_zone_time_details_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_comparison_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_comparison_at(
+                    endpoint,
+                    TeamId::new(EDGE_TEST_TEAM_ID),
+                    edge_test_season(),
+                    EDGE_TEST_GAME_TYPE,
+                )
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_team_landing_call(client: &Client, endpoint: Endpoint) -> EdgeMethodFuture<'_> {
+        Box::pin(async move {
+            client
+                .edge_team_landing_at(endpoint, edge_test_season(), EDGE_TEST_GAME_TYPE)
+                .await
+                .map(|_| ())
+        })
+    }
+
+    fn edge_cases() -> Vec<EdgeCase> {
+        vec![
+            EdgeCase {
+                name: "edge_skater_detail",
+                path: format!(
+                    "/edge/skater-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_detail_call,
+            },
+            EdgeCase {
+                name: "edge_skater_speed_detail",
+                path: format!(
+                    "/edge/skater-skating-speed-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_speed_detail_call,
+            },
+            EdgeCase {
+                name: "edge_skater_distance_detail",
+                path: format!(
+                    "/edge/skater-skating-distance-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_distance_detail_call,
+            },
+            EdgeCase {
+                name: "edge_skater_shot_speed_detail",
+                path: format!(
+                    "/edge/skater-shot-speed-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_shot_speed_detail_call,
+            },
+            EdgeCase {
+                name: "edge_skater_shot_location_detail",
+                path: format!(
+                    "/edge/skater-shot-location-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_shot_location_detail_call,
+            },
+            EdgeCase {
+                name: "edge_skater_zone_time",
+                path: format!(
+                    "/edge/skater-zone-time/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_zone_time_call,
+            },
+            EdgeCase {
+                name: "edge_skater_comparison",
+                path: format!(
+                    "/edge/skater-comparison/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_comparison_call,
+            },
+            EdgeCase {
+                name: "edge_skater_landing",
+                path: format!(
+                    "/edge/skater-landing/{}/{}",
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_skater_landing_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_detail",
+                path: format!(
+                    "/edge/goalie-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_detail_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_5v5_detail",
+                path: format!(
+                    "/edge/goalie-5v5-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_5v5_detail_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_shot_location_detail",
+                path: format!(
+                    "/edge/goalie-shot-location-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_shot_location_detail_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_save_pctg_detail",
+                path: format!(
+                    "/edge/goalie-save-percentage-detail/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_save_pctg_detail_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_comparison",
+                path: format!(
+                    "/edge/goalie-comparison/{}/{}/{}",
+                    EDGE_TEST_PLAYER_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_comparison_call,
+            },
+            EdgeCase {
+                name: "edge_goalie_landing",
+                path: format!(
+                    "/edge/goalie-landing/{}/{}",
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_goalie_landing_call,
+            },
+            EdgeCase {
+                name: "edge_team_detail",
+                path: format!(
+                    "/edge/team-detail/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_detail_call,
+            },
+            EdgeCase {
+                name: "edge_team_speed_detail",
+                path: format!(
+                    "/edge/team-skating-speed-detail/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_speed_detail_call,
+            },
+            EdgeCase {
+                name: "edge_team_distance_detail",
+                path: format!(
+                    "/edge/team-skating-distance-detail/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_distance_detail_call,
+            },
+            EdgeCase {
+                name: "edge_team_shot_speed_detail",
+                path: format!(
+                    "/edge/team-shot-speed-detail/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_shot_speed_detail_call,
+            },
+            EdgeCase {
+                name: "edge_team_shot_location_detail",
+                path: format!(
+                    "/edge/team-shot-location-detail/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_shot_location_detail_call,
+            },
+            EdgeCase {
+                name: "edge_team_zone_time_details",
+                path: format!(
+                    "/edge/team-zone-time-details/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_zone_time_details_call,
+            },
+            EdgeCase {
+                name: "edge_team_comparison",
+                path: format!(
+                    "/edge/team-comparison/{}/{}/{}",
+                    EDGE_TEST_TEAM_ID,
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_comparison_call,
+            },
+            EdgeCase {
+                name: "edge_team_landing",
+                path: format!(
+                    "/edge/team-landing/{}/{}",
+                    edge_test_season().to_api_string(),
+                    EDGE_TEST_GAME_TYPE.to_int()
+                ),
+                call: edge_team_landing_call,
+            },
+        ]
+    }
+
+    /// Verifies every Edge client method requests the documented URL path.
+    /// Each case is run against a mock server that only answers on the exact
+    /// expected path with `200 {}` -- an empty JSON object deserializes cleanly
+    /// into every Edge response type (the 6.2 `{}`-deserializes rule), and a
+    /// request to any other path leaves the mock unmatched, failing the request.
+    #[tokio::test]
+    async fn test_edge_all_client_methods_path_contract() {
+        for case in edge_cases() {
+            let mut server = mockito::Server::new_async().await;
+            let mock = server
+                .mock("GET", case.path.as_str())
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body("{}")
+                .create_async()
+                .await;
+
+            let client = Client::new().unwrap();
+            let result = (case.call)(&client, Endpoint::Custom(server.url())).await;
+
+            assert!(
+                result.is_ok(),
+                "{} did not request the expected path {:?}: {:?}",
+                case.name,
+                case.path,
+                result.err()
+            );
+            mock.assert_async().await;
+        }
+    }
+
+    /// Verifies every Edge client method propagates a 404 as
+    /// `NHLApiError::ResourceNotFound` rather than swallowing or mis-mapping it.
+    #[tokio::test]
+    async fn test_edge_all_client_methods_404_propagates_error() {
+        for case in edge_cases() {
+            let mut server = mockito::Server::new_async().await;
+            let mock = server
+                .mock("GET", case.path.as_str())
+                .with_status(404)
+                .create_async()
+                .await;
+
+            let client = Client::new().unwrap();
+            let result = (case.call)(&client, Endpoint::Custom(server.url())).await;
+
+            match result {
+                Err(NHLApiError::ResourceNotFound { .. }) => {}
+                Err(other) => panic!("{} expected ResourceNotFound, got {:?}", case.name, other),
+                Ok(_) => panic!("{} expected an error for 404, got Ok", case.name),
+            }
+            mock.assert_async().await;
+        }
     }
 }
