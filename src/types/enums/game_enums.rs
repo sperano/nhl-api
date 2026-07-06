@@ -2,6 +2,7 @@
 //!
 //! This module contains enums related to game state and play events.
 
+use super::macros::nhl_string_enum;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -11,68 +12,24 @@ use thiserror::Error;
 // PeriodType
 // =============================================================================
 
-/// Error type for parsing PeriodType from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown period type: {0}")]
-pub struct ParsePeriodTypeError(pub String);
-
-/// NHL period type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PeriodType {
-    /// Regulation period
-    #[serde(rename = "REG")]
-    Regulation,
-
-    /// Overtime period
-    #[serde(rename = "OT")]
-    Overtime,
-
-    /// Shootout
-    #[serde(rename = "SO")]
-    Shootout,
+nhl_string_enum! {
+    error_name = "period type",
+    display = code,
+    /// NHL period type
+    pub enum PeriodType {
+        /// Regulation period
+        Regulation = "REG", name = "Regulation";
+        /// Overtime period
+        Overtime = "OT", name = "Overtime";
+        /// Shootout
+        Shootout = "SO", name = "Shootout";
+    }
 }
 
 impl PeriodType {
-    /// Returns the short code for this period type
-    pub const fn code(&self) -> &'static str {
-        match self {
-            PeriodType::Regulation => "REG",
-            PeriodType::Overtime => "OT",
-            PeriodType::Shootout => "SO",
-        }
-    }
-
-    /// Returns the full name for this period type
-    pub const fn name(&self) -> &'static str {
-        match self {
-            PeriodType::Regulation => "Regulation",
-            PeriodType::Overtime => "Overtime",
-            PeriodType::Shootout => "Shootout",
-        }
-    }
-
     /// Returns true if this is overtime (includes shootout)
     pub const fn is_overtime(&self) -> bool {
         matches!(self, PeriodType::Overtime | PeriodType::Shootout)
-    }
-}
-
-impl fmt::Display for PeriodType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for PeriodType {
-    type Err = ParsePeriodTypeError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "REG" => Ok(PeriodType::Regulation),
-            "OT" => Ok(PeriodType::Overtime),
-            "SO" => Ok(PeriodType::Shootout),
-            _ => Err(ParsePeriodTypeError(s.to_string())),
-        }
     }
 }
 
@@ -320,6 +277,7 @@ mod tests {
 
     mod period_type_tests {
         use super::*;
+        use crate::types::enums::UnknownEnumValue;
 
         #[test]
         fn test_period_type_code() {
@@ -360,6 +318,34 @@ mod tests {
         fn test_period_type_from_str_invalid() {
             let result = "INVALID".parse::<PeriodType>();
             assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_period_type_from_str_unknown_enum_value() {
+            let err = "INVALID".parse::<PeriodType>().unwrap_err();
+            assert_eq!(
+                err,
+                UnknownEnumValue {
+                    enum_name: "period type",
+                    value: "INVALID".to_string(),
+                }
+            );
+            assert_eq!(err.enum_name, "period type");
+            assert_eq!(err.value, "INVALID");
+        }
+
+        #[test]
+        fn test_period_type_deserialize_unknown_error_message() {
+            let err = serde_json::from_str::<PeriodType>(r#""INVALID""#).unwrap_err();
+            let message = err.to_string();
+            assert!(
+                message.contains("period type"),
+                "message missing enum name: {message}"
+            );
+            assert!(
+                message.contains("INVALID"),
+                "message missing offending value: {message}"
+            );
         }
 
         #[test]
@@ -798,12 +784,6 @@ mod tests {
 
     mod error_display_tests {
         use super::*;
-
-        #[test]
-        fn test_parse_period_type_error_display() {
-            let err = ParsePeriodTypeError("INVALID".to_string());
-            assert_eq!(format!("{}", err), "Unknown period type: INVALID");
-        }
 
         #[test]
         fn test_parse_home_road_error_display() {
