@@ -1,7 +1,15 @@
+use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::enums::{empty_string_as_none, Handedness, Position};
+
+/// Number of inches in a foot, used by [`RosterPlayer::height_feet_inches`].
+const INCHES_PER_FOOT: i32 = 12;
+
+/// `chrono` format string matching the NHL API's `birthDate` field
+/// (e.g. `"1997-01-13"`).
+const BIRTH_DATE_FORMAT: &str = "%Y-%m-%d";
 
 /// Localized string (NHL API returns {default: "value"})
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -129,6 +137,55 @@ pub struct RosterPlayer {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "birthStateProvince")]
     pub birth_state_province: Option<LocalizedString>,
+}
+
+impl RosterPlayer {
+    /// The player's full name (first name + last name).
+    pub fn full_name(&self) -> String {
+        format!("{} {}", self.first_name.default, self.last_name.default)
+    }
+
+    /// A comma-joined birth place built from whichever of city, state/
+    /// province, and country are present and non-empty (e.g.
+    /// `"Richmond Hill, ON, CAN"`, or `"Boston, USA"` when there's no
+    /// state/province on file).
+    pub fn birth_place(&self) -> String {
+        let state_province = self
+            .birth_state_province
+            .as_ref()
+            .map(|s| s.default.as_str());
+
+        [
+            self.birth_city.default.as_str(),
+            state_province.unwrap_or(""),
+            self.birth_country.as_str(),
+        ]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(", ")
+    }
+
+    /// The player's height formatted as feet and inches (e.g. `6'2"` for a
+    /// player who is 74 inches tall).
+    pub fn height_feet_inches(&self) -> String {
+        let feet = self.height_in_inches / INCHES_PER_FOOT;
+        let inches = self.height_in_inches % INCHES_PER_FOOT;
+        format!("{feet}'{inches}\"")
+    }
+
+    /// The player's age in whole years as of `on`, or `None` if `birth_date`
+    /// isn't a parseable `YYYY-MM-DD` date. Takes the reference date as a
+    /// parameter (rather than reading the wall clock internally) so the
+    /// calculation stays pure and testable.
+    pub fn age(&self, on: NaiveDate) -> Option<u32> {
+        let birth_date = NaiveDate::parse_from_str(&self.birth_date, BIRTH_DATE_FORMAT).ok()?;
+        let mut years = on.year() - birth_date.year();
+        if (on.month(), on.day()) < (birth_date.month(), birth_date.day()) {
+            years -= 1;
+        }
+        u32::try_from(years).ok()
+    }
 }
 
 #[cfg(test)]
@@ -418,5 +475,137 @@ mod tests {
             !serialized.contains("shootsCatches"),
             "expected shootsCatches to be omitted: {serialized}"
         );
+    }
+
+    /// Builds a baseline McDavid-like `RosterPlayer`; individual fields are
+    /// overridden per test via struct-update syntax.
+    fn sample_roster_player() -> RosterPlayer {
+        RosterPlayer {
+            id: 8478402,
+            headshot: "https://assets.nhle.com/mugs/nhl/default.png".to_string(),
+            first_name: LocalizedString {
+                default: "Connor".to_string(),
+            },
+            last_name: LocalizedString {
+                default: "McDavid".to_string(),
+            },
+            sweater_number: 97,
+            position: Some(Position::Center),
+            shoots_catches: Some(Handedness::Left),
+            height_in_inches: 73,
+            weight_in_pounds: 193,
+            height_in_centimeters: 185,
+            weight_in_kilograms: 88,
+            birth_date: "1997-01-13".to_string(),
+            birth_city: LocalizedString {
+                default: "Richmond Hill".to_string(),
+            },
+            birth_country: "CAN".to_string(),
+            birth_state_province: Some(LocalizedString {
+                default: "ON".to_string(),
+            }),
+        }
+    }
+
+    #[test]
+    fn test_roster_player_full_name() {
+        let player = sample_roster_player();
+        assert_eq!(player.full_name(), "Connor McDavid");
+    }
+
+    #[test]
+    fn test_roster_player_birth_place_all_parts() {
+        let player = sample_roster_player();
+        assert_eq!(player.birth_place(), "Richmond Hill, ON, CAN");
+    }
+
+    #[test]
+    fn test_roster_player_birth_place_missing_state() {
+        let player = RosterPlayer {
+            birth_state_province: None,
+            ..sample_roster_player()
+        };
+        assert_eq!(player.birth_place(), "Richmond Hill, CAN");
+    }
+
+    #[test]
+    fn test_roster_player_birth_place_city_only() {
+        let player = RosterPlayer {
+            birth_state_province: None,
+            birth_country: String::new(),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.birth_place(), "Richmond Hill");
+    }
+
+    /// An empty `LocalizedString` state/province (rather than `None`) is
+    /// also treated as absent, not rendered as a bare `", "`.
+    #[test]
+    fn test_roster_player_birth_place_empty_state_string_treated_as_absent() {
+        let player = RosterPlayer {
+            birth_state_province: Some(LocalizedString::default()),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.birth_place(), "Richmond Hill, CAN");
+    }
+
+    #[test]
+    fn test_roster_player_birth_place_none() {
+        let player = RosterPlayer {
+            birth_city: LocalizedString::default(),
+            birth_state_province: None,
+            birth_country: String::new(),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.birth_place(), "");
+    }
+
+    #[test]
+    fn test_roster_player_height_feet_inches() {
+        let player = sample_roster_player();
+        assert_eq!(player.height_feet_inches(), "6'1\"");
+
+        let short_player = RosterPlayer {
+            height_in_inches: 72,
+            ..sample_roster_player()
+        };
+        assert_eq!(short_player.height_feet_inches(), "6'0\"");
+
+        let exact_foot = RosterPlayer {
+            height_in_inches: 84,
+            ..sample_roster_player()
+        };
+        assert_eq!(exact_foot.height_feet_inches(), "7'0\"");
+    }
+
+    #[test]
+    fn test_roster_player_age_before_birthday_this_year() {
+        let player = sample_roster_player(); // born 1997-01-13
+        let on = NaiveDate::from_ymd_opt(2024, 1, 12).unwrap();
+        assert_eq!(player.age(on), Some(26));
+    }
+
+    #[test]
+    fn test_roster_player_age_on_birthday() {
+        let player = sample_roster_player();
+        let on = NaiveDate::from_ymd_opt(2024, 1, 13).unwrap();
+        assert_eq!(player.age(on), Some(27));
+    }
+
+    #[test]
+    fn test_roster_player_age_after_birthday_this_year() {
+        let player = sample_roster_player();
+        let on = NaiveDate::from_ymd_opt(2024, 1, 14).unwrap();
+        assert_eq!(player.age(on), Some(27));
+    }
+
+    #[test]
+    fn test_roster_player_age_unparseable_birth_date() {
+        let player = RosterPlayer {
+            birth_date: "not-a-date".to_string(),
+            ..sample_roster_player()
+        };
+        let on = NaiveDate::from_ymd_opt(2024, 1, 14).unwrap();
+        assert_eq!(player.age(on), None);
     }
 }
