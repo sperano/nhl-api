@@ -18,6 +18,7 @@ pub use common::*;
 pub use edge::common::*;
 pub use edge::goalie::*;
 pub use edge::skater::*;
+pub use edge::team::*;
 pub use enums::*;
 pub use game_center::*;
 pub use game_state::*;

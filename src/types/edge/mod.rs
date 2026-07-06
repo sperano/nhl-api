@@ -61,3 +61,4 @@
 pub mod common;
 pub mod goalie;
 pub mod skater;
+pub mod team;

@@ -2,13 +2,15 @@ use crate::config::ClientConfig;
 use crate::date::{GameDate, Season};
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
-use crate::ids::{GameId, PlayerId};
+use crate::ids::{GameId, PlayerId, TeamId};
 use crate::types::{
     Boxscore, ClubStats, DailySchedule, DailyScores, EdgeGoalie5v5Detail, EdgeGoalieComparison,
     EdgeGoalieDetail, EdgeGoalieLanding, EdgeGoalieSavePctgDetail, EdgeGoalieShotLocationDetail,
     EdgeSkaterComparison, EdgeSkaterDetail, EdgeSkaterDistanceDetail, EdgeSkaterLanding,
     EdgeSkaterShotLocationDetail, EdgeSkaterShotSpeedDetail, EdgeSkaterSpeedDetail,
-    EdgeSkaterZoneTimeDetail, Franchise, FranchisesResponse, GameMatchup, GameStory, GameType,
+    EdgeSkaterZoneTimeDetail, EdgeTeamComparison, EdgeTeamDetail, EdgeTeamDistanceDetail,
+    EdgeTeamLanding, EdgeTeamShotLocationDetail, EdgeTeamShotSpeedDetail, EdgeTeamSpeedDetail,
+    EdgeTeamZoneTimeDetails, Franchise, FranchisesResponse, GameMatchup, GameStory, GameType,
     PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster, SeasonGameTypes,
     SeasonInfo, SeasonSeriesMatchup, SeasonsResponse, ShiftChart, Standing, StandingsResponse,
     Team, TeamScheduleResponse, WeeklyScheduleResponse,
@@ -798,6 +800,187 @@ impl Client {
                 Endpoint::ApiWebV1,
                 &format!(
                     "edge/goalie-landing/{}/{}",
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge puck/player-tracking overview stats for a team's season.
+    ///
+    /// Team Edge stats are rank-based (1-32), unlike the percentile-based
+    /// skater/goalie stats.
+    pub async fn edge_team_detail(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamDetail, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-detail/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge skating-speed detail (per-player top speeds) for a team's season.
+    pub async fn edge_team_speed_detail(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamSpeedDetail, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-skating-speed-detail/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge skating-distance detail (per-game distance skated) for a team's season.
+    pub async fn edge_team_distance_detail(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamDistanceDetail, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-skating-distance-detail/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge shot-speed detail (per-player hardest shots) for a team's season.
+    pub async fn edge_team_shot_speed_detail(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamShotSpeedDetail, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-shot-speed-detail/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge shot-location detail (shot breakdown by rink area) for a team's season.
+    pub async fn edge_team_shot_location_detail(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamShotLocationDetail, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-shot-location-detail/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge zone-time detail (zone time by strength code, with shot
+    /// differential) for a team's season.
+    ///
+    /// Distinct from the zone-time summary embedded in [`EdgeTeamDetail`].
+    /// Note the path has a `-details` suffix, unlike the skater equivalent
+    /// (`edge/team-zone-time-details`, not `edge/team-zone-time`).
+    pub async fn edge_team_zone_time_details(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamZoneTimeDetails, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-zone-time-details/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the Edge head-to-head comparison composite for a team's season.
+    pub async fn edge_team_comparison(
+        &self,
+        team_id: impl Into<TeamId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamComparison, NHLApiError> {
+        let team_id = team_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-comparison/{}/{}/{}",
+                    team_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the league-wide Edge team leaderboard for a season (no team id).
+    pub async fn edge_team_landing(
+        &self,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeTeamLanding, NHLApiError> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/team-landing/{}/{}",
                     season.to_api_string(),
                     game_type.to_int()
                 ),
