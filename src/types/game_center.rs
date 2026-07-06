@@ -105,20 +105,45 @@ pub struct GameSituation {
     pub home_goalie_in: bool,
 }
 
+/// Minimum valid skater count encoded in a situation code (goalie excluded).
+const MIN_SITUATION_SKATERS: u32 = 1;
+/// Maximum valid skater count encoded in a situation code (goalie excluded).
+const MAX_SITUATION_SKATERS: u32 = 6;
+
 impl GameSituation {
-    /// Parse a situation code string (e.g., "1551")
+    /// Parse a situation code string (e.g., "1551").
+    ///
+    /// Returns `None` if the code is not exactly 4 ASCII digits, either
+    /// goalie flag is not `0`/`1`, or either skater count falls outside
+    /// `MIN_SITUATION_SKATERS..=MAX_SITUATION_SKATERS`. An earlier version
+    /// only checked the string length, so codes like `"a55b"` parsed
+    /// "successfully" with both goalies read as pulled.
     pub fn from_code(code: &str) -> Option<Self> {
         if code.len() != 4 {
             return None;
         }
 
-        let chars: Vec<char> = code.chars().collect();
+        let digits: Vec<u32> = code
+            .chars()
+            .map(|c| c.to_digit(10))
+            .collect::<Option<_>>()?;
+        let (away_goalie, away_skaters, home_skaters, home_goalie) =
+            (digits[0], digits[1], digits[2], digits[3]);
+
+        if away_goalie > 1 || home_goalie > 1 {
+            return None;
+        }
+
+        let skater_range = MIN_SITUATION_SKATERS..=MAX_SITUATION_SKATERS;
+        if !skater_range.contains(&away_skaters) || !skater_range.contains(&home_skaters) {
+            return None;
+        }
 
         Some(Self {
-            away_goalie_in: chars[0] == '1',
-            away_skaters: chars[1].to_digit(10)? as u8,
-            home_skaters: chars[2].to_digit(10)? as u8,
-            home_goalie_in: chars[3] == '1',
+            away_goalie_in: away_goalie == 1,
+            away_skaters: away_skaters as u8,
+            home_skaters: home_skaters as u8,
+            home_goalie_in: home_goalie == 1,
         })
     }
 
@@ -1551,6 +1576,33 @@ mod tests {
         assert!(GameSituation::from_code("155").is_none());
         assert!(GameSituation::from_code("15512").is_none());
         assert!(GameSituation::from_code("abcd").is_none());
+    }
+
+    #[test]
+    fn test_game_situation_from_code_non_digit_chars() {
+        // Only the skater digits used to be validated, so this "parsed" with
+        // both goalies read as pulled instead of being rejected.
+        assert!(GameSituation::from_code("a55b").is_none());
+    }
+
+    #[test]
+    fn test_game_situation_from_code_skaters_out_of_range() {
+        assert!(GameSituation::from_code("1991").is_none());
+    }
+
+    #[test]
+    fn test_game_situation_from_code_invalid_goalie_flag() {
+        assert!(GameSituation::from_code("2551").is_none());
+    }
+
+    #[test]
+    fn test_game_situation_from_code_three_on_three_ot() {
+        let situation = GameSituation::from_code("0331").unwrap();
+        assert_eq!(situation.away_skaters, 3);
+        assert_eq!(situation.home_skaters, 3);
+        assert!(!situation.away_goalie_in);
+        assert!(situation.home_goalie_in);
+        assert!(situation.is_even_strength());
     }
 
     #[test]
