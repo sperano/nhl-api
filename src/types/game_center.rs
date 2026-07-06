@@ -238,9 +238,8 @@ pub struct PlayByPlay {
     pub plays: Vec<PlayEvent>,
     #[serde(rename = "rosterSpots", default)]
     pub roster_spots: Vec<RosterSpot>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "regPeriods")]
-    pub reg_periods: Option<i32>,
+    #[serde(rename = "regPeriods", default)]
+    pub reg_periods: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<GameSummary>,
 }
@@ -537,7 +536,7 @@ pub struct GameMatchup {
     pub shootout_in_use: bool,
     #[serde(rename = "maxPeriods")]
     pub max_periods: i32,
-    #[serde(rename = "regPeriods")]
+    #[serde(rename = "regPeriods", default)]
     pub reg_periods: i32,
     #[serde(rename = "otInUse")]
     pub ot_in_use: bool,
@@ -931,7 +930,7 @@ pub struct GameStory {
     pub shootout_in_use: bool,
     #[serde(rename = "maxPeriods")]
     pub max_periods: i32,
-    #[serde(rename = "regPeriods")]
+    #[serde(rename = "regPeriods", default)]
     pub reg_periods: i32,
     #[serde(rename = "otInUse")]
     pub ot_in_use: bool,
@@ -1685,5 +1684,74 @@ mod tests {
         assert_eq!(unplayed.game_state, GameState::Future);
         assert_eq!(unplayed.period_descriptor.period_type, None);
         assert_eq!(unplayed.game_outcome.last_period_type, None);
+    }
+
+    /// Minimal fields required to deserialize a `PlayByPlay`, with an
+    /// optional trailing `regPeriods` fragment appended by the caller.
+    fn play_by_play_json(reg_periods_fragment: &str) -> String {
+        format!(
+            r#"{{
+                "id": 2024020444,
+                "season": 20242025,
+                "gameType": 2,
+                "limitedScoring": false,
+                "gameDate": "2024-11-01",
+                "venue": {{"default": "Test Arena"}},
+                "venueLocation": {{"default": "Test City"}},
+                "startTimeUTC": "2024-11-01T19:00:00Z",
+                "easternUTCOffset": "-04:00",
+                "venueUTCOffset": "-04:00",
+                "gameState": "FINAL",
+                "gameScheduleState": "OK",
+                "periodDescriptor": {{}},
+                "awayTeam": {{
+                    "id": 1,
+                    "commonName": {{"default": "Devils"}},
+                    "abbrev": "NJD",
+                    "score": 2,
+                    "sog": 15,
+                    "logo": "https://example.com/njd_light.svg",
+                    "darkLogo": "https://example.com/njd_dark.svg",
+                    "placeName": {{"default": "New Jersey"}},
+                    "placeNameWithPreposition": {{"default": "New Jersey"}}
+                }},
+                "homeTeam": {{
+                    "id": 7,
+                    "commonName": {{"default": "Sabres"}},
+                    "abbrev": "BUF",
+                    "score": 1,
+                    "sog": 12,
+                    "logo": "https://example.com/buf_light.svg",
+                    "darkLogo": "https://example.com/buf_dark.svg",
+                    "placeName": {{"default": "Buffalo"}},
+                    "placeNameWithPreposition": {{"default": "Buffalo"}}
+                }},
+                "shootoutInUse": false,
+                "otInUse": false,
+                "clock": {{
+                    "timeRemaining": "00:00",
+                    "secondsRemaining": 0,
+                    "running": false,
+                    "inIntermission": false
+                }},
+                "displayPeriod": 3,
+                "maxPeriods": 3
+                {reg_periods_fragment}
+            }}"#
+        )
+    }
+
+    #[test]
+    fn test_play_by_play_missing_reg_periods_defaults_to_zero() {
+        let json = play_by_play_json("");
+        let pbp: PlayByPlay = serde_json::from_str(&json).unwrap();
+        assert_eq!(pbp.reg_periods, 0);
+    }
+
+    #[test]
+    fn test_play_by_play_reg_periods_present() {
+        let json = play_by_play_json(r#", "regPeriods": 3"#);
+        let pbp: PlayByPlay = serde_json::from_str(&json).unwrap();
+        assert_eq!(pbp.reg_periods, 3);
     }
 }
