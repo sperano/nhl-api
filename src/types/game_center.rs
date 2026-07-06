@@ -571,11 +571,10 @@ pub struct MatchupTeam {
 pub struct GameSummary {
     #[serde(default)]
     pub scoring: Vec<PeriodScoring>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub shootout: Option<Vec<ShootoutAttempt>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "threeStars")]
-    pub three_stars: Option<Vec<ThreeStar>>,
+    #[serde(default)]
+    pub shootout: Vec<ShootoutAttempt>,
+    #[serde(rename = "threeStars", default)]
+    pub three_stars: Vec<ThreeStar>,
     #[serde(default)]
     pub penalties: Vec<PeriodPenalties>,
 }
@@ -1753,5 +1752,50 @@ mod tests {
         let json = play_by_play_json(r#", "regPeriods": 3"#);
         let pbp: PlayByPlay = serde_json::from_str(&json).unwrap();
         assert_eq!(pbp.reg_periods, 3);
+    }
+
+    #[test]
+    fn test_game_summary_missing_shootout_and_three_stars() {
+        let json = r#"{
+            "scoring": [],
+            "penalties": []
+        }"#;
+
+        let summary: GameSummary = serde_json::from_str(json).unwrap();
+        assert!(summary.shootout.is_empty());
+        assert!(summary.three_stars.is_empty());
+    }
+
+    #[test]
+    fn test_game_summary_with_shootout_and_three_stars() {
+        let json = r#"{
+            "scoring": [],
+            "shootout": [{
+                "sequence": 1,
+                "playerId": 8478402,
+                "teamAbbrev": {"default": "EDM"},
+                "firstName": {"default": "Connor"},
+                "lastName": {"default": "McDavid"},
+                "shotType": "wrist",
+                "result": "goal",
+                "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
+                "gameWinner": true
+            }],
+            "threeStars": [{
+                "star": 1,
+                "playerId": 8478402,
+                "teamAbbrev": "EDM",
+                "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
+                "name": {"default": "C. McDavid"},
+                "sweaterNo": 97
+            }],
+            "penalties": []
+        }"#;
+
+        let summary: GameSummary = serde_json::from_str(json).unwrap();
+        assert_eq!(summary.shootout.len(), 1);
+        assert!(summary.shootout[0].game_winner);
+        assert_eq!(summary.three_stars.len(), 1);
+        assert_eq!(summary.three_stars[0].player_id, 8478402);
     }
 }
