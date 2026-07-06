@@ -71,7 +71,7 @@ pub struct SpecialEvent {
 }
 
 /// Period descriptor with game period information
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PeriodDescriptor {
     #[serde(default)]
     pub number: i32,

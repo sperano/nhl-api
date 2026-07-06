@@ -71,3 +71,15 @@ pub use types::{
 
 // Standings types
 pub use types::{SeasonInfo, SeasonsResponse, Standing, StandingsResponse};
+
+// Edge stats shared types
+pub use types::{
+    EdgeComparisonDistanceLast10Entry, EdgeComparisonShotLocationDetail,
+    EdgeComparisonShotLocationTotal, EdgeComparisonShotSpeedDetails,
+    EdgeComparisonSkatingDistanceDetails, EdgeComparisonSkatingSpeedDetails,
+    EdgeComparisonZoneStarts, EdgeComparisonZoneTimeDetails, EdgeCountLeagueAvg,
+    EdgeCountPercentileStat, EdgeGoaliePlayer, EdgeLeaderShotLocation, EdgeMeasurement,
+    EdgeMeasurementWithOverlay, EdgeOverlay, EdgeOverlayPlayer, EdgeOverlayTeam,
+    EdgePercentileStat, EdgePercentileStatWithOverlay, EdgeRankStat, EdgeRankStatWithOverlay,
+    EdgeSeasonAvailability, EdgeSkaterPlayer, EdgeTeamInfo, EdgeTeamLogo,
+};
