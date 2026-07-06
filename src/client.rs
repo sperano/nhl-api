@@ -1,5 +1,5 @@
 use crate::config::ClientConfig;
-use crate::date::GameDate;
+use crate::date::{GameDate, Season};
 use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::{GameId, PlayerId};
@@ -454,6 +454,45 @@ impl Client {
             )
             .await
     }
+
+    /// Gets the full schedule for a team in a given season
+    ///
+    /// Includes preseason, regular season, and playoff games for the team's
+    /// entire season, unlike [`Self::team_weekly_schedule`] which only covers a
+    /// single week.
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    /// * `season` - The NHL season to fetch the schedule for
+    pub async fn club_schedule_season(
+        &self,
+        team_abbr: &str,
+        season: Season,
+    ) -> Result<TeamScheduleResponse, NHLApiError> {
+        self.club_schedule_season_at(Endpoint::ApiWebV1, team_abbr, season)
+            .await
+    }
+
+    /// Endpoint-parameterized core of [`Self::club_schedule_season`], split out
+    /// so the exact request path can be exercised against a mock server.
+    async fn club_schedule_season_at(
+        &self,
+        endpoint: Endpoint,
+        team_abbr: &str,
+        season: Season,
+    ) -> Result<TeamScheduleResponse, NHLApiError> {
+        self.client
+            .get_json(
+                endpoint,
+                &format!(
+                    "club-schedule-season/{}/{}",
+                    team_abbr,
+                    season.to_api_string()
+                ),
+                None,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -663,5 +702,96 @@ mod tests {
         // Verify that GameId can be created from i64
         let game_id = GameId::from(2023020001);
         assert_eq!(game_id.as_i64(), 2023020001);
+    }
+
+    // ===== club_schedule_season Tests =====
+
+    #[tokio::test]
+    async fn test_club_schedule_season_requests_exact_path() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/club-schedule-season/FLA/20232024")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"games": []}"#)
+            .create_async()
+            .await;
+
+        let client = Client::new().unwrap();
+        let result = client
+            .club_schedule_season_at(Endpoint::Custom(server.url()), "FLA", Season::new(2023))
+            .await;
+
+        assert!(result.is_ok(), "request should succeed: {:?}", result.err());
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_club_schedule_season_deserializes_fixture() {
+        use crate::types::game_state::GameState;
+
+        // Fixture ported from the Go client's TestClubScheduleSeason
+        // (nhl-api-go/nhl/client_test.go): a regular-season game and a
+        // playoff game, both completed, on the same date.
+        let fixture = r#"{
+            "games": [
+                {
+                    "id": 2023020001,
+                    "gameType": 2,
+                    "gameDate": "2024-04-20",
+                    "startTimeUTC": "2024-04-20T23:00:00Z",
+                    "awayTeam": {
+                        "id": 13,
+                        "abbrev": "FLA",
+                        "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"
+                    },
+                    "homeTeam": {
+                        "id": 10,
+                        "abbrev": "TOR",
+                        "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
+                    },
+                    "gameState": "OFF"
+                },
+                {
+                    "id": 2023030111,
+                    "gameType": 3,
+                    "gameDate": "2024-04-20",
+                    "startTimeUTC": "2024-04-20T23:00:00Z",
+                    "awayTeam": {
+                        "id": 13,
+                        "abbrev": "FLA",
+                        "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"
+                    },
+                    "homeTeam": {
+                        "id": 10,
+                        "abbrev": "TOR",
+                        "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
+                    },
+                    "gameState": "OFF"
+                }
+            ]
+        }"#;
+
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/club-schedule-season/FLA/20232024")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(fixture)
+            .create_async()
+            .await;
+
+        let client = Client::new().unwrap();
+        let result = client
+            .club_schedule_season_at(Endpoint::Custom(server.url()), "FLA", Season::new(2023))
+            .await
+            .expect("deserialization should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(result.games.len(), 2);
+        assert_eq!(result.games[0].game_type, GameType::RegularSeason);
+        assert_eq!(result.games[0].game_state, GameState::Off);
+        assert_eq!(result.games[1].game_type, GameType::Playoffs);
+        assert_eq!(result.games[1].id, GameId::new(2023030111));
     }
 }
