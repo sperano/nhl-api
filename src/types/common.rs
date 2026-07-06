@@ -4,7 +4,7 @@ use std::fmt;
 use super::enums::{empty_string_as_none, Handedness, Position};
 
 /// Localized string (NHL API returns {default: "value"})
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct LocalizedString {
     pub default: String,
 }
@@ -28,6 +28,12 @@ pub struct Division {
 pub struct Team {
     pub name: String,
     pub common_name: String,
+    /// Team's place name (e.g. "Toronto"), reconstructed from `name` and
+    /// `common_name` where the source data has no dedicated field for it
+    /// (see `Standing::to_team`). `#[serde(default)]` keeps existing JSON
+    /// paths working for callers that don't supply it.
+    #[serde(default)]
+    pub place_name: LocalizedString,
     pub abbr: String,
     pub logo: String,
     pub conference: Conference,
@@ -134,6 +140,9 @@ mod tests {
         let team = Team {
             name: "Buffalo Sabres".to_string(),
             common_name: "Sabres".to_string(),
+            place_name: LocalizedString {
+                default: "Buffalo".to_string(),
+            },
             abbr: "BUF".to_string(),
             logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
             conference: Conference {
@@ -153,6 +162,25 @@ mod tests {
         assert_eq!(deserialized.name, "Buffalo Sabres");
         assert_eq!(deserialized.abbr, "BUF");
         assert_eq!(deserialized.franchise_id, Some(19));
+        assert_eq!(deserialized.place_name.default, "Buffalo");
+    }
+
+    /// Older serialized `Team` JSON predating the `place_name` field must
+    /// still deserialize, defaulting to an empty `LocalizedString`.
+    #[test]
+    fn test_team_deserialization_without_place_name() {
+        let json = r#"{
+            "name": "Buffalo Sabres",
+            "common_name": "Sabres",
+            "abbr": "BUF",
+            "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg",
+            "conference": {"abbr": "E", "name": "Eastern"},
+            "division": {"abbr": "ATL", "name": "Atlantic"}
+        }"#;
+
+        let team: Team = serde_json::from_str(json).unwrap();
+        assert_eq!(team.place_name, LocalizedString::default());
+        assert_eq!(team.place_name.default, "");
     }
 
     #[test]
@@ -273,6 +301,9 @@ mod tests {
         let team = Team {
             name: "Buffalo Sabres".to_string(),
             common_name: "Sabres".to_string(),
+            place_name: LocalizedString {
+                default: "Buffalo".to_string(),
+            },
             abbr: "BUF".to_string(),
             logo: "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg".to_string(),
             conference: Conference {

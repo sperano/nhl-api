@@ -53,6 +53,9 @@ impl Standing {
         Team {
             name: self.team_name.default.clone(),
             common_name: self.team_common_name.default.clone(),
+            place_name: LocalizedString {
+                default: place_name(&self.team_name.default, &self.team_common_name.default),
+            },
             abbr: self.team_abbrev.default.clone(),
             logo: self.team_logo.clone(),
             conference: Conference {
@@ -70,6 +73,22 @@ impl Standing {
     pub fn games_played(&self) -> i32 {
         self.wins + self.losses + self.ot_losses
     }
+}
+
+/// Reconstructs a team's place name (e.g. `"Toronto"`) from its full name
+/// (e.g. `"Toronto Maple Leafs"`) by removing the common name (e.g. `"Maple
+/// Leafs"`). The NHL standings endpoint carries no dedicated place-name
+/// field, so it must be derived. The common name may sit at either the start
+/// or the end of the full name, so only its first occurrence is removed,
+/// wherever it appears, and the remaining whitespace is normalized. If the
+/// common name is empty or not found within the full name, the full name is
+/// returned unchanged.
+fn place_name(full_name: &str, common_name: &str) -> String {
+    if common_name.is_empty() {
+        return full_name.to_string();
+    }
+    let stripped = full_name.replacen(common_name, "", 1);
+    stripped.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 impl fmt::Display for Standing {
@@ -163,6 +182,7 @@ mod tests {
 
         assert_eq!(team.name, "Vegas Golden Knights");
         assert_eq!(team.common_name, "Golden Knights");
+        assert_eq!(team.place_name.default, "Vegas");
         assert_eq!(team.abbr, "VGK");
         assert_eq!(
             team.logo,
@@ -301,6 +321,7 @@ mod tests {
 
         assert_eq!(team.name, "Montreal Canadiens");
         assert_eq!(team.common_name, "Canadiens");
+        assert_eq!(team.place_name.default, "Montreal");
         assert_eq!(team.abbr, "MTL");
         assert_eq!(team.conference.abbr, "UNK");
         assert_eq!(team.conference.name, "Unknown");
@@ -489,5 +510,89 @@ mod tests {
         };
 
         assert_eq!(standing.games_played(), 17); // 10 + 5 + 2
+    }
+
+    // Port of Go's `TestPlaceName` table (`nhl/standings_test.go`).
+    mod place_name_tests {
+        use super::place_name;
+
+        #[test]
+        fn test_place_name_common_name_at_end() {
+            assert_eq!(place_name("Toronto Maple Leafs", "Maple Leafs"), "Toronto");
+        }
+
+        #[test]
+        fn test_place_name_common_name_at_start() {
+            assert_eq!(place_name("Maple Leafs Toronto", "Maple Leafs"), "Toronto");
+        }
+
+        #[test]
+        fn test_place_name_single_word_place() {
+            assert_eq!(place_name("Boston Bruins", "Bruins"), "Boston");
+        }
+
+        #[test]
+        fn test_place_name_multi_word_place() {
+            assert_eq!(place_name("Tampa Bay Lightning", "Lightning"), "Tampa Bay");
+        }
+
+        #[test]
+        fn test_place_name_common_name_not_found_falls_back_to_full_name() {
+            assert_eq!(
+                place_name("Vegas Golden Knights", "Senators"),
+                "Vegas Golden Knights"
+            );
+        }
+
+        #[test]
+        fn test_place_name_empty_common_name_falls_back_to_full_name() {
+            assert_eq!(
+                place_name("Vegas Golden Knights", ""),
+                "Vegas Golden Knights"
+            );
+        }
+
+        #[test]
+        fn test_place_name_full_name_equals_common_name_yields_empty() {
+            assert_eq!(place_name("Wild", "Wild"), "");
+        }
+
+        #[test]
+        fn test_place_name_interior_whitespace_is_collapsed() {
+            assert_eq!(
+                place_name("Montreal Habs Canadiens", "Habs"),
+                "Montreal Canadiens"
+            );
+        }
+    }
+
+    /// `to_team()` falls back to the full name when the common name can't be
+    /// found within it (mirrors the Go `TestPlaceName` fallback case, applied
+    /// end-to-end through the conversion).
+    #[test]
+    fn test_standing_to_team_place_name_fallback_when_common_name_not_found() {
+        let standing = Standing {
+            conference_abbrev: Some("W".to_string()),
+            conference_name: Some("Western".to_string()),
+            division_abbrev: "PAC".to_string(),
+            division_name: "Pacific".to_string(),
+            team_name: LocalizedString {
+                default: "Vegas Golden Knights".to_string(),
+            },
+            team_common_name: LocalizedString {
+                default: "Senators".to_string(),
+            },
+            team_abbrev: LocalizedString {
+                default: "VGK".to_string(),
+            },
+            team_logo: "https://assets.nhle.com/logos/nhl/svg/VGK_light.svg".to_string(),
+            wins: 0,
+            losses: 0,
+            ot_losses: 0,
+            points: 0,
+        };
+
+        let team = standing.to_team();
+        assert_eq!(team.place_name.default, "Vegas Golden Knights");
     }
 }
