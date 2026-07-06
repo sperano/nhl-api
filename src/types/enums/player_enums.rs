@@ -2,72 +2,39 @@
 //!
 //! This module contains enums that describe player attributes.
 
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::str::FromStr;
-use thiserror::Error;
+use super::macros::nhl_string_enum;
 
 // =============================================================================
 // Position
 // =============================================================================
 
-/// Error type for parsing Position from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown position: {0}")]
-pub struct ParsePositionError(pub String);
-
-/// NHL player position
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Position {
-    /// Center
-    #[serde(rename = "C")]
-    Center,
-
-    /// Left Wing
-    #[serde(alias = "L", rename = "LW")]
-    LeftWing,
-
-    /// Right Wing
-    #[serde(alias = "R", rename = "RW")]
-    RightWing,
-
-    /// Defense
-    #[serde(rename = "D")]
-    Defense,
-
-    /// Goalie
-    #[serde(rename = "G")]
-    Goalie,
+nhl_string_enum! {
+    error_name = "position",
+    display = code,
+    /// NHL player position
+    pub enum Position {
+        /// Center
+        Center = "C", name = "Center";
+        /// Left Wing
+        LeftWing = "LW", name = "Left Wing", aliases = ["L"];
+        /// Right Wing
+        RightWing = "RW", name = "Right Wing", aliases = ["R"];
+        /// Generic forward (used for historical games that don't distinguish
+        /// center/left wing/right wing).
+        Forward = "F", name = "Forward";
+        /// Defense
+        Defense = "D", name = "Defense";
+        /// Goalie
+        Goalie = "G", name = "Goalie";
+    }
 }
 
 impl Position {
-    /// Returns the short code for this position
-    pub const fn code(&self) -> &'static str {
-        match self {
-            Position::Center => "C",
-            Position::LeftWing => "LW",
-            Position::RightWing => "RW",
-            Position::Defense => "D",
-            Position::Goalie => "G",
-        }
-    }
-
-    /// Returns the full name for this position
-    pub const fn name(&self) -> &'static str {
-        match self {
-            Position::Center => "Center",
-            Position::LeftWing => "Left Wing",
-            Position::RightWing => "Right Wing",
-            Position::Defense => "Defense",
-            Position::Goalie => "Goalie",
-        }
-    }
-
     /// Returns true if this is a forward position
     pub const fn is_forward(&self) -> bool {
         matches!(
             self,
-            Position::Center | Position::LeftWing | Position::RightWing
+            Position::Center | Position::LeftWing | Position::RightWing | Position::Forward
         )
     }
 
@@ -77,81 +44,19 @@ impl Position {
     }
 }
 
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for Position {
-    type Err = ParsePositionError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "C" => Ok(Position::Center),
-            "L" | "LW" => Ok(Position::LeftWing),
-            "R" | "RW" => Ok(Position::RightWing),
-            "D" => Ok(Position::Defense),
-            "G" => Ok(Position::Goalie),
-            _ => Err(ParsePositionError(s.to_string())),
-        }
-    }
-}
-
 // =============================================================================
 // Handedness
 // =============================================================================
 
-/// Error type for parsing Handedness from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown handedness: {0}")]
-pub struct ParseHandednessError(pub String);
-
-/// NHL player handedness (shoots/catches)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Handedness {
-    /// Left-handed
-    #[serde(rename = "L")]
-    Left,
-
-    /// Right-handed
-    #[serde(rename = "R")]
-    Right,
-}
-
-impl Handedness {
-    /// Returns the short code for this handedness
-    pub const fn code(&self) -> &'static str {
-        match self {
-            Handedness::Left => "L",
-            Handedness::Right => "R",
-        }
-    }
-
-    /// Returns the full name for this handedness
-    pub const fn name(&self) -> &'static str {
-        match self {
-            Handedness::Left => "Left",
-            Handedness::Right => "Right",
-        }
-    }
-}
-
-impl fmt::Display for Handedness {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for Handedness {
-    type Err = ParseHandednessError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "L" => Ok(Handedness::Left),
-            "R" => Ok(Handedness::Right),
-            _ => Err(ParseHandednessError(s.to_string())),
-        }
+nhl_string_enum! {
+    error_name = "handedness",
+    display = code,
+    /// NHL player handedness (shoots/catches)
+    pub enum Handedness {
+        /// Left-handed
+        Left = "L", name = "Left";
+        /// Right-handed
+        Right = "R", name = "Right";
     }
 }
 
@@ -159,67 +64,26 @@ impl FromStr for Handedness {
 // GoalieDecision
 // =============================================================================
 
-/// Error type for parsing GoalieDecision from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown goalie decision: {0}")]
-pub struct ParseGoalieDecisionError(pub String);
-
-/// Goalie game decision (win/loss/OT loss)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum GoalieDecision {
-    /// Win
-    #[serde(rename = "W")]
-    Win,
-
-    /// Loss
-    #[serde(rename = "L")]
-    Loss,
-
-    /// Overtime loss
-    #[serde(rename = "O")]
-    OvertimeLoss,
-}
-
-impl GoalieDecision {
-    pub const fn code(&self) -> &'static str {
-        match self {
-            GoalieDecision::Win => "W",
-            GoalieDecision::Loss => "L",
-            GoalieDecision::OvertimeLoss => "O",
-        }
-    }
-
-    pub const fn name(&self) -> &'static str {
-        match self {
-            GoalieDecision::Win => "Win",
-            GoalieDecision::Loss => "Loss",
-            GoalieDecision::OvertimeLoss => "Overtime Loss",
-        }
-    }
-}
-
-impl fmt::Display for GoalieDecision {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for GoalieDecision {
-    type Err = ParseGoalieDecisionError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "W" => Ok(GoalieDecision::Win),
-            "L" => Ok(GoalieDecision::Loss),
-            "O" => Ok(GoalieDecision::OvertimeLoss),
-            _ => Err(ParseGoalieDecisionError(s.to_string())),
-        }
+nhl_string_enum! {
+    error_name = "goalie decision",
+    display = code,
+    /// Goalie game decision (win/loss/tie/OT loss)
+    pub enum GoalieDecision {
+        /// Win
+        Win = "W", name = "Win";
+        /// Loss
+        Loss = "L", name = "Loss";
+        /// Tie (pre-shootout era, before the 2005-06 season)
+        Tie = "T", name = "Tie";
+        /// Overtime loss
+        OvertimeLoss = "O", name = "Overtime Loss", aliases = ["OTL"];
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::enums::UnknownEnumValue;
 
     mod position_tests {
         use super::*;
@@ -229,6 +93,7 @@ mod tests {
             assert_eq!(Position::Center.code(), "C");
             assert_eq!(Position::LeftWing.code(), "LW");
             assert_eq!(Position::RightWing.code(), "RW");
+            assert_eq!(Position::Forward.code(), "F");
             assert_eq!(Position::Defense.code(), "D");
             assert_eq!(Position::Goalie.code(), "G");
         }
@@ -238,6 +103,7 @@ mod tests {
             assert_eq!(Position::Center.name(), "Center");
             assert_eq!(Position::LeftWing.name(), "Left Wing");
             assert_eq!(Position::RightWing.name(), "Right Wing");
+            assert_eq!(Position::Forward.name(), "Forward");
             assert_eq!(Position::Defense.name(), "Defense");
             assert_eq!(Position::Goalie.name(), "Goalie");
         }
@@ -247,6 +113,7 @@ mod tests {
             assert!(Position::Center.is_forward());
             assert!(Position::LeftWing.is_forward());
             assert!(Position::RightWing.is_forward());
+            assert!(Position::Forward.is_forward());
             assert!(!Position::Defense.is_forward());
             assert!(!Position::Goalie.is_forward());
         }
@@ -256,6 +123,7 @@ mod tests {
             assert!(Position::Center.is_skater());
             assert!(Position::LeftWing.is_skater());
             assert!(Position::RightWing.is_skater());
+            assert!(Position::Forward.is_skater());
             assert!(Position::Defense.is_skater());
             assert!(!Position::Goalie.is_skater());
         }
@@ -265,6 +133,7 @@ mod tests {
             assert_eq!(Position::Center.to_string(), "C");
             assert_eq!(Position::LeftWing.to_string(), "LW");
             assert_eq!(Position::RightWing.to_string(), "RW");
+            assert_eq!(Position::Forward.to_string(), "F");
             assert_eq!(Position::Defense.to_string(), "D");
             assert_eq!(Position::Goalie.to_string(), "G");
         }
@@ -276,6 +145,7 @@ mod tests {
             assert_eq!("L".parse::<Position>().unwrap(), Position::LeftWing);
             assert_eq!("RW".parse::<Position>().unwrap(), Position::RightWing);
             assert_eq!("R".parse::<Position>().unwrap(), Position::RightWing);
+            assert_eq!("F".parse::<Position>().unwrap(), Position::Forward);
             assert_eq!("D".parse::<Position>().unwrap(), Position::Defense);
             assert_eq!("G".parse::<Position>().unwrap(), Position::Goalie);
         }
@@ -284,7 +154,13 @@ mod tests {
         fn test_position_from_str_invalid() {
             let result = "X".parse::<Position>();
             assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), ParsePositionError("X".to_string()));
+            assert_eq!(
+                result.unwrap_err(),
+                UnknownEnumValue {
+                    enum_name: "position",
+                    value: "X".to_string(),
+                }
+            );
         }
 
         #[test]
@@ -298,6 +174,7 @@ mod tests {
                 serde_json::to_string(&Position::RightWing).unwrap(),
                 r#""RW""#
             );
+            assert_eq!(serde_json::to_string(&Position::Forward).unwrap(), r#""F""#);
             assert_eq!(serde_json::to_string(&Position::Defense).unwrap(), r#""D""#);
             assert_eq!(serde_json::to_string(&Position::Goalie).unwrap(), r#""G""#);
         }
@@ -339,12 +216,29 @@ mod tests {
             );
         }
 
+        /// Historical games (pre-modern-era tracking) sometimes only record a
+        /// generic "F" (forward) rather than a specific forward position.
+        #[test]
+        fn test_position_deserialize_historical_forward() {
+            #[derive(serde::Deserialize)]
+            struct RosterEntryFixture {
+                #[serde(rename = "positionCode")]
+                position_code: Position,
+            }
+
+            let json = r#"{"positionCode": "F"}"#;
+            let entry: RosterEntryFixture = serde_json::from_str(json).unwrap();
+            assert_eq!(entry.position_code, Position::Forward);
+            assert!(entry.position_code.is_forward());
+        }
+
         #[test]
         fn test_position_roundtrip() {
             for pos in [
                 Position::Center,
                 Position::LeftWing,
                 Position::RightWing,
+                Position::Forward,
                 Position::Defense,
                 Position::Goalie,
             ] {
@@ -447,6 +341,7 @@ mod tests {
         fn test_goalie_decision_code() {
             assert_eq!(GoalieDecision::Win.code(), "W");
             assert_eq!(GoalieDecision::Loss.code(), "L");
+            assert_eq!(GoalieDecision::Tie.code(), "T");
             assert_eq!(GoalieDecision::OvertimeLoss.code(), "O");
         }
 
@@ -454,6 +349,7 @@ mod tests {
         fn test_goalie_decision_name() {
             assert_eq!(GoalieDecision::Win.name(), "Win");
             assert_eq!(GoalieDecision::Loss.name(), "Loss");
+            assert_eq!(GoalieDecision::Tie.name(), "Tie");
             assert_eq!(GoalieDecision::OvertimeLoss.name(), "Overtime Loss");
         }
 
@@ -466,6 +362,10 @@ mod tests {
             assert_eq!(
                 serde_json::to_string(&GoalieDecision::Loss).unwrap(),
                 r#""L""#
+            );
+            assert_eq!(
+                serde_json::to_string(&GoalieDecision::Tie).unwrap(),
+                r#""T""#
             );
             assert_eq!(
                 serde_json::to_string(&GoalieDecision::OvertimeLoss).unwrap(),
@@ -484,7 +384,21 @@ mod tests {
                 GoalieDecision::Loss
             );
             assert_eq!(
+                serde_json::from_str::<GoalieDecision>(r#""T""#).unwrap(),
+                GoalieDecision::Tie
+            );
+            assert_eq!(
                 serde_json::from_str::<GoalieDecision>(r#""O""#).unwrap(),
+                GoalieDecision::OvertimeLoss
+            );
+        }
+
+        #[test]
+        fn test_goalie_decision_deserialize_otl_alias() {
+            // "OTL" is Go's canonical form; kept here as a parse alias so both
+            // shapes seen in the wild deserialize to the same variant.
+            assert_eq!(
+                serde_json::from_str::<GoalieDecision>(r#""OTL""#).unwrap(),
                 GoalieDecision::OvertimeLoss
             );
         }
@@ -493,8 +407,13 @@ mod tests {
         fn test_goalie_decision_from_str() {
             assert_eq!("W".parse::<GoalieDecision>().unwrap(), GoalieDecision::Win);
             assert_eq!("L".parse::<GoalieDecision>().unwrap(), GoalieDecision::Loss);
+            assert_eq!("T".parse::<GoalieDecision>().unwrap(), GoalieDecision::Tie);
             assert_eq!(
                 "O".parse::<GoalieDecision>().unwrap(),
+                GoalieDecision::OvertimeLoss
+            );
+            assert_eq!(
+                "OTL".parse::<GoalieDecision>().unwrap(),
                 GoalieDecision::OvertimeLoss
             );
         }
@@ -505,7 +424,10 @@ mod tests {
             assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err(),
-                ParseGoalieDecisionError("X".to_string())
+                UnknownEnumValue {
+                    enum_name: "goalie decision",
+                    value: "X".to_string(),
+                }
             );
         }
 
@@ -513,7 +435,21 @@ mod tests {
         fn test_goalie_decision_display() {
             assert_eq!(GoalieDecision::Win.to_string(), "W");
             assert_eq!(GoalieDecision::Loss.to_string(), "L");
+            assert_eq!(GoalieDecision::Tie.to_string(), "T");
             assert_eq!(GoalieDecision::OvertimeLoss.to_string(), "O");
+        }
+
+        /// Pre-shootout-era (before 2005-06) game logs record ties.
+        #[test]
+        fn test_goalie_decision_deserialize_historical_tie() {
+            #[derive(serde::Deserialize)]
+            struct GameLogEntryFixture {
+                decision: GoalieDecision,
+            }
+
+            let json = r#"{"decision": "T"}"#;
+            let entry: GameLogEntryFixture = serde_json::from_str(json).unwrap();
+            assert_eq!(entry.decision, GoalieDecision::Tie);
         }
 
         #[test]
@@ -521,6 +457,7 @@ mod tests {
             for gd in [
                 GoalieDecision::Win,
                 GoalieDecision::Loss,
+                GoalieDecision::Tie,
                 GoalieDecision::OvertimeLoss,
             ] {
                 let serialized = serde_json::to_string(&gd).unwrap();
@@ -535,8 +472,9 @@ mod tests {
             let mut set = HashSet::new();
             set.insert(GoalieDecision::Win);
             set.insert(GoalieDecision::Loss);
+            set.insert(GoalieDecision::Tie);
             set.insert(GoalieDecision::OvertimeLoss);
-            assert_eq!(set.len(), 3);
+            assert_eq!(set.len(), 4);
         }
     }
 
@@ -544,21 +482,21 @@ mod tests {
         use super::*;
 
         #[test]
-        fn test_parse_position_error_display() {
-            let err = ParsePositionError("X".to_string());
-            assert_eq!(format!("{}", err), "Unknown position: X");
+        fn test_unknown_position_error_display() {
+            let err = UnknownEnumValue {
+                enum_name: "position",
+                value: "X".to_string(),
+            };
+            assert_eq!(format!("{}", err), r#"invalid position: "X""#);
         }
 
         #[test]
-        fn test_parse_handedness_error_display() {
-            let err = ParseHandednessError("X".to_string());
-            assert_eq!(format!("{}", err), "Unknown handedness: X");
-        }
-
-        #[test]
-        fn test_parse_goalie_decision_error_display() {
-            let err = ParseGoalieDecisionError("X".to_string());
-            assert_eq!(format!("{}", err), "Unknown goalie decision: X");
+        fn test_unknown_goalie_decision_error_display() {
+            let err = UnknownEnumValue {
+                enum_name: "goalie decision",
+                value: "X".to_string(),
+            };
+            assert_eq!(format!("{}", err), r#"invalid goalie decision: "X""#);
         }
     }
 }

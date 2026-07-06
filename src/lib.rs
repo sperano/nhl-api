@@ -53,10 +53,8 @@ pub use types::GameType;
 
 // Enum types
 pub use types::{
-    DefendingSide, GameScheduleState, GoalieDecision, Handedness, HomeRoad,
-    ParseDefendingSideError, ParseGameScheduleStateError, ParseGoalieDecisionError,
-    ParseHandednessError, ParseHomeRoadError, ParsePositionError, ParseZoneCodeError, PeriodType,
-    Position, UnknownEnumValue, ZoneCode,
+    DefendingSide, GameScheduleState, GoalieDecision, Handedness, HomeRoad, PeriodType, Position,
+    UnknownEnumValue, ZoneCode,
 };
 
 // Player types

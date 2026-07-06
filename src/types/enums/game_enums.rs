@@ -3,10 +3,6 @@
 //! This module contains enums related to game state and play events.
 
 use super::macros::nhl_string_enum;
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::str::FromStr;
-use thiserror::Error;
 
 // =============================================================================
 // PeriodType
@@ -37,54 +33,15 @@ impl PeriodType {
 // HomeRoad
 // =============================================================================
 
-/// Error type for parsing HomeRoad from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown home/road value: {0}")]
-pub struct ParseHomeRoadError(pub String);
-
-/// Home or road game indicator
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum HomeRoad {
-    /// Home game
-    #[serde(rename = "H")]
-    Home,
-
-    /// Road (away) game
-    #[serde(rename = "R")]
-    Road,
-}
-
-impl HomeRoad {
-    pub const fn code(&self) -> &'static str {
-        match self {
-            HomeRoad::Home => "H",
-            HomeRoad::Road => "R",
-        }
-    }
-
-    pub const fn name(&self) -> &'static str {
-        match self {
-            HomeRoad::Home => "Home",
-            HomeRoad::Road => "Road",
-        }
-    }
-}
-
-impl fmt::Display for HomeRoad {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for HomeRoad {
-    type Err = ParseHomeRoadError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "H" => Ok(HomeRoad::Home),
-            "R" => Ok(HomeRoad::Road),
-            _ => Err(ParseHomeRoadError(s.to_string())),
-        }
+nhl_string_enum! {
+    error_name = "home/road value",
+    display = code,
+    /// Home or road game indicator
+    pub enum HomeRoad {
+        /// Home game
+        Home = "H", name = "Home";
+        /// Road (away) game
+        Road = "R", name = "Road";
     }
 }
 
@@ -92,61 +49,17 @@ impl FromStr for HomeRoad {
 // ZoneCode
 // =============================================================================
 
-/// Error type for parsing ZoneCode from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown zone code: {0}")]
-pub struct ParseZoneCodeError(pub String);
-
-/// Ice zone where play event occurred
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ZoneCode {
-    /// Offensive zone
-    #[serde(rename = "O")]
-    Offensive,
-
-    /// Defensive zone
-    #[serde(rename = "D")]
-    Defensive,
-
-    /// Neutral zone
-    #[serde(rename = "N")]
-    Neutral,
-}
-
-impl ZoneCode {
-    pub const fn code(&self) -> &'static str {
-        match self {
-            ZoneCode::Offensive => "O",
-            ZoneCode::Defensive => "D",
-            ZoneCode::Neutral => "N",
-        }
-    }
-
-    pub const fn name(&self) -> &'static str {
-        match self {
-            ZoneCode::Offensive => "Offensive",
-            ZoneCode::Defensive => "Defensive",
-            ZoneCode::Neutral => "Neutral",
-        }
-    }
-}
-
-impl fmt::Display for ZoneCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for ZoneCode {
-    type Err = ParseZoneCodeError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "O" => Ok(ZoneCode::Offensive),
-            "D" => Ok(ZoneCode::Defensive),
-            "N" => Ok(ZoneCode::Neutral),
-            _ => Err(ParseZoneCodeError(s.to_string())),
-        }
+nhl_string_enum! {
+    error_name = "zone code",
+    display = code,
+    /// Ice zone where play event occurred
+    pub enum ZoneCode {
+        /// Offensive zone
+        Offensive = "O", name = "Offensive";
+        /// Defensive zone
+        Defensive = "D", name = "Defensive";
+        /// Neutral zone
+        Neutral = "N", name = "Neutral";
     }
 }
 
@@ -154,46 +67,15 @@ impl FromStr for ZoneCode {
 // DefendingSide
 // =============================================================================
 
-/// Error type for parsing DefendingSide from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown defending side: {0}")]
-pub struct ParseDefendingSideError(pub String);
-
-/// Which side of the ice the home team is defending
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum DefendingSide {
-    /// Defending left side
-    Left,
-
-    /// Defending right side
-    Right,
-}
-
-impl DefendingSide {
-    pub const fn name(&self) -> &'static str {
-        match self {
-            DefendingSide::Left => "left",
-            DefendingSide::Right => "right",
-        }
-    }
-}
-
-impl fmt::Display for DefendingSide {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name())
-    }
-}
-
-impl FromStr for DefendingSide {
-    type Err = ParseDefendingSideError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "left" => Ok(DefendingSide::Left),
-            "right" => Ok(DefendingSide::Right),
-            _ => Err(ParseDefendingSideError(s.to_string())),
-        }
+nhl_string_enum! {
+    error_name = "defending side",
+    display = code,
+    /// Which side of the ice the home team is defending
+    pub enum DefendingSide {
+        /// Defending left side
+        Left = "left", name = "left", aliases = ["LEFT", "Left"];
+        /// Defending right side
+        Right = "right", name = "right", aliases = ["RIGHT", "Right"];
     }
 }
 
@@ -201,83 +83,42 @@ impl FromStr for DefendingSide {
 // GameScheduleState
 // =============================================================================
 
-/// Error type for parsing GameScheduleState from string
-#[derive(Error, Debug, PartialEq)]
-#[error("Unknown game schedule state: {0}")]
-pub struct ParseGameScheduleStateError(pub String);
-
-/// Game schedule state (OK, postponed, etc.)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum GameScheduleState {
-    /// Game is scheduled as planned
-    #[serde(rename = "OK")]
-    Ok,
-
-    /// Game is postponed
-    #[serde(rename = "PPD")]
-    Postponed,
-
-    /// Game is suspended
-    #[serde(rename = "SUSP")]
-    Suspended,
-
-    /// Game is cancelled
-    #[serde(rename = "CNCL")]
-    Cancelled,
+nhl_string_enum! {
+    error_name = "game schedule state",
+    display = code,
+    /// Game schedule state (OK, postponed, etc.)
+    pub enum GameScheduleState {
+        /// Game is scheduled as planned
+        Ok = "OK", name = "OK";
+        /// Game will not be played (historical/administrative games)
+        DontPlay = "DONT_PLAY", name = "Don't Play";
+        /// Game is postponed
+        Postponed = "PPD", name = "Postponed";
+        /// Game is suspended
+        Suspended = "SUSP", name = "Suspended";
+        /// Game time is to be determined
+        Tbd = "TBD", name = "TBD";
+        /// Game has been completed
+        Completed = "COMPLETED", name = "Completed";
+        /// Game is cancelled
+        Cancelled = "CNCL", name = "Cancelled";
+    }
 }
 
 impl GameScheduleState {
-    pub const fn code(&self) -> &'static str {
-        match self {
-            GameScheduleState::Ok => "OK",
-            GameScheduleState::Postponed => "PPD",
-            GameScheduleState::Suspended => "SUSP",
-            GameScheduleState::Cancelled => "CNCL",
-        }
-    }
-
-    pub const fn name(&self) -> &'static str {
-        match self {
-            GameScheduleState::Ok => "OK",
-            GameScheduleState::Postponed => "Postponed",
-            GameScheduleState::Suspended => "Suspended",
-            GameScheduleState::Cancelled => "Cancelled",
-        }
-    }
-
     /// Returns true if the game is playable (not postponed/cancelled/suspended)
     pub const fn is_playable(&self) -> bool {
         matches!(self, GameScheduleState::Ok)
     }
 }
 
-impl fmt::Display for GameScheduleState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.code())
-    }
-}
-
-impl FromStr for GameScheduleState {
-    type Err = ParseGameScheduleStateError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "OK" => Ok(GameScheduleState::Ok),
-            "PPD" => Ok(GameScheduleState::Postponed),
-            "SUSP" => Ok(GameScheduleState::Suspended),
-            "CNCL" => Ok(GameScheduleState::Cancelled),
-            _ => Err(ParseGameScheduleStateError(s.to_string())),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::enums::UnknownEnumValue;
 
     mod period_type_tests {
         use super::*;
-        use crate::types::enums::UnknownEnumValue;
 
         #[test]
         fn test_period_type_code() {
@@ -447,7 +288,13 @@ mod tests {
         fn test_home_road_from_str_invalid() {
             let result = "X".parse::<HomeRoad>();
             assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), ParseHomeRoadError("X".to_string()));
+            assert_eq!(
+                result.unwrap_err(),
+                UnknownEnumValue {
+                    enum_name: "home/road value",
+                    value: "X".to_string(),
+                }
+            );
         }
 
         #[test]
@@ -533,7 +380,13 @@ mod tests {
         fn test_zone_code_from_str_invalid() {
             let result = "X".parse::<ZoneCode>();
             assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), ParseZoneCodeError("X".to_string()));
+            assert_eq!(
+                result.unwrap_err(),
+                UnknownEnumValue {
+                    enum_name: "zone code",
+                    value: "X".to_string(),
+                }
+            );
         }
 
         #[test]
@@ -622,7 +475,10 @@ mod tests {
             assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err(),
-                ParseDefendingSideError("center".to_string())
+                UnknownEnumValue {
+                    enum_name: "defending side",
+                    value: "center".to_string(),
+                }
             );
         }
 
@@ -657,16 +513,22 @@ mod tests {
         #[test]
         fn test_game_schedule_state_code() {
             assert_eq!(GameScheduleState::Ok.code(), "OK");
+            assert_eq!(GameScheduleState::DontPlay.code(), "DONT_PLAY");
             assert_eq!(GameScheduleState::Postponed.code(), "PPD");
             assert_eq!(GameScheduleState::Suspended.code(), "SUSP");
+            assert_eq!(GameScheduleState::Tbd.code(), "TBD");
+            assert_eq!(GameScheduleState::Completed.code(), "COMPLETED");
             assert_eq!(GameScheduleState::Cancelled.code(), "CNCL");
         }
 
         #[test]
         fn test_game_schedule_state_name() {
             assert_eq!(GameScheduleState::Ok.name(), "OK");
+            assert_eq!(GameScheduleState::DontPlay.name(), "Don't Play");
             assert_eq!(GameScheduleState::Postponed.name(), "Postponed");
             assert_eq!(GameScheduleState::Suspended.name(), "Suspended");
+            assert_eq!(GameScheduleState::Tbd.name(), "TBD");
+            assert_eq!(GameScheduleState::Completed.name(), "Completed");
             assert_eq!(GameScheduleState::Cancelled.name(), "Cancelled");
         }
 
@@ -677,12 +539,24 @@ mod tests {
                 r#""OK""#
             );
             assert_eq!(
+                serde_json::to_string(&GameScheduleState::DontPlay).unwrap(),
+                r#""DONT_PLAY""#
+            );
+            assert_eq!(
                 serde_json::to_string(&GameScheduleState::Postponed).unwrap(),
                 r#""PPD""#
             );
             assert_eq!(
                 serde_json::to_string(&GameScheduleState::Suspended).unwrap(),
                 r#""SUSP""#
+            );
+            assert_eq!(
+                serde_json::to_string(&GameScheduleState::Tbd).unwrap(),
+                r#""TBD""#
+            );
+            assert_eq!(
+                serde_json::to_string(&GameScheduleState::Completed).unwrap(),
+                r#""COMPLETED""#
             );
             assert_eq!(
                 serde_json::to_string(&GameScheduleState::Cancelled).unwrap(),
@@ -697,12 +571,24 @@ mod tests {
                 GameScheduleState::Ok
             );
             assert_eq!(
+                serde_json::from_str::<GameScheduleState>(r#""DONT_PLAY""#).unwrap(),
+                GameScheduleState::DontPlay
+            );
+            assert_eq!(
                 serde_json::from_str::<GameScheduleState>(r#""PPD""#).unwrap(),
                 GameScheduleState::Postponed
             );
             assert_eq!(
                 serde_json::from_str::<GameScheduleState>(r#""SUSP""#).unwrap(),
                 GameScheduleState::Suspended
+            );
+            assert_eq!(
+                serde_json::from_str::<GameScheduleState>(r#""TBD""#).unwrap(),
+                GameScheduleState::Tbd
+            );
+            assert_eq!(
+                serde_json::from_str::<GameScheduleState>(r#""COMPLETED""#).unwrap(),
+                GameScheduleState::Completed
             );
             assert_eq!(
                 serde_json::from_str::<GameScheduleState>(r#""CNCL""#).unwrap(),
@@ -717,12 +603,24 @@ mod tests {
                 GameScheduleState::Ok
             );
             assert_eq!(
+                "DONT_PLAY".parse::<GameScheduleState>().unwrap(),
+                GameScheduleState::DontPlay
+            );
+            assert_eq!(
                 "PPD".parse::<GameScheduleState>().unwrap(),
                 GameScheduleState::Postponed
             );
             assert_eq!(
                 "SUSP".parse::<GameScheduleState>().unwrap(),
                 GameScheduleState::Suspended
+            );
+            assert_eq!(
+                "TBD".parse::<GameScheduleState>().unwrap(),
+                GameScheduleState::Tbd
+            );
+            assert_eq!(
+                "COMPLETED".parse::<GameScheduleState>().unwrap(),
+                GameScheduleState::Completed
             );
             assert_eq!(
                 "CNCL".parse::<GameScheduleState>().unwrap(),
@@ -736,32 +634,66 @@ mod tests {
             assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err(),
-                ParseGameScheduleStateError("UNKNOWN".to_string())
+                UnknownEnumValue {
+                    enum_name: "game schedule state",
+                    value: "UNKNOWN".to_string(),
+                }
             );
         }
 
         #[test]
         fn test_game_schedule_state_display() {
             assert_eq!(GameScheduleState::Ok.to_string(), "OK");
+            assert_eq!(GameScheduleState::DontPlay.to_string(), "DONT_PLAY");
             assert_eq!(GameScheduleState::Postponed.to_string(), "PPD");
             assert_eq!(GameScheduleState::Suspended.to_string(), "SUSP");
+            assert_eq!(GameScheduleState::Tbd.to_string(), "TBD");
+            assert_eq!(GameScheduleState::Completed.to_string(), "COMPLETED");
             assert_eq!(GameScheduleState::Cancelled.to_string(), "CNCL");
         }
 
         #[test]
         fn test_game_schedule_state_is_playable() {
             assert!(GameScheduleState::Ok.is_playable());
+            assert!(!GameScheduleState::DontPlay.is_playable());
             assert!(!GameScheduleState::Postponed.is_playable());
             assert!(!GameScheduleState::Suspended.is_playable());
+            assert!(!GameScheduleState::Tbd.is_playable());
+            assert!(!GameScheduleState::Completed.is_playable());
             assert!(!GameScheduleState::Cancelled.is_playable());
+        }
+
+        /// Historical/administrative schedule entries use these three states;
+        /// exercise them via a boxscore-shaped fixture rather than bare strings.
+        #[test]
+        fn test_game_schedule_state_deserialize_historical_fixture() {
+            #[derive(serde::Deserialize)]
+            struct GameFixture {
+                #[serde(rename = "gameScheduleState")]
+                game_schedule_state: GameScheduleState,
+            }
+
+            let dont_play: GameFixture =
+                serde_json::from_str(r#"{"gameScheduleState": "DONT_PLAY"}"#).unwrap();
+            assert_eq!(dont_play.game_schedule_state, GameScheduleState::DontPlay);
+
+            let tbd: GameFixture = serde_json::from_str(r#"{"gameScheduleState": "TBD"}"#).unwrap();
+            assert_eq!(tbd.game_schedule_state, GameScheduleState::Tbd);
+
+            let completed: GameFixture =
+                serde_json::from_str(r#"{"gameScheduleState": "COMPLETED"}"#).unwrap();
+            assert_eq!(completed.game_schedule_state, GameScheduleState::Completed);
         }
 
         #[test]
         fn test_game_schedule_state_roundtrip() {
             for gss in [
                 GameScheduleState::Ok,
+                GameScheduleState::DontPlay,
                 GameScheduleState::Postponed,
                 GameScheduleState::Suspended,
+                GameScheduleState::Tbd,
+                GameScheduleState::Completed,
                 GameScheduleState::Cancelled,
             ] {
                 let serialized = serde_json::to_string(&gss).unwrap();
@@ -775,38 +707,13 @@ mod tests {
             use std::collections::HashSet;
             let mut set = HashSet::new();
             set.insert(GameScheduleState::Ok);
+            set.insert(GameScheduleState::DontPlay);
             set.insert(GameScheduleState::Postponed);
             set.insert(GameScheduleState::Suspended);
+            set.insert(GameScheduleState::Tbd);
+            set.insert(GameScheduleState::Completed);
             set.insert(GameScheduleState::Cancelled);
-            assert_eq!(set.len(), 4);
-        }
-    }
-
-    mod error_display_tests {
-        use super::*;
-
-        #[test]
-        fn test_parse_home_road_error_display() {
-            let err = ParseHomeRoadError("X".to_string());
-            assert_eq!(format!("{}", err), "Unknown home/road value: X");
-        }
-
-        #[test]
-        fn test_parse_zone_code_error_display() {
-            let err = ParseZoneCodeError("X".to_string());
-            assert_eq!(format!("{}", err), "Unknown zone code: X");
-        }
-
-        #[test]
-        fn test_parse_defending_side_error_display() {
-            let err = ParseDefendingSideError("center".to_string());
-            assert_eq!(format!("{}", err), "Unknown defending side: center");
-        }
-
-        #[test]
-        fn test_parse_game_schedule_state_error_display() {
-            let err = ParseGameScheduleStateError("UNKNOWN".to_string());
-            assert_eq!(format!("{}", err), "Unknown game schedule state: UNKNOWN");
+            assert_eq!(set.len(), 7);
         }
     }
 }
