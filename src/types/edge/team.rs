@@ -256,9 +256,9 @@ pub struct EdgeTeamShotDifferential {
 ///
 /// A rich composite for head-to-head display; each detail sub-object is
 /// genuinely nullable (only populated when the comparison includes that
-/// category). Reuses the shared `EdgeComparison*` family from
-/// [`super::common`] — team comparisons have no `zoneStarts` field (unlike
-/// [`super::skater::EdgeSkaterComparison`]).
+/// category). Reuses the shared `EdgeComparison*` family from the `edge::common`
+/// module — team comparisons have no `zoneStarts` field (unlike
+/// [`crate::EdgeSkaterComparison`]).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(default, rename_all = "camelCase")]
 pub struct EdgeTeamComparison {

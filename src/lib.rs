@@ -12,7 +12,7 @@ mod types;
 pub use client::Client;
 
 // Config
-pub use config::ClientConfig;
+pub use config::{ClientConfig, DEFAULT_USER_AGENT};
 
 // Date and Season
 pub use date::{GameDate, Season, SeasonError};
@@ -84,4 +84,34 @@ pub use types::{
     EdgeMeasurementWithOverlay, EdgeOverlay, EdgeOverlayPlayer, EdgeOverlayTeam,
     EdgePercentileStat, EdgePercentileStatWithOverlay, EdgeRankStat, EdgeRankStatWithOverlay,
     EdgeSeasonAvailability, EdgeSkaterPlayer, EdgeTeamInfo, EdgeTeamLogo,
+};
+
+// Edge skater types
+pub use types::{
+    EdgeDistanceEntry, EdgeShotLocationEntry, EdgeShotSpeedEntry, EdgeSkaterComparison,
+    EdgeSkaterDetail, EdgeSkaterDistanceDetail, EdgeSkaterLanding, EdgeSkaterLeader,
+    EdgeSkaterShotLocationDetail, EdgeSkaterShotSpeedDetail, EdgeSkaterSogSummary, EdgeSkaterSpeed,
+    EdgeSkaterSpeedDetail, EdgeSkaterZoneTimeDetail, EdgeSkaterZoneTimeSummary, EdgeSogAreaDetail,
+    EdgeSpeedEntry, EdgeZoneTimeEntry,
+};
+
+// Edge goalie types
+pub use types::{
+    EdgeGoalie5v5Detail, EdgeGoalie5v5Entry, EdgeGoalieComparison, EdgeGoalieComparisonLast10Entry,
+    EdgeGoalieComparisonSavePctg5v5Details, EdgeGoalieComparisonSavePctgDetails,
+    EdgeGoalieComparisonShotDetail, EdgeGoalieComparisonShotSummary, EdgeGoalieDetail,
+    EdgeGoalieLanding, EdgeGoalieLeader, EdgeGoalieSavePctgDetail, EdgeGoalieSavePctgEntry,
+    EdgeGoalieSavePctgStatDetail, EdgeGoalieShotLocationArea, EdgeGoalieShotLocationDetail,
+    EdgeGoalieShotLocationEntry, EdgeGoalieShotLocationSummary, EdgeGoalieStatEntry,
+    EdgeGoalieStatsSummary,
+};
+
+// Edge team types
+pub use types::{
+    EdgeTeamComparison, EdgeTeamDetail, EdgeTeamDistance, EdgeTeamDistanceDetail,
+    EdgeTeamDistanceEntry, EdgeTeamLanding, EdgeTeamLeader, EdgeTeamShotDifferential,
+    EdgeTeamShotLocationDetail, EdgeTeamShotLocationEntry, EdgeTeamShotSpeed,
+    EdgeTeamShotSpeedDetail, EdgeTeamShotSpeedEntry, EdgeTeamSkatingSpeed, EdgeTeamSogAreaDetail,
+    EdgeTeamSogSummary, EdgeTeamSpeedDetail, EdgeTeamSpeedEntry, EdgeTeamZoneTime,
+    EdgeTeamZoneTimeByStrength, EdgeTeamZoneTimeDetails,
 };

@@ -10,8 +10,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-nhl_api = "0.5"
+nhl_api = "0.8"
 tokio = { version = "1", features = ["full"] }
+```
+
+Enable the `fixtures` feature if your own tests need throwaway `Boxscore`/`PlayByPlay`/etc. values:
+
+```toml
+nhl_api = { version = "0.8", features = ["fixtures"] }
 ```
 
 ## Quick Start
@@ -82,6 +88,10 @@ let schedule = client.weekly_schedule(None).await?;
 // Team-specific weekly schedule
 let schedule = client.team_weekly_schedule("BOS", None).await?;
 
+// Full-season team schedule
+use nhl_api::Season;
+let schedule = client.club_schedule_season("BOS", Season::new(2024)).await?;
+
 // Daily scores
 let scores = client.daily_scores(None).await?;
 ```
@@ -144,19 +154,40 @@ let seasons = client.club_stats_season("BOS").await?;
 let franchises = client.franchises().await?;
 ```
 
+### Edge Stats
+
+Puck/player-tracking stats from the NHL Edge system — 22 methods across skaters, goalies, and
+teams, each with a per-player/team `_detail` family plus a league-wide `_landing` leaderboard.
+
+```rust
+use nhl_api::{GameType, Season};
+
+// Skater overview stats for a season
+let detail = client.edge_skater_detail(8478402, Season::new(2024), GameType::RegularSeason).await?;
+
+// Team overview stats (rank-based, 1-32)
+let team_detail = client.edge_team_detail(10, Season::new(2024), GameType::RegularSeason).await?;
+
+// League-wide skater leaderboard (no player id)
+let leaders = client.edge_skater_landing(Season::new(2024), GameType::RegularSeason).await?;
+```
+
 ## Configuration
 
 ```rust
 use nhl_api::{Client, ClientConfig};
 use std::time::Duration;
 
-let config = ClientConfig {
-    timeout: Duration::from_secs(30),
-    ssl_verify: true,
-    follow_redirects: true,
-};
+let config = ClientConfig::default()
+    .with_timeout(Duration::from_secs(30))
+    .with_user_agent("my-app/1.0");
 let client = Client::with_config(config)?;
 ```
+
+`ClientConfig` also supports `with_ssl_verify()`, `with_follow_redirects()`, and
+`with_http_client(reqwest::Client)` — the last one is an escape hatch for retry/backoff or
+instrumentation middleware; when set, the other transport options are ignored and the injected
+client's configuration is used as-is.
 
 ## Types
 
@@ -168,9 +199,16 @@ The library provides strongly-typed responses for all API endpoints. Key types i
 - `PlayByPlay` - All play events from a game
 - `PlayerLanding` - Player profile with career stats
 - `Roster` - Team roster with player details
-- `GameType` - Preseason, RegularSeason, Playoffs, AllStar
+- `Season` - An NHL season (e.g. `2023-2024`); parses from `"20232024"`, `"2023-2024"`, or an
+  integer, and serializes/deserializes accordingly
+- `GameId`, `PlayerId`, `TeamId` - Typed numeric identifiers used throughout response structs and
+  client method parameters (`impl Into<GameId>` etc., so plain `i64` call sites still work)
+- `GameType` - 15 variants (`RegularSeason`, `Playoffs`, `Preseason`, `AllStar`, plus historical/
+  special event types); `label()` returns a stable snake_case string (e.g. `"regular_season"`)
 - `GameState` - FUT, PRE, LIVE, CRIT, FINAL, OFF
 - `GameDate` - Either `Now` or `Date(NaiveDate)`
+- Edge stats types (`EdgeSkaterDetail`, `EdgeGoalieDetail`, `EdgeTeamDetail`, and friends) - puck/
+  player-tracking data returned by the `edge_*` client methods
 
 ## Error Handling
 
@@ -181,7 +219,13 @@ All client methods return `Result<T, NHLApiError>`. Error variants include:
 - `BadRequest` - 400 errors
 - `ServerError` - 5xx errors
 - `RequestError` - Network/connection issues
-- `JsonError` - Deserialization failures
+- `JsonError` - Deserialization failures; carries the request URL and the underlying
+  `serde_json::Error`
+
+Error messages for non-2xx responses include a snippet of the response body (truncated to 4096
+bytes) for easier diagnosis. Unrecognized enum values from the API (e.g. a new game type NHL adds
+before this library is updated) surface as an `UnknownEnumValue { enum_name, value }` error from
+`FromStr`, or as a descriptive message at the serde boundary.
 
 ## License
 

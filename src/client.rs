@@ -285,7 +285,7 @@ impl Client {
     /// # Arguments
     /// * `query` - Search query (player name or partial name)
     /// * `limit` - Maximum number of results to return (defaults to
-    ///   [`DEFAULT_SEARCH_LIMIT`] when `None`)
+    ///   `DEFAULT_SEARCH_LIMIT` when `None`)
     pub async fn search_player(
         &self,
         query: &str,
@@ -296,7 +296,7 @@ impl Client {
     }
 
     /// Endpoint-parameterized core of [`Self::search_player`], split out so the
-    /// query-building (notably the [`DEFAULT_SEARCH_LIMIT`] fallback) can be
+    /// query-building (notably the `DEFAULT_SEARCH_LIMIT` fallback) can be
     /// exercised against a mock server.
     async fn search_player_at(
         &self,
