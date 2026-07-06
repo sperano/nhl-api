@@ -59,4 +59,5 @@
 //! `seasonsWithEdgeStats`) documented alongside the affected types there.
 
 pub mod common;
+pub mod goalie;
 pub mod skater;

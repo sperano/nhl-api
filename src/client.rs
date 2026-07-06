@@ -4,12 +4,14 @@ use crate::error::NHLApiError;
 use crate::http_client::{Endpoint, HttpClient};
 use crate::ids::{GameId, PlayerId};
 use crate::types::{
-    Boxscore, ClubStats, DailySchedule, DailyScores, EdgeSkaterComparison, EdgeSkaterDetail,
-    EdgeSkaterDistanceDetail, EdgeSkaterLanding, EdgeSkaterShotLocationDetail,
-    EdgeSkaterShotSpeedDetail, EdgeSkaterSpeedDetail, EdgeSkaterZoneTimeDetail, Franchise,
-    FranchisesResponse, GameMatchup, GameStory, GameType, PlayByPlay, PlayerGameLog, PlayerLanding,
-    PlayerSearchResult, Roster, SeasonGameTypes, SeasonInfo, SeasonSeriesMatchup, SeasonsResponse,
-    ShiftChart, Standing, StandingsResponse, Team, TeamScheduleResponse, WeeklyScheduleResponse,
+    Boxscore, ClubStats, DailySchedule, DailyScores, EdgeGoalie5v5Detail, EdgeGoalieComparison,
+    EdgeGoalieDetail, EdgeGoalieLanding, EdgeGoalieSavePctgDetail, EdgeGoalieShotLocationDetail,
+    EdgeSkaterComparison, EdgeSkaterDetail, EdgeSkaterDistanceDetail, EdgeSkaterLanding,
+    EdgeSkaterShotLocationDetail, EdgeSkaterShotSpeedDetail, EdgeSkaterSpeedDetail,
+    EdgeSkaterZoneTimeDetail, Franchise, FranchisesResponse, GameMatchup, GameStory, GameType,
+    PlayByPlay, PlayerGameLog, PlayerLanding, PlayerSearchResult, Roster, SeasonGameTypes,
+    SeasonInfo, SeasonSeriesMatchup, SeasonsResponse, ShiftChart, Standing, StandingsResponse,
+    Team, TeamScheduleResponse, WeeklyScheduleResponse,
 };
 use std::collections::HashMap;
 
@@ -664,6 +666,138 @@ impl Client {
                 Endpoint::ApiWebV1,
                 &format!(
                     "edge/skater-landing/{}/{}",
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge puck/player-tracking overview stats for a goalie's season.
+    pub async fn edge_goalie_detail(
+        &self,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieDetail, NHLApiError> {
+        let goalie_id = goalie_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-detail/{}/{}/{}",
+                    goalie_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge 5v5 save-percentage detail (per-game) for a goalie's season.
+    pub async fn edge_goalie_5v5_detail(
+        &self,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalie5v5Detail, NHLApiError> {
+        let goalie_id = goalie_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-5v5-detail/{}/{}/{}",
+                    goalie_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge shot-location detail (shot breakdown by rink area) for a goalie's season.
+    pub async fn edge_goalie_shot_location_detail(
+        &self,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieShotLocationDetail, NHLApiError> {
+        let goalie_id = goalie_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-shot-location-detail/{}/{}/{}",
+                    goalie_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets Edge save-percentage detail (per-game, plus aggregated stats) for a goalie's season.
+    ///
+    /// Note the path slug is spelled out (`goalie-save-percentage-detail`),
+    /// not abbreviated to `goalie-save-pctg-detail`.
+    pub async fn edge_goalie_save_pctg_detail(
+        &self,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieSavePctgDetail, NHLApiError> {
+        let goalie_id = goalie_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-save-percentage-detail/{}/{}/{}",
+                    goalie_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the Edge head-to-head comparison composite for a goalie's season.
+    pub async fn edge_goalie_comparison(
+        &self,
+        goalie_id: impl Into<PlayerId>,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieComparison, NHLApiError> {
+        let goalie_id = goalie_id.into();
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-comparison/{}/{}/{}",
+                    goalie_id,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the league-wide Edge goalie leaderboard for a season (no goalie id).
+    pub async fn edge_goalie_landing(
+        &self,
+        season: Season,
+        game_type: GameType,
+    ) -> Result<EdgeGoalieLanding, NHLApiError> {
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "edge/goalie-landing/{}/{}",
                     season.to_api_string(),
                     game_type.to_int()
                 ),

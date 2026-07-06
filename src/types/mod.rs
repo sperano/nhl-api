@@ -16,6 +16,7 @@ pub use common::*;
 // Re-export Edge shared types (`edge::common::*` rather than `edge::*` to avoid
 // colliding the `common` submodule name with `types::common`).
 pub use edge::common::*;
+pub use edge::goalie::*;
 pub use edge::skater::*;
 pub use enums::*;
 pub use game_center::*;
