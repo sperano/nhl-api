@@ -1258,9 +1258,18 @@ mod tests {
         assert_eq!(format!("{}", PlayEventType::Goal), "Goal");
         assert_eq!(format!("{}", PlayEventType::Penalty), "Penalty");
         assert_eq!(format!("{}", PlayEventType::Stoppage), "Stoppage");
-        assert_eq!(format!("{}", PlayEventType::DelayedPenalty), "Delayed Penalty");
-        assert_eq!(format!("{}", PlayEventType::FailedShotAttempt), "Failed Shot Attempt");
-        assert_eq!(format!("{}", PlayEventType::ShootoutComplete), "Shootout Complete");
+        assert_eq!(
+            format!("{}", PlayEventType::DelayedPenalty),
+            "Delayed Penalty"
+        );
+        assert_eq!(
+            format!("{}", PlayEventType::FailedShotAttempt),
+            "Failed Shot Attempt"
+        );
+        assert_eq!(
+            format!("{}", PlayEventType::ShootoutComplete),
+            "Shootout Complete"
+        );
         assert_eq!(format!("{}", PlayEventType::Unknown), "Unknown");
     }
 
