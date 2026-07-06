@@ -371,8 +371,14 @@ pub struct PlayEventDetails {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "yCoord")]
     pub y_coord: Option<i32>,
+    /// `None` when the API returns `""` or omits the field entirely, which
+    /// happens for some play events — see `empty_string_as_none`.
+    #[serde(
+        rename = "zoneCode",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "zoneCode")]
     pub zone_code: Option<ZoneCode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "eventOwnerTeamId")]
@@ -1125,6 +1131,29 @@ mod tests {
         assert_eq!(details.winning_player_id, Some(PlayerId::new(8480002)));
         assert_eq!(details.losing_player_id, Some(PlayerId::new(8478043)));
         assert_eq!(details.zone_code, Some(ZoneCode::Neutral));
+    }
+
+    /// Some play events return `zoneCode: ""`; the field must resolve to
+    /// `None` rather than fail the whole deserialize.
+    #[test]
+    fn test_play_event_details_empty_zone_code() {
+        let json = r#"{"zoneCode": ""}"#;
+
+        let details: PlayEventDetails = serde_json::from_str(json).unwrap();
+        assert_eq!(details.zone_code, None);
+    }
+
+    #[test]
+    fn test_play_event_details_missing_zone_code() {
+        let details: PlayEventDetails = serde_json::from_str("{}").unwrap();
+        assert_eq!(details.zone_code, None);
+    }
+
+    #[test]
+    fn test_play_event_details_serialize_omits_none_zone_code() {
+        let details: PlayEventDetails = serde_json::from_str("{}").unwrap();
+        let json = serde_json::to_string(&details).unwrap();
+        assert_eq!(json, "{}", "expected zoneCode (and all else) to be omitted");
     }
 
     /// Old games (pre-1920s) lack `homeTeamDefendingSide` data.

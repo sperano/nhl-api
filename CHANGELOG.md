@@ -102,3 +102,5 @@ client. Several changes are breaking; see below.
   `EdgeTeamDetail`, and ~55 related structs) are now re-exported from the crate root. They were
   previously only reachable through the private `types` module, so callers could not name the
   return type of any of the 22 `edge_*` client methods.
+- `PlayEventDetails.zone_code` now tolerates an empty-string `zoneCode` (resolving to `None`)
+  instead of failing deserialization.
