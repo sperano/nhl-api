@@ -3,7 +3,9 @@ use std::fmt;
 
 use super::boxscore::{BoxscoreTeam, GameClock, PeriodDescriptor, SpecialEvent, TvBroadcast};
 use super::common::LocalizedString;
-use super::enums::{DefendingSide, GameScheduleState, PeriodType, Position, ZoneCode};
+use super::enums::{
+    empty_string_as_none, DefendingSide, GameScheduleState, PeriodType, Position, ZoneCode,
+};
 use super::game_state::GameState;
 use super::game_type::GameType;
 
@@ -278,8 +280,16 @@ impl PlayByPlay {
 /// Game outcome information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameOutcome {
-    #[serde(rename = "lastPeriodType")]
-    pub last_period_type: PeriodType,
+    /// `None` when the API returns `""` or omits the field entirely, which
+    /// happens for unplayed games (e.g. future season-series entries) —
+    /// see `empty_string_as_none`.
+    #[serde(
+        rename = "lastPeriodType",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_period_type: Option<PeriodType>,
 }
 
 /// Individual play event in the game
@@ -295,8 +305,14 @@ pub struct PlayEvent {
     pub time_remaining: String,
     #[serde(rename = "situationCode")]
     pub situation_code: String,
-    #[serde(rename = "homeTeamDefendingSide")]
-    pub home_team_defending_side: DefendingSide,
+    /// `None` for historical games that lack defending-side data.
+    #[serde(
+        rename = "homeTeamDefendingSide",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub home_team_defending_side: Option<DefendingSide>,
     #[serde(rename = "typeCode")]
     pub type_code: i32,
     #[serde(rename = "typeDescKey")]
@@ -443,8 +459,15 @@ pub struct RosterSpot {
     pub last_name: LocalizedString,
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
-    #[serde(rename = "positionCode")]
-    pub position: Position,
+    /// `None` for historical roster data where the API returns an empty
+    /// position code.
+    #[serde(
+        rename = "positionCode",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub headshot: String,
 }
 
@@ -586,8 +609,14 @@ pub struct GoalSummary {
     pub goal_modifier: String,
     #[serde(default)]
     pub assists: Vec<AssistSummary>,
-    #[serde(rename = "homeTeamDefendingSide")]
-    pub home_team_defending_side: DefendingSide,
+    /// `None` for historical games that lack defending-side data.
+    #[serde(
+        rename = "homeTeamDefendingSide",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub home_team_defending_side: Option<DefendingSide>,
     #[serde(rename = "isHome")]
     pub is_home: bool,
 }
@@ -640,7 +669,10 @@ pub struct ThreeStar {
     pub name: LocalizedString,
     #[serde(rename = "sweaterNo")]
     pub sweater_no: i32,
-    pub position: Position,
+    /// `None` for historical data where the API returns an empty position code.
+    #[serde(deserialize_with = "empty_string_as_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     // Skater stats
     #[serde(skip_serializing_if = "Option::is_none")]
     pub goals: Option<i32>,
@@ -1067,6 +1099,142 @@ mod tests {
         assert_eq!(details.zone_code, Some(ZoneCode::Neutral));
     }
 
+    /// Old games (pre-1920s) lack `homeTeamDefendingSide` data.
+    #[test]
+    fn test_play_event_empty_defending_side() {
+        let json = r#"{
+            "eventId": 1,
+            "periodDescriptor": {
+                "number": 1,
+                "periodType": "REG",
+                "maxRegulationPeriods": 3
+            },
+            "timeInPeriod": "00:00",
+            "timeRemaining": "20:00",
+            "situationCode": "1551",
+            "homeTeamDefendingSide": "",
+            "typeCode": 502,
+            "typeDescKey": "faceoff",
+            "sortOrder": 1
+        }"#;
+
+        let event: PlayEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.home_team_defending_side, None);
+    }
+
+    #[test]
+    fn test_play_event_missing_defending_side() {
+        let json = r#"{
+            "eventId": 1,
+            "periodDescriptor": {
+                "number": 1,
+                "periodType": "REG",
+                "maxRegulationPeriods": 3
+            },
+            "timeInPeriod": "00:00",
+            "timeRemaining": "20:00",
+            "situationCode": "1551",
+            "typeCode": 502,
+            "typeDescKey": "faceoff",
+            "sortOrder": 1
+        }"#;
+
+        let event: PlayEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.home_team_defending_side, None);
+    }
+
+    /// Builds a minimal, valid `GoalSummary` JSON fixture with the given
+    /// `homeTeamDefendingSide` fragment spliced in (e.g. `"\"left\""`,
+    /// `"\"\""`, or `""` to omit the key entirely).
+    fn goal_summary_json_with_defending_side(defending_side_field: &str) -> String {
+        format!(
+            r#"{{
+                "situationCode": "1551",
+                "eventId": 1,
+                "strength": "ev",
+                "playerId": 8478402,
+                "firstName": {{"default": "Connor"}},
+                "lastName": {{"default": "McDavid"}},
+                "name": {{"default": "C. McDavid"}},
+                "teamAbbrev": {{"default": "EDM"}},
+                "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+                "awayScore": 1,
+                "homeScore": 0,
+                "timeInPeriod": "10:00",
+                "shotType": "wrist",
+                "goalModifier": "",
+                {defending_side}
+                "isHome": false
+            }}"#,
+            defending_side = defending_side_field,
+        )
+    }
+
+    #[test]
+    fn test_goal_summary_real_defending_side() {
+        let json = goal_summary_json_with_defending_side(r#""homeTeamDefendingSide": "left","#);
+        let goal: GoalSummary = serde_json::from_str(&json).unwrap();
+        assert_eq!(goal.home_team_defending_side, Some(DefendingSide::Left));
+    }
+
+    #[test]
+    fn test_goal_summary_empty_defending_side() {
+        let json = goal_summary_json_with_defending_side(r#""homeTeamDefendingSide": "","#);
+        let goal: GoalSummary = serde_json::from_str(&json).unwrap();
+        assert_eq!(goal.home_team_defending_side, None);
+    }
+
+    #[test]
+    fn test_goal_summary_missing_defending_side() {
+        let json = goal_summary_json_with_defending_side("");
+        let goal: GoalSummary = serde_json::from_str(&json).unwrap();
+        assert_eq!(goal.home_team_defending_side, None);
+    }
+
+    #[test]
+    fn test_three_star_position_real_empty_and_missing() {
+        let real: ThreeStar = serde_json::from_str(
+            r#"{
+                "star": 1,
+                "playerId": 8478402,
+                "teamAbbrev": "EDM",
+                "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
+                "name": {"default": "C. McDavid"},
+                "sweaterNo": 97,
+                "position": "C"
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(real.position, Some(Position::Center));
+
+        let empty: ThreeStar = serde_json::from_str(
+            r#"{
+                "star": 1,
+                "playerId": 8478402,
+                "teamAbbrev": "EDM",
+                "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
+                "name": {"default": "C. McDavid"},
+                "sweaterNo": 97,
+                "position": ""
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(empty.position, None);
+
+        let missing: ThreeStar = serde_json::from_str(
+            r#"{
+                "star": 1,
+                "playerId": 8478402,
+                "teamAbbrev": "EDM",
+                "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
+                "name": {"default": "C. McDavid"},
+                "sweaterNo": 97
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(missing.position, None);
+    }
+
     #[test]
     fn test_roster_spot_deserialization() {
         let json = r#"{
@@ -1085,14 +1253,69 @@ mod tests {
         assert_eq!(roster_spot.first_name.default, "Jacob");
         assert_eq!(roster_spot.last_name.default, "Markstrom");
         assert_eq!(roster_spot.sweater_number, 25);
-        assert_eq!(roster_spot.position, Position::Goalie);
+        assert_eq!(roster_spot.position, Some(Position::Goalie));
+    }
+
+    /// Historical roster spots (e.g. 1988 BOS) return an empty position code.
+    #[test]
+    fn test_roster_spot_empty_position() {
+        let json = r#"{
+            "teamId": 1,
+            "playerId": 8474593,
+            "firstName": {"default": "Jacob"},
+            "lastName": {"default": "Markstrom"},
+            "sweaterNumber": 25,
+            "positionCode": "",
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/NJD/8474593.png"
+        }"#;
+
+        let roster_spot: RosterSpot = serde_json::from_str(json).unwrap();
+        assert_eq!(roster_spot.position, None);
+    }
+
+    #[test]
+    fn test_roster_spot_missing_position() {
+        let json = r#"{
+            "teamId": 1,
+            "playerId": 8474593,
+            "firstName": {"default": "Jacob"},
+            "lastName": {"default": "Markstrom"},
+            "sweaterNumber": 25,
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/NJD/8474593.png"
+        }"#;
+
+        let roster_spot: RosterSpot = serde_json::from_str(json).unwrap();
+        assert_eq!(roster_spot.position, None);
     }
 
     #[test]
     fn test_game_outcome_deserialization() {
         let json = r#"{"lastPeriodType": "REG"}"#;
         let outcome: GameOutcome = serde_json::from_str(json).unwrap();
-        assert_eq!(outcome.last_period_type, PeriodType::Regulation);
+        assert_eq!(outcome.last_period_type, Some(PeriodType::Regulation));
+    }
+
+    /// Unplayed games return `lastPeriodType: ""`.
+    #[test]
+    fn test_game_outcome_empty_last_period_type() {
+        let json = r#"{"lastPeriodType": ""}"#;
+        let outcome: GameOutcome = serde_json::from_str(json).unwrap();
+        assert_eq!(outcome.last_period_type, None);
+    }
+
+    #[test]
+    fn test_game_outcome_missing_last_period_type() {
+        let json = r#"{}"#;
+        let outcome: GameOutcome = serde_json::from_str(json).unwrap();
+        assert_eq!(outcome.last_period_type, None);
+    }
+
+    #[test]
+    fn test_game_outcome_serialize_omits_none() {
+        let outcome = GameOutcome {
+            last_period_type: None,
+        };
+        assert_eq!(serde_json::to_string(&outcome).unwrap(), "{}");
     }
 
     #[test]
@@ -1334,5 +1557,81 @@ mod tests {
     fn test_game_situation_display() {
         let situation = GameSituation::from_code("1551").unwrap();
         assert_eq!(format!("{}", situation), "5v5");
+    }
+
+    /// Regression test for the 2.3 fix: a season series containing an
+    /// unplayed/future game (empty `periodType`/`lastPeriodType`) used to
+    /// fail deserialization of the whole `SeasonSeriesMatchup` response.
+    #[test]
+    fn test_season_series_matchup_unplayed_game_deserialization() {
+        let json = r#"{
+            "seasonSeries": [
+                {
+                    "id": 2024020100,
+                    "season": 20242025,
+                    "gameType": 2,
+                    "gameDate": "2024-11-01",
+                    "startTimeUTC": "2024-11-01T23:00:00Z",
+                    "easternUTCOffset": "-04:00",
+                    "venueUTCOffset": "-04:00",
+                    "gameState": "OFF",
+                    "gameScheduleState": "OK",
+                    "awayTeam": {"id": 1, "abbrev": "NJD", "logo": "https://a", "score": 3},
+                    "homeTeam": {"id": 7, "abbrev": "BUF", "logo": "https://b", "score": 2},
+                    "periodDescriptor": {
+                        "number": 3,
+                        "periodType": "REG",
+                        "maxRegulationPeriods": 3
+                    },
+                    "gameCenterLink": "/gamecenter/2024020100",
+                    "gameOutcome": {"lastPeriodType": "REG"}
+                },
+                {
+                    "id": 2024020250,
+                    "season": 20242025,
+                    "gameType": 2,
+                    "gameDate": "2025-02-14",
+                    "startTimeUTC": "2025-02-14T23:00:00Z",
+                    "easternUTCOffset": "-05:00",
+                    "venueUTCOffset": "-05:00",
+                    "gameState": "FUT",
+                    "gameScheduleState": "OK",
+                    "awayTeam": {"id": 1, "abbrev": "NJD", "logo": "https://a", "score": 0},
+                    "homeTeam": {"id": 7, "abbrev": "BUF", "logo": "https://b", "score": 0},
+                    "periodDescriptor": {
+                        "number": 0,
+                        "periodType": "",
+                        "maxRegulationPeriods": 0
+                    },
+                    "gameCenterLink": "/gamecenter/2024020250",
+                    "gameOutcome": {"lastPeriodType": ""}
+                }
+            ],
+            "seasonSeriesWins": {"awayTeamWins": 1, "homeTeamWins": 0},
+            "gameInfo": {
+                "referees": [{"default": "J. Referee"}],
+                "linesmen": [{"default": "L. Linesman"}],
+                "awayTeam": {"headCoach": {"default": "Coach A"}, "scratches": []},
+                "homeTeam": {"headCoach": {"default": "Coach B"}, "scratches": []}
+            }
+        }"#;
+
+        let matchup: SeasonSeriesMatchup = serde_json::from_str(json).unwrap();
+        assert_eq!(matchup.season_series.len(), 2);
+
+        let played = &matchup.season_series[0];
+        assert_eq!(
+            played.period_descriptor.period_type,
+            Some(PeriodType::Regulation)
+        );
+        assert_eq!(
+            played.game_outcome.last_period_type,
+            Some(PeriodType::Regulation)
+        );
+
+        let unplayed = &matchup.season_series[1];
+        assert_eq!(unplayed.game_state, GameState::Future);
+        assert_eq!(unplayed.period_descriptor.period_type, None);
+        assert_eq!(unplayed.game_outcome.last_period_type, None);
     }
 }

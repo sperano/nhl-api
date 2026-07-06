@@ -8,6 +8,10 @@
 //! `macros.rs`), which gives every enum a uniform code/name/Display/FromStr/serde
 //! surface and routes unknown values through the shared [`UnknownEnumValue`] error.
 
+use std::fmt;
+use std::str::FromStr;
+
+use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 
 pub(crate) mod macros;
@@ -42,4 +46,97 @@ pub struct UnknownEnumValue {
     pub enum_name: &'static str,
     /// The unrecognized raw value as received from the API.
     pub value: String,
+}
+
+/// Deserializes a string-backed enum field, treating `""` (and a missing
+/// field, via `#[serde(default)]`) as `None` instead of an `UnknownEnumValue`
+/// error.
+///
+/// The NHL API returns empty-string enum values for historical and
+/// not-yet-played data (e.g. `periodType` on an unplayed season-series game,
+/// `positionCode` on 1980s roster entries). Rather than adopt Go's
+/// zero-value-tolerant enum (deviation #5 in `BACKPORT_PLAN.md`), the
+/// affected *fields* become `Option<T>`: `None` is the honest model for "the
+/// API omitted this", and every other value still goes through `T::FromStr`
+/// so unknown non-empty values keep failing loudly.
+///
+/// Pair with both `default` and `deserialize_with` on the field — `default`
+/// covers the field being absent entirely, this function covers it being
+/// present but empty:
+///
+/// ```ignore
+/// #[serde(deserialize_with = "empty_string_as_none", default)]
+/// #[serde(skip_serializing_if = "Option::is_none")]
+/// pub period_type: Option<PeriodType>,
+/// ```
+pub(crate) fn empty_string_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: FromStr,
+    T::Err: fmt::Display,
+{
+    let raw = Option::<String>::deserialize(deserializer)?;
+    match raw {
+        None => Ok(None),
+        Some(s) if s.is_empty() => Ok(None),
+        Some(s) => s.parse::<T>().map(Some).map_err(serde::de::Error::custom),
+    }
+}
+
+#[cfg(test)]
+mod empty_string_as_none_tests {
+    use super::empty_string_as_none;
+    use super::PeriodType;
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize, PartialEq)]
+    struct Fixture {
+        #[serde(deserialize_with = "empty_string_as_none", default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        period_type: Option<PeriodType>,
+    }
+
+    #[test]
+    fn test_empty_string_as_none_empty_string() {
+        let fixture: Fixture = serde_json::from_str(r#"{"period_type": ""}"#).unwrap();
+        assert_eq!(fixture.period_type, None);
+    }
+
+    #[test]
+    fn test_empty_string_as_none_missing_field() {
+        let fixture: Fixture = serde_json::from_str("{}").unwrap();
+        assert_eq!(fixture.period_type, None);
+    }
+
+    #[test]
+    fn test_empty_string_as_none_real_value() {
+        let fixture: Fixture = serde_json::from_str(r#"{"period_type": "REG"}"#).unwrap();
+        assert_eq!(fixture.period_type, Some(PeriodType::Regulation));
+    }
+
+    #[test]
+    fn test_empty_string_as_none_unknown_value_still_errors() {
+        let err = serde_json::from_str::<Fixture>(r#"{"period_type": "BOGUS"}"#).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("period type") && message.contains("BOGUS"),
+            "message missing enum name or value: {message}"
+        );
+    }
+
+    #[test]
+    fn test_empty_string_as_none_serialize_skips_none() {
+        let fixture = Fixture { period_type: None };
+        assert_eq!(serde_json::to_string(&fixture).unwrap(), "{}");
+    }
+
+    #[test]
+    fn test_empty_string_as_none_serialize_emits_value() {
+        let fixture = Fixture {
+            period_type: Some(PeriodType::Overtime),
+        };
+        assert_eq!(
+            serde_json::to_string(&fixture).unwrap(),
+            r#"{"period_type":"OT"}"#
+        );
+    }
 }

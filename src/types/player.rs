@@ -1,5 +1,5 @@
 use crate::types::common::LocalizedString;
-use crate::types::enums::{Handedness, HomeRoad, Position};
+use crate::types::enums::{empty_string_as_none, Handedness, HomeRoad, Position};
 use crate::types::game_type::GameType;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,10 @@ pub struct PlayerLanding {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sweater_number: Option<i32>,
 
-    pub position: Position,
+    /// `None` when the API returns an empty position code.
+    #[serde(deserialize_with = "empty_string_as_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub headshot: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -41,7 +44,10 @@ pub struct PlayerLanding {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub birth_country: Option<String>,
 
-    pub shoots_catches: Handedness,
+    /// `None` for players with missing handedness data from the API.
+    #[serde(deserialize_with = "empty_string_as_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shoots_catches: Option<Handedness>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub draft_details: Option<DraftDetails>,
@@ -266,8 +272,14 @@ pub struct PlayerSearchResult {
     #[serde(rename = "playerId")]
     pub player_id: String,
     pub name: String,
-    #[serde(rename = "positionCode")]
-    pub position: Position,
+    /// `None` when the API returns an empty position code.
+    #[serde(
+        rename = "positionCode",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team_id: Option<String>,
@@ -357,7 +369,117 @@ mod tests {
         let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
         assert_eq!(result.player_id, "8478402");
         assert_eq!(result.name, "Connor McDavid");
-        assert_eq!(result.position, Position::Center);
+        assert_eq!(result.position, Some(Position::Center));
         assert!(result.active);
+    }
+
+    #[test]
+    fn test_player_search_result_empty_position() {
+        let json = r#"{
+            "playerId": "8478402",
+            "name": "Connor McDavid",
+            "positionCode": "",
+            "active": true
+        }"#;
+
+        let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
+        assert_eq!(result.position, None);
+    }
+
+    #[test]
+    fn test_player_search_result_missing_position() {
+        let json = r#"{
+            "playerId": "8478402",
+            "name": "Connor McDavid",
+            "active": true
+        }"#;
+
+        let result: PlayerSearchResult = serde_json::from_str(json).unwrap();
+        assert_eq!(result.position, None);
+    }
+
+    /// The player landing endpoint returns empty `position`/`shootsCatches`
+    /// strings for some historical players and players with missing bio data.
+    #[test]
+    fn test_player_landing_empty_position_and_handedness() {
+        let json = r#"{
+            "playerId": 8449312,
+            "isActive": false,
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "position": "",
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "birthDate": "1950-01-01",
+            "shootsCatches": ""
+        }"#;
+
+        let landing: PlayerLanding = serde_json::from_str(json).unwrap();
+        assert_eq!(landing.position, None);
+        assert_eq!(landing.shoots_catches, None);
+    }
+
+    #[test]
+    fn test_player_landing_missing_position_and_handedness() {
+        let json = r#"{
+            "playerId": 8449312,
+            "isActive": false,
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "birthDate": "1950-01-01"
+        }"#;
+
+        let landing: PlayerLanding = serde_json::from_str(json).unwrap();
+        assert_eq!(landing.position, None);
+        assert_eq!(landing.shoots_catches, None);
+    }
+
+    #[test]
+    fn test_player_landing_real_position_and_handedness() {
+        let json = r#"{
+            "playerId": 8478402,
+            "isActive": true,
+            "firstName": {"default": "Connor"},
+            "lastName": {"default": "McDavid"},
+            "position": "C",
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "heightInInches": 73,
+            "weightInPounds": 193,
+            "birthDate": "1997-01-13",
+            "shootsCatches": "L"
+        }"#;
+
+        let landing: PlayerLanding = serde_json::from_str(json).unwrap();
+        assert_eq!(landing.position, Some(Position::Center));
+        assert_eq!(landing.shoots_catches, Some(Handedness::Left));
+    }
+
+    #[test]
+    fn test_player_landing_serialize_omits_none_position_and_handedness() {
+        let json = r#"{
+            "playerId": 8449312,
+            "isActive": false,
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "birthDate": "1950-01-01"
+        }"#;
+
+        let landing: PlayerLanding = serde_json::from_str(json).unwrap();
+        let serialized = serde_json::to_string(&landing).unwrap();
+        assert!(
+            !serialized.contains("\"position\""),
+            "expected position to be omitted: {serialized}"
+        );
+        assert!(
+            !serialized.contains("shootsCatches"),
+            "expected shootsCatches to be omitted: {serialized}"
+        );
     }
 }

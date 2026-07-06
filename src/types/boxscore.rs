@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::common::LocalizedString;
-use super::enums::{GoalieDecision, PeriodType, Position};
+use super::enums::{empty_string_as_none, GoalieDecision, PeriodType, Position};
 use super::game_state::GameState;
 use super::game_type::GameType;
 
@@ -70,10 +70,19 @@ pub struct SpecialEvent {
 /// Period descriptor with game period information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PeriodDescriptor {
+    #[serde(default)]
     pub number: i32,
-    #[serde(rename = "periodType")]
-    pub period_type: PeriodType,
-    #[serde(rename = "maxRegulationPeriods")]
+    /// `None` when the API returns `""` or omits the field entirely, which
+    /// happens for unplayed games (e.g. future season-series entries) —
+    /// see `empty_string_as_none`.
+    #[serde(
+        rename = "periodType",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub period_type: Option<PeriodType>,
+    #[serde(rename = "maxRegulationPeriods", default)]
     pub max_regulation_periods: i32,
 }
 
@@ -170,7 +179,7 @@ impl TeamGameStats {
     fn add_faceoff_stats(team_stats: &mut TeamGameStats, skater: &SkaterStats) {
         // TODO: Revisit this logic - not sure only counting centers for faceoffs is correct.
         // Wings can also take faceoffs in certain situations.
-        if skater.position == Position::Center && skater.faceoff_winning_pctg > 0.0 {
+        if skater.position == Some(Position::Center) && skater.faceoff_winning_pctg > 0.0 {
             // Estimate total faceoffs using shifts as a proxy for faceoff participation
             let estimated_faceoffs = skater.shifts;
             team_stats.faceoff_total += estimated_faceoffs;
@@ -214,7 +223,10 @@ pub struct SkaterStats {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
-    pub position: Position,
+    /// `None` for historical data where the API returns an empty position code.
+    #[serde(deserialize_with = "empty_string_as_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub goals: i32,
     pub assists: i32,
     pub points: i32,
@@ -243,7 +255,10 @@ pub struct GoalieStats {
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
     pub name: LocalizedString,
-    pub position: Position,
+    /// `None` for historical data where the API returns an empty position code.
+    #[serde(deserialize_with = "empty_string_as_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     #[serde(rename = "evenStrengthShotsAgainst")]
     pub even_strength_shots_against: String,
     #[serde(rename = "powerPlayShotsAgainst")]
@@ -384,7 +399,7 @@ mod tests {
         assert_eq!(stats.player_id, 8480002);
         assert_eq!(stats.sweater_number, 13);
         assert_eq!(stats.name.default, "N. Hischier");
-        assert_eq!(stats.position, Position::Center);
+        assert_eq!(stats.position, Some(Position::Center));
         assert_eq!(stats.goals, 1);
         assert_eq!(stats.assists, 2);
         assert_eq!(stats.points, 3);
@@ -420,13 +435,120 @@ mod tests {
         assert_eq!(stats.player_id, 8474593);
         assert_eq!(stats.sweater_number, 25);
         assert_eq!(stats.name.default, "J. Markstrom");
-        assert_eq!(stats.position, Position::Goalie);
+        assert_eq!(stats.position, Some(Position::Goalie));
         assert_eq!(stats.save_pctg, Some(0.967));
         assert_eq!(stats.goals_against, 1);
         assert_eq!(stats.saves, 30);
         assert_eq!(stats.shots_against, 31);
         assert_eq!(stats.starter, Some(true));
         assert_eq!(stats.decision, Some(GoalieDecision::Win));
+    }
+
+    /// Historical player stats sometimes carry an empty position code.
+    #[test]
+    fn test_skater_stats_empty_position() {
+        let json = r#"{
+            "playerId": 8480000,
+            "sweaterNumber": 99,
+            "name": {"default": "Historical Player"},
+            "position": "",
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "pim": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "sog": 0,
+            "faceoffWinningPctg": 0.0,
+            "toi": "00:00",
+            "blockedShots": 0,
+            "shifts": 0,
+            "giveaways": 0,
+            "takeaways": 0
+        }"#;
+
+        let stats: SkaterStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.position, None);
+    }
+
+    #[test]
+    fn test_skater_stats_missing_position() {
+        let json = r#"{
+            "playerId": 8480000,
+            "sweaterNumber": 99,
+            "name": {"default": "Historical Player"},
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "pim": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "sog": 0,
+            "faceoffWinningPctg": 0.0,
+            "toi": "00:00",
+            "blockedShots": 0,
+            "shifts": 0,
+            "giveaways": 0,
+            "takeaways": 0
+        }"#;
+
+        let stats: SkaterStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.position, None);
+    }
+
+    #[test]
+    fn test_goalie_stats_empty_position() {
+        let json = r#"{
+            "playerId": 8474593,
+            "sweaterNumber": 25,
+            "name": {"default": "Historical Goalie"},
+            "position": "",
+            "evenStrengthShotsAgainst": "0/0",
+            "powerPlayShotsAgainst": "0/0",
+            "shorthandedShotsAgainst": "0/0",
+            "saveShotsAgainst": "0/0",
+            "evenStrengthGoalsAgainst": 0,
+            "powerPlayGoalsAgainst": 0,
+            "shorthandedGoalsAgainst": 0,
+            "goalsAgainst": 0,
+            "toi": "00:00",
+            "shotsAgainst": 0,
+            "saves": 0
+        }"#;
+
+        let stats: GoalieStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.position, None);
+    }
+
+    #[test]
+    fn test_skater_stats_position_serialize_omits_none() {
+        let json = r#"{
+            "playerId": 1,
+            "sweaterNumber": 1,
+            "name": {"default": "Test"},
+            "goals": 0,
+            "assists": 0,
+            "points": 0,
+            "plusMinus": 0,
+            "pim": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "sog": 0,
+            "faceoffWinningPctg": 0.0,
+            "toi": "00:00",
+            "blockedShots": 0,
+            "shifts": 0,
+            "giveaways": 0,
+            "takeaways": 0
+        }"#;
+        let stats: SkaterStats = serde_json::from_str(json).unwrap();
+        let serialized = serde_json::to_string(&stats).unwrap();
+        assert!(
+            !serialized.contains("position"),
+            "expected position to be omitted: {serialized}"
+        );
     }
 
     #[test]
@@ -471,7 +593,7 @@ mod tests {
 
         let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
         assert_eq!(period.number, 3);
-        assert_eq!(period.period_type, PeriodType::Regulation);
+        assert_eq!(period.period_type, Some(PeriodType::Regulation));
         assert_eq!(period.max_regulation_periods, 3);
     }
 
@@ -485,7 +607,57 @@ mod tests {
 
         let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
         assert_eq!(period.number, 4);
-        assert_eq!(period.period_type, PeriodType::Overtime);
+        assert_eq!(period.period_type, Some(PeriodType::Overtime));
+    }
+
+    /// Unplayed season-series games return `periodType: ""` (2.3 fix); the
+    /// field must resolve to `None` rather than fail the whole deserialize.
+    #[test]
+    fn test_period_descriptor_empty_period_type() {
+        let json = r#"{
+            "number": 0,
+            "periodType": "",
+            "maxRegulationPeriods": 0
+        }"#;
+
+        let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
+        assert_eq!(period.period_type, None);
+    }
+
+    #[test]
+    fn test_period_descriptor_missing_period_type() {
+        let json = r#"{
+            "number": 0,
+            "maxRegulationPeriods": 0
+        }"#;
+
+        let period: PeriodDescriptor = serde_json::from_str(json).unwrap();
+        assert_eq!(period.period_type, None);
+    }
+
+    /// Unplayed season-series games return a fully empty `periodDescriptor: {}`
+    /// (no keys at all); `number` and `maxRegulationPeriods` must default to 0
+    /// rather than fail deserialization the way `period_type` alone would.
+    #[test]
+    fn test_period_descriptor_fully_empty_object() {
+        let period: PeriodDescriptor = serde_json::from_str("{}").unwrap();
+        assert_eq!(period.number, 0);
+        assert_eq!(period.period_type, None);
+        assert_eq!(period.max_regulation_periods, 0);
+    }
+
+    #[test]
+    fn test_period_descriptor_serialize_omits_none_period_type() {
+        let period = PeriodDescriptor {
+            number: 0,
+            period_type: None,
+            max_regulation_periods: 0,
+        };
+        let json = serde_json::to_string(&period).unwrap();
+        assert!(
+            !json.contains("periodType"),
+            "expected periodType to be omitted: {json}"
+        );
     }
 
     #[test]
@@ -811,7 +983,7 @@ mod tests {
                 name: LocalizedString {
                     default: "Player 1".to_string(),
                 },
-                position: Position::Center,
+                position: Some(Position::Center),
                 goals: 1,
                 assists: 2,
                 points: 3,
@@ -833,7 +1005,7 @@ mod tests {
                 name: LocalizedString {
                     default: "Player 2".to_string(),
                 },
-                position: Position::Defense,
+                position: Some(Position::Defense),
                 goals: 0,
                 assists: 1,
                 points: 1,
@@ -873,7 +1045,7 @@ mod tests {
                 name: LocalizedString {
                     default: "Goalie 1".to_string(),
                 },
-                position: Position::Goalie,
+                position: Some(Position::Goalie),
                 even_strength_shots_against: "20/22".to_string(),
                 power_play_shots_against: "3/5".to_string(),
                 shorthanded_shots_against: "0/0".to_string(),

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::enums::{Handedness, Position};
+use super::enums::{empty_string_as_none, Handedness, Position};
 
 /// Localized string (NHL API returns {default: "value"})
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -89,10 +89,23 @@ pub struct RosterPlayer {
     pub last_name: LocalizedString,
     #[serde(rename = "sweaterNumber")]
     pub sweater_number: i32,
-    #[serde(rename = "positionCode")]
-    pub position: Position,
-    #[serde(rename = "shootsCatches")]
-    pub shoots_catches: Handedness,
+    /// `None` for historical roster entries (e.g. 1988 BOS) where the API
+    /// returns an empty position code.
+    #[serde(
+        rename = "positionCode",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
+    /// `None` for players with missing handedness data from the API.
+    #[serde(
+        rename = "shootsCatches",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shoots_catches: Option<Handedness>,
     #[serde(rename = "heightInInches")]
     pub height_in_inches: i32,
     #[serde(rename = "weightInPounds")]
@@ -274,5 +287,105 @@ mod tests {
         };
 
         assert_eq!(team.to_string(), "Buffalo Sabres (BUF)");
+    }
+
+    /// 1988 BOS-style historical roster entries return empty position/handedness codes.
+    #[test]
+    fn test_roster_player_empty_position_and_handedness() {
+        let json = r#"{
+            "id": 1,
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "sweaterNumber": 9,
+            "positionCode": "",
+            "shootsCatches": "",
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "heightInCentimeters": 183,
+            "weightInKilograms": 82,
+            "birthDate": "1960-01-01",
+            "birthCity": {"default": "Boston"},
+            "birthCountry": "USA"
+        }"#;
+
+        let player: RosterPlayer = serde_json::from_str(json).unwrap();
+        assert_eq!(player.position, None);
+        assert_eq!(player.shoots_catches, None);
+    }
+
+    #[test]
+    fn test_roster_player_missing_position_and_handedness() {
+        let json = r#"{
+            "id": 1,
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "sweaterNumber": 9,
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "heightInCentimeters": 183,
+            "weightInKilograms": 82,
+            "birthDate": "1960-01-01",
+            "birthCity": {"default": "Boston"},
+            "birthCountry": "USA"
+        }"#;
+
+        let player: RosterPlayer = serde_json::from_str(json).unwrap();
+        assert_eq!(player.position, None);
+        assert_eq!(player.shoots_catches, None);
+    }
+
+    #[test]
+    fn test_roster_player_real_position_and_handedness() {
+        let json = r#"{
+            "id": 1,
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "firstName": {"default": "Connor"},
+            "lastName": {"default": "McDavid"},
+            "sweaterNumber": 97,
+            "positionCode": "C",
+            "shootsCatches": "L",
+            "heightInInches": 73,
+            "weightInPounds": 193,
+            "heightInCentimeters": 185,
+            "weightInKilograms": 88,
+            "birthDate": "1997-01-13",
+            "birthCity": {"default": "Richmond Hill"},
+            "birthCountry": "CAN"
+        }"#;
+
+        let player: RosterPlayer = serde_json::from_str(json).unwrap();
+        assert_eq!(player.position, Some(Position::Center));
+        assert_eq!(player.shoots_catches, Some(Handedness::Left));
+    }
+
+    #[test]
+    fn test_roster_player_serialize_omits_none_position_and_handedness() {
+        let json = r#"{
+            "id": 1,
+            "headshot": "https://assets.nhle.com/mugs/nhl/default.png",
+            "firstName": {"default": "Historical"},
+            "lastName": {"default": "Player"},
+            "sweaterNumber": 9,
+            "heightInInches": 72,
+            "weightInPounds": 180,
+            "heightInCentimeters": 183,
+            "weightInKilograms": 82,
+            "birthDate": "1960-01-01",
+            "birthCity": {"default": "Boston"},
+            "birthCountry": "USA"
+        }"#;
+
+        let player: RosterPlayer = serde_json::from_str(json).unwrap();
+        let serialized = serde_json::to_string(&player).unwrap();
+        assert!(
+            !serialized.contains("positionCode"),
+            "expected positionCode to be omitted: {serialized}"
+        );
+        assert!(
+            !serialized.contains("shootsCatches"),
+            "expected shootsCatches to be omitted: {serialized}"
+        );
     }
 }

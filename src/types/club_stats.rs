@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use super::common::LocalizedString;
-use super::enums::Position;
+use super::enums::{empty_string_as_none, Position};
 use super::game_type::GameType;
 
 /// Skater season statistics for a team
@@ -15,8 +15,14 @@ pub struct ClubSkaterStats {
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
-    #[serde(rename = "positionCode")]
-    pub position: Position,
+    /// `None` for historical data where the API returns an empty position code.
+    #[serde(
+        rename = "positionCode",
+        deserialize_with = "empty_string_as_none",
+        default
+    )]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     #[serde(rename = "gamesPlayed")]
     pub games_played: i32,
     pub goals: i32,
@@ -208,13 +214,72 @@ mod tests {
         assert_eq!(stats.player_id, 8475233);
         assert_eq!(stats.first_name.default, "David");
         assert_eq!(stats.last_name.default, "Savard");
-        assert_eq!(stats.position, Position::Defense);
+        assert_eq!(stats.position, Some(Position::Defense));
         assert_eq!(stats.games_played, 75);
         assert_eq!(stats.goals, 1);
         assert_eq!(stats.assists, 14);
         assert_eq!(stats.points, 15);
         assert_eq!(stats.plus_minus, -8);
         assert_eq!(stats.shots, 48);
+    }
+
+    /// Historical club stats data (some older seasons) return an empty
+    /// position code.
+    #[test]
+    fn test_club_skater_stats_empty_position() {
+        let json = r#"{
+            "playerId": 8475233,
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
+            "firstName": {"default": "David"},
+            "lastName": {"default": "Savard"},
+            "positionCode": "",
+            "gamesPlayed": 75,
+            "goals": 1,
+            "assists": 14,
+            "points": 15,
+            "plusMinus": -8,
+            "penaltyMinutes": 36,
+            "powerPlayGoals": 0,
+            "shorthandedGoals": 0,
+            "gameWinningGoals": 0,
+            "overtimeGoals": 0,
+            "shots": 48,
+            "shootingPctg": 0.020833,
+            "avgTimeOnIcePerGame": 995.36,
+            "avgShiftsPerGame": 19.84,
+            "faceoffWinPctg": 0.0
+        }"#;
+
+        let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.position, None);
+    }
+
+    #[test]
+    fn test_club_skater_stats_missing_position() {
+        let json = r#"{
+            "playerId": 8475233,
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
+            "firstName": {"default": "David"},
+            "lastName": {"default": "Savard"},
+            "gamesPlayed": 75,
+            "goals": 1,
+            "assists": 14,
+            "points": 15,
+            "plusMinus": -8,
+            "penaltyMinutes": 36,
+            "powerPlayGoals": 0,
+            "shorthandedGoals": 0,
+            "gameWinningGoals": 0,
+            "overtimeGoals": 0,
+            "shots": 48,
+            "shootingPctg": 0.020833,
+            "avgTimeOnIcePerGame": 995.36,
+            "avgShiftsPerGame": 19.84,
+            "faceoffWinPctg": 0.0
+        }"#;
+
+        let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
+        assert_eq!(stats.position, None);
     }
 
     #[test]
@@ -363,7 +428,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position: Position::Defense,
+            position: Some(Position::Defense),
             games_played: 75,
             goals: 1,
             assists: 14,
@@ -498,7 +563,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position: Position::Defense,
+            position: Some(Position::Defense),
             games_played: 75,
             goals: 1,
             assists: 14,
@@ -532,7 +597,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position: Position::Defense,
+            position: Some(Position::Defense),
             games_played: 75,
             goals: 1,
             assists: 14,
@@ -725,7 +790,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position: Position::Defense,
+            position: Some(Position::Defense),
             games_played: 75,
             goals: 1,
             assists: 14,
@@ -814,7 +879,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "Savard".to_string(),
             },
-            position: Position::Defense,
+            position: Some(Position::Defense),
             games_played: 75,
             goals: 1,
             assists: 14,
