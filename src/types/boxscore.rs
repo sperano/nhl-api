@@ -143,7 +143,6 @@ pub struct TeamGameStats {
     pub faceoff_wins: i32,
     pub faceoff_total: i32,
     pub power_play_goals: i32,
-    pub power_play_opportunities: i32,
     pub penalty_minutes: i32,
     pub hits: i32,
     pub blocked_shots: i32,
@@ -193,22 +192,12 @@ impl TeamGameStats {
             if let Some(pim) = goalie.pim {
                 team_stats.penalty_minutes += pim;
             }
-            // Count power play opportunities from goals against
-            team_stats.power_play_opportunities += goalie.power_play_goals_against;
         }
     }
 
     pub fn faceoff_percentage(&self) -> f64 {
         if self.faceoff_total > 0 {
             (self.faceoff_wins as f64 / self.faceoff_total as f64) * 100.0
-        } else {
-            0.0
-        }
-    }
-
-    pub fn power_play_percentage(&self) -> f64 {
-        if self.power_play_opportunities > 0 {
-            (self.power_play_goals as f64 / self.power_play_opportunities as f64) * 100.0
         } else {
             0.0
         }
@@ -1066,7 +1055,6 @@ mod tests {
 
         let game_stats = TeamGameStats::from_team_player_stats(&team_stats);
         assert_eq!(game_stats.penalty_minutes, 2);
-        assert_eq!(game_stats.power_play_opportunities, 2);
     }
 
     #[test]
@@ -1076,7 +1064,6 @@ mod tests {
             faceoff_wins: 0,
             faceoff_total: 0,
             power_play_goals: 1,
-            power_play_opportunities: 4,
             penalty_minutes: 8,
             hits: 25,
             blocked_shots: 15,
@@ -1094,7 +1081,6 @@ mod tests {
             faceoff_wins: 30,
             faceoff_total: 60,
             power_play_goals: 1,
-            power_play_opportunities: 4,
             penalty_minutes: 8,
             hits: 25,
             blocked_shots: 15,
@@ -1103,42 +1089,6 @@ mod tests {
         };
 
         assert_eq!(game_stats.faceoff_percentage(), 50.0);
-    }
-
-    #[test]
-    fn test_team_game_stats_power_play_percentage_zero_opportunities() {
-        let game_stats = TeamGameStats {
-            shots_on_goal: 30,
-            faceoff_wins: 30,
-            faceoff_total: 60,
-            power_play_goals: 0,
-            power_play_opportunities: 0,
-            penalty_minutes: 8,
-            hits: 25,
-            blocked_shots: 15,
-            giveaways: 5,
-            takeaways: 7,
-        };
-
-        assert_eq!(game_stats.power_play_percentage(), 0.0);
-    }
-
-    #[test]
-    fn test_team_game_stats_power_play_percentage() {
-        let game_stats = TeamGameStats {
-            shots_on_goal: 30,
-            faceoff_wins: 30,
-            faceoff_total: 60,
-            power_play_goals: 2,
-            power_play_opportunities: 5,
-            penalty_minutes: 8,
-            hits: 25,
-            blocked_shots: 15,
-            giveaways: 5,
-            takeaways: 7,
-        };
-
-        assert_eq!(game_stats.power_play_percentage(), 40.0);
     }
 
     #[test]
