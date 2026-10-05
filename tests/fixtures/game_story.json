@@ -1,0 +1,148 @@
+{
+  "id": 2024020444,
+  "season": 20242025,
+  "gameType": 2,
+  "limitedScoring": false,
+  "gameDate": "2024-12-09",
+  "venue": {
+    "default": "Madison Square Garden"
+  },
+  "venueLocation": {
+    "default": "New York"
+  },
+  "startTimeUTC": "2024-12-10T00:00:00Z",
+  "easternUTCOffset": "-05:00",
+  "venueUTCOffset": "-05:00",
+  "venueTimezone": "America/New_York",
+  "tvBroadcasts": [],
+  "gameState": "OFF",
+  "gameScheduleState": "OK",
+  "awayTeam": {
+    "id": 16,
+    "name": {
+      "default": "Blackhawks"
+    },
+    "abbrev": "CHI",
+    "placeName": {
+      "default": "Chicago"
+    },
+    "score": 2,
+    "sog": 32,
+    "logo": "https://assets.nhle.com/logos/nhl/svg/CHI_light.svg"
+  },
+  "homeTeam": {
+    "id": 3,
+    "name": {
+      "default": "Rangers"
+    },
+    "abbrev": "NYR",
+    "placeName": {
+      "default": "New York"
+    },
+    "score": 1,
+    "sog": 30,
+    "logo": "https://assets.nhle.com/logos/nhl/svg/NYR_light.svg"
+  },
+  "shootoutInUse": true,
+  "maxPeriods": 5,
+  "regPeriods": 3,
+  "otInUse": true,
+  "tiesInUse": false,
+  "summary": {
+    "scoring": [
+      {
+        "periodDescriptor": {
+          "number": 1,
+          "periodType": "REG",
+          "maxRegulationPeriods": 3
+        },
+        "goals": [
+          {
+            "situationCode": "1551",
+            "eventId": 261,
+            "strength": "ev",
+            "playerId": 8477479,
+            "firstName": {
+              "default": "Tyler"
+            },
+            "lastName": {
+              "default": "Bertuzzi"
+            },
+            "name": {
+              "default": "T. Bertuzzi"
+            },
+            "teamAbbrev": {
+              "default": "CHI"
+            },
+            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/CHI/8477479.png",
+            "goalsToDate": 6,
+            "awayScore": 1,
+            "homeScore": 0,
+            "leadingTeamAbbrev": {
+              "default": "CHI"
+            },
+            "timeInPeriod": "08:10",
+            "shotType": "snap",
+            "goalModifier": "none",
+            "assists": [
+              {
+                "playerId": 8475791,
+                "firstName": {
+                  "default": "Taylor"
+                },
+                "lastName": {
+                  "default": "Hall"
+                },
+                "name": {
+                  "default": "T. Hall"
+                },
+                "assistsToDate": 6,
+                "sweaterNumber": 71
+              }
+            ],
+            "homeTeamDefendingSide": "right",
+            "isHome": false
+          }
+        ]
+      }
+    ],
+    "shootout": [],
+    "threeStars": [
+      {
+        "star": 1,
+        "playerId": 8475791,
+        "teamAbbrev": "CHI",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20242025/CHI/8475791.png",
+        "name": "T. Hall",
+        "sweaterNo": 71,
+        "position": "L",
+        "goals": 1,
+        "assists": 1,
+        "points": 2
+      },
+      {
+        "star": 2,
+        "playerId": 8482821,
+        "teamAbbrev": "CHI",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20242025/CHI/8482821.png",
+        "name": "A. Soderblom",
+        "sweaterNo": 40,
+        "position": "G",
+        "goalsAgainstAverage": 1.0,
+        "savePctg": 0.967
+      },
+      {
+        "star": 3,
+        "playerId": 8482157,
+        "teamAbbrev": "NYR",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20242025/NYR/8482157.png",
+        "name": "W. Cuylle",
+        "sweaterNo": 50,
+        "position": "L",
+        "goals": 1,
+        "assists": 0,
+        "points": 1
+      }
+    ]
+  }
+}
