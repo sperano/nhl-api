@@ -1,7 +1,8 @@
 use crate::date::Season;
-use crate::ids::{GameId, PlayerId, TeamId};
+use crate::ids::{PlayerId, TeamId};
 use crate::types::common::LocalizedString;
-use crate::types::enums::{empty_string_as_none, Handedness, HomeRoad, Position};
+use crate::types::enums::{empty_string_as_none, Handedness, Position};
+use crate::types::game_log::GameLog;
 use crate::types::game_type::GameType;
 use serde::{Deserialize, Serialize};
 
@@ -219,35 +220,6 @@ pub struct Award {
 #[serde(rename_all = "camelCase")]
 pub struct AwardSeason {
     pub season_id: Season,
-}
-
-/// Game log entry for a single game
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct GameLog {
-    pub game_id: GameId,
-    pub game_date: String,
-    pub team_abbrev: String,
-    pub home_road_flag: HomeRoad,
-    pub opponent_abbrev: String,
-    pub goals: i32,
-    pub assists: i32,
-    pub points: i32,
-    pub plus_minus: i32,
-    pub power_play_goals: i32,
-    pub power_play_points: i32,
-    pub shots: i32,
-    pub shifts: i32,
-    pub toi: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub game_winning_goals: Option<i32>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ot_goals: Option<i32>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pim: Option<i32>,
 }
 
 /// Player game log response
@@ -573,55 +545,6 @@ mod tests {
         assert_eq!(award.trophy.default, "Hart Memorial Trophy");
         assert_eq!(award.seasons.len(), 2);
         assert_eq!(award.seasons[0].season_id, Season::new(2014));
-    }
-
-    #[test]
-    fn test_game_log_deserialization() {
-        let json = r#"{
-            "gameId": 2023020001,
-            "gameDate": "2023-10-10",
-            "teamAbbrev": "EDM",
-            "homeRoadFlag": "H",
-            "opponentAbbrev": "VAN",
-            "goals": 1,
-            "assists": 2,
-            "points": 3,
-            "plusMinus": 1,
-            "powerPlayGoals": 0,
-            "powerPlayPoints": 1,
-            "shots": 4,
-            "shifts": 22,
-            "toi": "20:15"
-        }"#;
-
-        let game_log: GameLog = serde_json::from_str(json).unwrap();
-        assert_eq!(game_log.game_id, GameId::new(2023020001));
-        assert_eq!(game_log.goals, 1);
-        assert_eq!(game_log.points, 3);
-    }
-
-    /// `GameLog.game_id` accepts a numeric-string form too (1.3).
-    #[test]
-    fn test_game_log_game_id_deserializes_from_numeric_string() {
-        let json = r#"{
-            "gameId": "2023020001",
-            "gameDate": "2023-10-10",
-            "teamAbbrev": "EDM",
-            "homeRoadFlag": "H",
-            "opponentAbbrev": "VAN",
-            "goals": 0,
-            "assists": 0,
-            "points": 0,
-            "plusMinus": 0,
-            "powerPlayGoals": 0,
-            "powerPlayPoints": 0,
-            "shots": 0,
-            "shifts": 0,
-            "toi": "00:00"
-        }"#;
-
-        let game_log: GameLog = serde_json::from_str(json).unwrap();
-        assert_eq!(game_log.game_id, GameId::new(2023020001));
     }
 
     #[test]

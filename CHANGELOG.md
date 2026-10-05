@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Breaking changes
+
+- **`GameLog` is now an enum** (`src/types/game_log.rs`): `GameLog::Skater(SkaterGameLog)` or
+  `GameLog::Goalie(GoalieGameLog)`. `player_game_log()` previously failed for every goalie with
+  `missing field 'points'`, because the old `GameLog` struct required skater-only fields. The old
+  struct's fields now live on `SkaterGameLog`; match on the variant, or use `as_skater()`/
+  `as_goalie()`, to reach them. `game_id()`, `game_date()`, `team_abbrev()`, `opponent_abbrev()`,
+  `home_road_flag()`, and `toi()` work on either variant. Serialization emits the inner entry
+  unchanged (no variant tag).
+
+### Added
+
+- `GoalieGameLog`: `games_started`, `decision: Option<GoalieDecision>` (`None` when the goalie
+  was not credited with the decision), `shots_against`, `goals_against`, `save_pctg`,
+  `shutouts`, `goals`, `assists`, `toi`, `pim`.
+
 ## 0.8.1
 
 ### Changed

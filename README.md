@@ -127,6 +127,12 @@ let player = client.player_landing(8478402).await?; // Connor McDavid
 // Player game log
 use nhl_api::GameType;
 let log = client.player_game_log(8478402, 20242025, GameType::RegularSeason).await?;
+for entry in &log.game_log {
+    match entry {
+        nhl_api::GameLog::Skater(s) => println!("{}: {} pts", s.game_date, s.points),
+        nhl_api::GameLog::Goalie(g) => println!("{}: {} GA", g.game_date, g.goals_against),
+    }
+}
 
 // Search players
 let results = client.search_player("McDavid", Some(10)).await?;
