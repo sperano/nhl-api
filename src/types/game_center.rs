@@ -700,7 +700,7 @@ pub struct ThreeStar {
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: String,
     pub headshot: String,
-    pub name: LocalizedString,
+    pub name: String,
     #[serde(rename = "sweaterNo")]
     pub sweater_no: i32,
     /// `None` for historical data where the API returns an empty position code.
@@ -1256,7 +1256,7 @@ mod tests {
                 "playerId": 8478402,
                 "teamAbbrev": "EDM",
                 "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
-                "name": {"default": "C. McDavid"},
+                "name": "C. McDavid",
                 "sweaterNo": 97,
                 "position": "C"
             }"#,
@@ -1270,7 +1270,7 @@ mod tests {
                 "playerId": 8478402,
                 "teamAbbrev": "EDM",
                 "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
-                "name": {"default": "C. McDavid"},
+                "name": "C. McDavid",
                 "sweaterNo": 97,
                 "position": ""
             }"#,
@@ -1284,7 +1284,7 @@ mod tests {
                 "playerId": 8478402,
                 "teamAbbrev": "EDM",
                 "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
-                "name": {"default": "C. McDavid"},
+                "name": "C. McDavid",
                 "sweaterNo": 97
             }"#,
         )
@@ -1850,7 +1850,7 @@ mod tests {
                 "playerId": 8478402,
                 "teamAbbrev": "EDM",
                 "headshot": "https://assets.nhle.com/mugs/nhl/20242025/EDM/8478402.png",
-                "name": {"default": "C. McDavid"},
+                "name": "C. McDavid",
                 "sweaterNo": 97
             }],
             "penalties": []
@@ -1863,3 +1863,7 @@ mod tests {
         assert_eq!(summary.three_stars[0].player_id, PlayerId::new(8478402));
     }
 }
+
+#[cfg(test)]
+#[path = "game_center_test.rs"]
+mod fixture_tests;
