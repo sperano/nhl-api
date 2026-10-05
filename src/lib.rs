@@ -61,8 +61,8 @@ pub use types::{
 
 // Player types
 pub use types::{
-    Award, AwardSeason, CareerTotals, DraftDetails, FeaturedStats, GameLog, PlayerGameLog,
-    PlayerLanding, PlayerSearchResult, PlayerStats, SeasonTotal,
+    Award, AwardSeason, CareerTotals, DraftDetails, FeaturedStats, GameLog, GoalieGameLog,
+    PlayerGameLog, PlayerLanding, PlayerSearchResult, PlayerStats, SeasonTotal, SkaterGameLog,
 };
 
 // Schedule types

@@ -84,6 +84,10 @@ The codebase follows a clean layered architecture:
     Olympics, Young Stars, PWHL Showcase, Lockout, Canada Cup, exhibition-overseas, women's all-star,
     Four Nations), with `label()` (snake_case) and `FromStr` (numeric/display-name/label)
   - `player.rs` - PlayerLanding, PlayerGameLog, PlayerSearchResult, CareerTotals, Award
+  - `game_log.rs` - GameLog enum (`Skater(SkaterGameLog)` / `Goalie(GoalieGameLog)`), picked by
+    the presence of `shotsAgainst` rather than `#[serde(untagged)]` trial-and-error, so a bad
+    entry still reports the exact missing field; tests in sibling `game_log_test.rs` with live-API
+    fixtures under `tests/fixtures/`
   - `club_stats.rs` - ClubStats (`season: Season`), SeasonGameTypes (`season: Season`),
     ClubSkaterStats, ClubGoalieStats
   - `edge/` - Edge puck/player-tracking stats (`common.rs`, `skater.rs`, `goalie.rs`, `team.rs`,
