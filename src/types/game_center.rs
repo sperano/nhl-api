@@ -782,14 +782,16 @@ pub struct ShiftEntry {
     pub id: i64,
     #[serde(rename = "detailCode")]
     pub detail_code: i32,
-    pub duration: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration: Option<String>,
     #[serde(rename = "endTime")]
     pub end_time: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "eventDescription")]
     pub event_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "eventNumber")]
-    pub event_number: i64,
+    pub event_number: Option<i64>,
     #[serde(rename = "firstName")]
     pub first_name: String,
     #[serde(rename = "gameId")]
@@ -1420,10 +1422,10 @@ mod tests {
         let shift: ShiftEntry = serde_json::from_str(json).unwrap();
         assert_eq!(shift.id, 14376602);
         assert_eq!(shift.detail_code, 0);
-        assert_eq!(shift.duration, "17:15");
+        assert_eq!(shift.duration, Some("17:15".to_string()));
         assert_eq!(shift.end_time, "17:15");
         assert_eq!(shift.event_description, None);
-        assert_eq!(shift.event_number, 101);
+        assert_eq!(shift.event_number, Some(101));
         assert_eq!(shift.first_name, "Jacob");
         assert_eq!(shift.game_id, GameId::new(2024020001));
         assert_eq!(shift.hex_value, "#C8102E");
@@ -1470,6 +1472,70 @@ mod tests {
         assert_eq!(chart.data[0].player_id, PlayerId::new(8474593));
         assert_eq!(chart.data[0].first_name, "Jacob");
         assert_eq!(chart.data[0].last_name, "Markstrom");
+    }
+
+    /// Taken from a real `/stats/rest/en/shiftcharts` response (game 2024020444), where
+    /// goal/penalty rows (typeCode != 517) report a null `duration` instead of the usual
+    /// "MM:SS" string.
+    #[test]
+    fn test_shift_entry_deserialization_null_duration() {
+        let json = r##"{
+            "id": 14725214,
+            "detailCode": 810,
+            "duration": null,
+            "endTime": "06:16",
+            "eventDescription": "EVG",
+            "eventNumber": 125,
+            "firstName": "Taylor",
+            "gameId": 2024020444,
+            "hexValue": "#111111",
+            "lastName": "Hall",
+            "period": 2,
+            "playerId": 8475791,
+            "shiftNumber": 0,
+            "startTime": "06:16",
+            "teamAbbrev": "CHI",
+            "teamId": 16,
+            "teamName": "Chicago Blackhawks",
+            "typeCode": 505
+        }"##;
+
+        let shift: ShiftEntry = serde_json::from_str(json).unwrap();
+        assert_eq!(shift.duration, None);
+        assert_eq!(shift.event_description, Some("EVG".to_string()));
+        assert_eq!(shift.event_number, Some(125));
+    }
+
+    /// Taken from a real `/stats/rest/en/shiftcharts` response (game 2010020001, from before
+    /// `eventNumber` was consistently populated), where `eventNumber` and `eventDescription`
+    /// are both null on an ordinary shift row (typeCode == 517).
+    #[test]
+    fn test_shift_entry_deserialization_null_event_number() {
+        let json = r##"{
+            "id": 1,
+            "detailCode": 0,
+            "duration": "00:43",
+            "endTime": "00:43",
+            "eventDescription": null,
+            "eventNumber": null,
+            "firstName": "Hal",
+            "gameId": 2010020001,
+            "hexValue": "#AF1E2D",
+            "lastName": "Gill",
+            "period": 1,
+            "playerId": 8459628,
+            "shiftNumber": 1,
+            "startTime": "00:00",
+            "teamAbbrev": "MTL",
+            "teamId": 8,
+            "teamName": "Montréal Canadiens",
+            "typeCode": 517
+        }"##;
+
+        let shift: ShiftEntry = serde_json::from_str(json).unwrap();
+        assert_eq!(shift.duration, Some("00:43".to_string()));
+        assert_eq!(shift.event_description, None);
+        assert_eq!(shift.event_number, None);
     }
 
     #[test]
