@@ -40,11 +40,11 @@ pub use types::{ClubGoalieStats, ClubSkaterStats, ClubStats, SeasonGameTypes};
 
 // Game center types
 pub use types::{
-    AssistSummary, GameMatchup, GameOutcome, GameSituation, GameStory, GameSummary, GoalSummary,
-    MatchupTeam, PenaltyPlayer, PenaltySummary, PeriodPenalties, PeriodScoring, PlayByPlay,
-    PlayEvent, PlayEventDetails, PlayEventType, RosterSpot, ScratchedPlayer, SeasonSeriesMatchup,
-    SeriesGame, SeriesGameInfo, SeriesTeam, SeriesWins, ShiftChart, ShiftEntry, ShootoutAttempt,
-    StoryTeam, TeamGameInfo, ThreeStar,
+    AssistSummary, GameMatchup, GameOfficial, GameOutcome, GameSituation, GameStory, GameSummary,
+    GoalSummary, MatchupTeam, PenaltyPlayer, PenaltySummary, PeriodPenalties, PeriodScoring,
+    PlayByPlay, PlayEvent, PlayEventDetails, PlayEventType, RosterSpot, ScratchedPlayer,
+    SeasonSeriesMatchup, SeriesGame, SeriesGameInfo, SeriesTeam, SeriesWins, ShiftChart,
+    ShiftEntry, ShootoutAttempt, StoryTeam, TeamGameInfo, ThreeStar,
 };
 
 // Game state types

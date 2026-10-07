@@ -17,12 +17,24 @@ All notable changes to this project are documented in this file.
   `Option<i64>` (`src/types/game_center.rs`). The live API sends `null` for both on goal/penalty
   rows and, for older games, on ordinary shift rows too; `shift_chart()` previously failed
   deserialization entirely for every game that hit one of these rows.
+- `SeriesGameInfo.referees` and `SeriesGameInfo.linesmen` are now `Vec<GameOfficial>` (was
+  `Vec<LocalizedString>`). The right-rail response describes each official as
+  `{ fullName, sweaterNumber }`, not a bare localized string, so `season_series()` previously
+  failed with `missing field 'default'`. `GameOfficial` exposes `full_name` and
+  `sweater_number`.
 
 ### Added
 
 - `GoalieGameLog`: `games_started`, `decision: Option<GoalieDecision>` (`None` when the goalie
   was not credited with the decision), `shots_against`, `goals_against`, `save_pctg`,
   `shutouts`, `goals`, `assists`, `toi`, `pim`.
+
+### Fixed
+
+- `LocalizedString.default` is now `#[serde(default)]`, so a localized object that omits the
+  `default` key deserializes to an empty string instead of failing the whole response.
+- `SeriesGameInfo.referees`/`.linesmen` and `TeamGameInfo.scratches` now default to an empty vec
+  when the API omits them.
 
 ## 0.8.1
 

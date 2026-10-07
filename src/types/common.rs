@@ -14,8 +14,13 @@ const INCHES_PER_FOOT: i32 = 12;
 const BIRTH_DATE_FORMAT: &str = "%Y-%m-%d";
 
 /// Localized string (NHL API returns {default: "value"})
+///
+/// `default` is `#[serde(default)]` so a localized object that omits the
+/// `default` key (the API occasionally sends only localized variants) still
+/// deserializes to an empty string rather than failing the whole response.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct LocalizedString {
+    #[serde(default)]
     pub default: String,
 }
 
