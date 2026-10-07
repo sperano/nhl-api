@@ -13,6 +13,10 @@ All notable changes to this project are documented in this file.
   `as_goalie()`, to reach them. `game_id()`, `game_date()`, `team_abbrev()`, `opponent_abbrev()`,
   `home_road_flag()`, and `toi()` work on either variant. Serialization emits the inner entry
   unchanged (no variant tag).
+- `ShiftEntry.duration` is now `Option<String>` and `ShiftEntry.event_number` is now
+  `Option<i64>` (`src/types/game_center.rs`). The live API sends `null` for both on goal/penalty
+  rows and, for older games, on ordinary shift rows too; `shift_chart()` previously failed
+  deserialization entirely for every game that hit one of these rows.
 
 ### Added
 
