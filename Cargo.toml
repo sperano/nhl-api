@@ -2,6 +2,7 @@
 name = "nhl_api"
 version = "0.8.1"
 edition = "2021"
+rust-version = "1.82"
 description = "An NHL stats and scores API client"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/sperano/nhl-api"
