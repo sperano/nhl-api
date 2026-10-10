@@ -147,9 +147,18 @@ pub struct RosterPlayer {
 }
 
 impl RosterPlayer {
-    /// The player's full name (first name + last name).
+    /// The player's full name (first name + last name), joining only the
+    /// non-empty parts so a missing first or last name does not leave a
+    /// leading or trailing space.
     pub fn full_name(&self) -> String {
-        format!("{} {}", self.first_name.default, self.last_name.default)
+        [
+            self.first_name.default.as_str(),
+            self.last_name.default.as_str(),
+        ]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
     }
 
     /// A comma-joined birth place built from whichever of city, state/
@@ -543,6 +552,34 @@ mod tests {
     fn test_roster_player_full_name() {
         let player = sample_roster_player();
         assert_eq!(player.full_name(), "Connor McDavid");
+    }
+
+    #[test]
+    fn test_roster_player_full_name_empty_first_name() {
+        let player = RosterPlayer {
+            first_name: LocalizedString::default(),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.full_name(), "McDavid");
+    }
+
+    #[test]
+    fn test_roster_player_full_name_empty_last_name() {
+        let player = RosterPlayer {
+            last_name: LocalizedString::default(),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.full_name(), "Connor");
+    }
+
+    #[test]
+    fn test_roster_player_full_name_both_empty() {
+        let player = RosterPlayer {
+            first_name: LocalizedString::default(),
+            last_name: LocalizedString::default(),
+            ..sample_roster_player()
+        };
+        assert_eq!(player.full_name(), "");
     }
 
     #[test]

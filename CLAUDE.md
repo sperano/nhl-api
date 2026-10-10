@@ -289,7 +289,7 @@ percentile-based; team stats are rank-based (1-32).
 
 ## Requirements
 
-- Rust 1.65 or later
+- Rust 1.82 or later
 - Use the tracing library for logging/debugging HTTP requests
 - Use tracing at debug level to log http requests and responses for troubleshooting
 
