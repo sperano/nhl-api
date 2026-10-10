@@ -23,8 +23,19 @@ All notable changes to this project are documented in this file.
   failed with `missing field 'default'`. `GameOfficial` exposes `full_name` and
   `sweater_number`.
 
+- **`TeamGameStats` faceoffs**: `faceoff_wins`/`faceoff_total` are replaced by
+  `faceoffs: Option<FaceoffTotals>`, and `faceoff_percentage()` now returns `Option<f64>`.
+  `from_team_player_stats()` used to estimate the totals from centers' shift counts, which gave
+  wrong numbers (shifts are not faceoffs, and wingers take faceoffs too). The boxscore carries no
+  faceoff counts, so `from_team_player_stats()` now leaves `faceoffs` as `None`; attach real
+  totals with `with_faceoffs(play_by_play.faceoff_totals().home)` (or `.away`).
+
 ### Added
 
+- `PlayByPlay::faceoff_totals()` returns `GameFaceoffs { away, home }`, each a
+  `FaceoffTotals { wins, total }` counted from the play-by-play `faceoff` events (the winner is the
+  event's `eventOwnerTeamId`). For game 2024020444 it matches the right-rail `faceoffWins` category
+  (13/35 away, 22/35 home).
 - `GoalieGameLog`: `games_started`, `decision: Option<GoalieDecision>` (`None` when the goalie
   was not credited with the decision), `shots_against`, `goals_against`, `save_pctg`,
   `shutouts`, `goals`, `assists`, `toi`, `pim`.
