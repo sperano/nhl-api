@@ -35,6 +35,9 @@ pub use types::{
     SkaterStats, SpecialEvent, TeamGameStats, TeamPlayerStats, TvBroadcast,
 };
 
+// Faceoff totals (counted from play-by-play)
+pub use types::{FaceoffTotals, GameFaceoffs};
+
 // Club stats types
 pub use types::{ClubGoalieStats, ClubSkaterStats, ClubStats, SeasonGameTypes};
 

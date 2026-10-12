@@ -5,6 +5,7 @@ use crate::ids::{GameId, PlayerId, TeamId};
 
 use super::common::LocalizedString;
 use super::enums::{empty_string_as_none, GameScheduleState, GoalieDecision, PeriodType, Position};
+use super::faceoffs::FaceoffTotals;
 use super::game_state::GameState;
 use super::game_type::GameType;
 
@@ -143,8 +144,10 @@ pub struct TeamPlayerStats {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct TeamGameStats {
     pub shots_on_goal: i32,
-    pub faceoff_wins: i32,
-    pub faceoff_total: i32,
+    /// `None` unless supplied with [`TeamGameStats::with_faceoffs`]: the
+    /// boxscore has per-skater faceoff percentages but no faceoff counts.
+    /// Count them with [`PlayByPlay::faceoff_totals`](super::PlayByPlay::faceoff_totals).
+    pub faceoffs: Option<FaceoffTotals>,
     pub power_play_goals: i32,
     pub penalty_minutes: i32,
     pub hits: i32,
@@ -173,20 +176,6 @@ impl TeamGameStats {
             team_stats.blocked_shots += skater.blocked_shots;
             team_stats.giveaways += skater.giveaways;
             team_stats.takeaways += skater.takeaways;
-
-            Self::add_faceoff_stats(team_stats, skater);
-        }
-    }
-
-    fn add_faceoff_stats(team_stats: &mut TeamGameStats, skater: &SkaterStats) {
-        // TODO: Revisit this logic - not sure only counting centers for faceoffs is correct.
-        // Wings can also take faceoffs in certain situations.
-        if skater.position == Some(Position::Center) && skater.faceoff_winning_pctg > 0.0 {
-            // Estimate total faceoffs using shifts as a proxy for faceoff participation
-            let estimated_faceoffs = skater.shifts;
-            team_stats.faceoff_total += estimated_faceoffs;
-            team_stats.faceoff_wins +=
-                (estimated_faceoffs as f64 * skater.faceoff_winning_pctg).round() as i32;
         }
     }
 
@@ -198,12 +187,19 @@ impl TeamGameStats {
         }
     }
 
-    pub fn faceoff_percentage(&self) -> f64 {
-        if self.faceoff_total > 0 {
-            (self.faceoff_wins as f64 / self.faceoff_total as f64) * 100.0
-        } else {
-            0.0
+    /// Attach faceoff totals counted elsewhere, typically from
+    /// [`PlayByPlay::faceoff_totals`](super::PlayByPlay::faceoff_totals)
+    pub fn with_faceoffs(self, faceoffs: FaceoffTotals) -> Self {
+        Self {
+            faceoffs: Some(faceoffs),
+            ..self
         }
+    }
+
+    /// Faceoff winning percentage (0-100), or `None` when no faceoff totals
+    /// were supplied or none were taken
+    pub fn faceoff_percentage(&self) -> Option<f64> {
+        self.faceoffs.as_ref().and_then(FaceoffTotals::percentage)
     }
 }
 
@@ -1225,40 +1221,6 @@ mod tests {
 
         let game_stats = TeamGameStats::from_team_player_stats(&team_stats);
         assert_eq!(game_stats.penalty_minutes, 2);
-    }
-
-    #[test]
-    fn test_team_game_stats_faceoff_percentage_zero_faceoffs() {
-        let game_stats = TeamGameStats {
-            shots_on_goal: 30,
-            faceoff_wins: 0,
-            faceoff_total: 0,
-            power_play_goals: 1,
-            penalty_minutes: 8,
-            hits: 25,
-            blocked_shots: 15,
-            giveaways: 5,
-            takeaways: 7,
-        };
-
-        assert_eq!(game_stats.faceoff_percentage(), 0.0);
-    }
-
-    #[test]
-    fn test_team_game_stats_faceoff_percentage() {
-        let game_stats = TeamGameStats {
-            shots_on_goal: 30,
-            faceoff_wins: 30,
-            faceoff_total: 60,
-            power_play_goals: 1,
-            penalty_minutes: 8,
-            hits: 25,
-            blocked_shots: 15,
-            giveaways: 5,
-            takeaways: 7,
-        };
-
-        assert_eq!(game_stats.faceoff_percentage(), 50.0);
     }
 
     #[test]

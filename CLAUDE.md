@@ -88,6 +88,10 @@ The codebase follows a clean layered architecture:
     the presence of `shotsAgainst` rather than `#[serde(untagged)]` trial-and-error, so a bad
     entry still reports the exact missing field; tests in sibling `game_log_test.rs` with live-API
     fixtures under `tests/fixtures/`
+  - `faceoffs.rs` - FaceoffTotals, GameFaceoffs, `PlayByPlay::faceoff_totals()` (counts `faceoff`
+    events by `eventOwnerTeamId`). The boxscore has per-skater `faceoffWinningPctg` but no faceoff
+    counts, so `TeamGameStats::from_team_player_stats()` leaves `faceoffs: None`; attach real totals
+    with `with_faceoffs()`. Tests in sibling `faceoffs_test.rs`
   - `club_stats.rs` - ClubStats (`season: Season`), SeasonGameTypes (`season: Season`),
     ClubSkaterStats, ClubGoalieStats
   - `edge/` - Edge puck/player-tracking stats (`common.rs`, `skater.rs`, `goalie.rs`, `team.rs`,

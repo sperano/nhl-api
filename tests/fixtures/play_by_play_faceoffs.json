@@ -1,0 +1,151 @@
+{
+  "id": 2024020444,
+  "season": 20242025,
+  "gameType": 2,
+  "limitedScoring": false,
+  "gameDate": "2024-12-09",
+  "venue": {
+    "default": "Madison Square Garden"
+  },
+  "venueLocation": {
+    "default": "New York"
+  },
+  "startTimeUTC": "2024-12-10T00:00:00Z",
+  "easternUTCOffset": "-05:00",
+  "venueUTCOffset": "-05:00",
+  "tvBroadcasts": [
+    {
+      "id": 324,
+      "market": "N",
+      "countryCode": "US",
+      "network": "NHLN",
+      "sequenceNumber": 35
+    },
+    {
+      "id": 551,
+      "market": "A",
+      "countryCode": "US",
+      "network": "CHSN",
+      "sequenceNumber": 254
+    },
+    {
+      "id": 409,
+      "market": "H",
+      "countryCode": "US",
+      "network": "MSGSN",
+      "sequenceNumber": 411
+    }
+  ],
+  "gameState": "OFF",
+  "gameScheduleState": "OK",
+  "periodDescriptor": {
+    "number": 3,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+  },
+  "awayTeam": {
+    "id": 16,
+    "commonName": {
+      "default": "Blackhawks"
+    },
+    "abbrev": "CHI",
+    "score": 2,
+    "sog": 32,
+    "logo": "https://assets.nhle.com/logos/nhl/svg/CHI_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/CHI_dark.svg",
+    "placeName": {
+      "default": "Chicago"
+    },
+    "placeNameWithPreposition": {
+      "default": "Chicago",
+      "fr": "de Chicago"
+    }
+  },
+  "homeTeam": {
+    "id": 3,
+    "commonName": {
+      "default": "Rangers"
+    },
+    "abbrev": "NYR",
+    "score": 1,
+    "sog": 30,
+    "logo": "https://assets.nhle.com/logos/nhl/svg/NYR_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/NYR_dark.svg",
+    "placeName": {
+      "default": "New York"
+    },
+    "placeNameWithPreposition": {
+      "default": "New York",
+      "fr": "de New York"
+    }
+  },
+  "shootoutInUse": true,
+  "otInUse": true,
+  "clock": {
+    "timeRemaining": "00:00",
+    "secondsRemaining": 0,
+    "running": false,
+    "inIntermission": false
+  },
+  "displayPeriod": 1,
+  "maxPeriods": 5,
+  "gameOutcome": {
+    "lastPeriodType": "REG"
+  },
+  "regPeriods": 3,
+  "plays": [
+    {"eventId":102,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:00","timeRemaining":"20:00","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":520,"typeDescKey":"period-start","sortOrder":10},
+    {"eventId":101,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:00","timeRemaining":"20:00","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":11,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8480078,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":62,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:08","timeRemaining":"19:52","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":504,"typeDescKey":"giveaway","sortOrder":12,"details":{"xCoord":29,"yCoord":12,"zoneCode":"D","eventOwnerTeamId":3,"playerId":8481554}},
+    {"eventId":53,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:21","timeRemaining":"19:39","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":507,"typeDescKey":"missed-shot","sortOrder":13,"details":{"xCoord":-51,"yCoord":32,"zoneCode":"O","reason":"wide-left","shotType":"wrist","shootingPlayerId":8482073,"goalieInNetId":8482821,"eventOwnerTeamId":3}},
+    {"eventId":103,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"02:56","timeRemaining":"17:04","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":51,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8480078,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":104,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"03:09","timeRemaining":"16:51","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":57,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476389,"winningPlayerId":8484144,"xCoord":69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":105,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"08:10","timeRemaining":"11:50","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":128,"details":{"eventOwnerTeamId":16,"losingPlayerId":8475842,"winningPlayerId":8482117,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":106,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"08:47","timeRemaining":"11:13","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":134,"details":{"eventOwnerTeamId":3,"losingPlayerId":8482117,"winningPlayerId":8480078,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":107,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"11:36","timeRemaining":"08:24","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":166,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8480078,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":109,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"12:56","timeRemaining":"07:04","situationCode":"1451","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":184,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476389,"xCoord":-69,"yCoord":22,"zoneCode":"O"}},
+    {"eventId":110,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"13:53","timeRemaining":"06:07","situationCode":"1451","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":191,"details":{"eventOwnerTeamId":3,"losingPlayerId":8479315,"winningPlayerId":8480078,"xCoord":-20,"yCoord":22,"zoneCode":"N"}},
+    {"eventId":111,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"14:19","timeRemaining":"05:41","situationCode":"1451","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":195,"details":{"eventOwnerTeamId":16,"losingPlayerId":8481554,"winningPlayerId":8477450,"xCoord":-69,"yCoord":22,"zoneCode":"D"}},
+    {"eventId":113,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"15:49","timeRemaining":"04:11","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":213,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477987,"winningPlayerId":8476389,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":114,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"16:41","timeRemaining":"03:19","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":224,"details":{"eventOwnerTeamId":16,"losingPlayerId":8480078,"winningPlayerId":8477450,"xCoord":-69,"yCoord":22,"zoneCode":"D"}},
+    {"eventId":115,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"17:29","timeRemaining":"02:31","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":238,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476459,"winningPlayerId":8477450,"xCoord":69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":116,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"18:01","timeRemaining":"01:59","situationCode":"1541","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":244,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477987,"winningPlayerId":8476389,"xCoord":69,"yCoord":22,"zoneCode":"D"}},
+    {"eventId":117,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"18:56","timeRemaining":"01:04","situationCode":"1541","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":251,"details":{"eventOwnerTeamId":3,"losingPlayerId":8482117,"winningPlayerId":8475842,"xCoord":69,"yCoord":-22,"zoneCode":"D"}},
+    {"eventId":118,"periodDescriptor":{"number":1,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"19:17","timeRemaining":"00:43","situationCode":"1541","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":256,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476389,"winningPlayerId":8477987,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":119,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:00","timeRemaining":"20:00","situationCode":"1541","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":266,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476459,"winningPlayerId":8477450,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":121,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"01:34","timeRemaining":"18:26","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":281,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476389,"winningPlayerId":8477987,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":122,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"03:22","timeRemaining":"16:38","situationCode":"1451","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":308,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476389,"xCoord":69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":123,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"04:00","timeRemaining":"16:00","situationCode":"1451","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":314,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476389,"xCoord":69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":124,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"05:47","timeRemaining":"14:13","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":331,"details":{"eventOwnerTeamId":16,"losingPlayerId":8481726,"winningPlayerId":8477450,"xCoord":69,"yCoord":-22,"zoneCode":"D"}},
+    {"eventId":126,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"06:16","timeRemaining":"13:44","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":336,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477987,"winningPlayerId":8476389,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":128,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"06:55","timeRemaining":"13:05","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":345,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476459,"winningPlayerId":8474034,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":129,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"09:08","timeRemaining":"10:52","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":369,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477987,"winningPlayerId":8475842,"xCoord":-69,"yCoord":-22,"zoneCode":"D"}},
+    {"eventId":130,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"09:38","timeRemaining":"10:22","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":375,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476389,"winningPlayerId":8480798,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":132,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"11:34","timeRemaining":"08:26","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":400,"details":{"eventOwnerTeamId":3,"losingPlayerId":8474034,"winningPlayerId":8476459,"xCoord":-69,"yCoord":-22,"zoneCode":"D"}},
+    {"eventId":134,"periodDescriptor":{"number":2,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"17:53","timeRemaining":"02:07","situationCode":"1551","homeTeamDefendingSide":"left","typeCode":502,"typeDescKey":"faceoff","sortOrder":485,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476459,"xCoord":-69,"yCoord":-22,"zoneCode":"D"}},
+    {"eventId":135,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:00","timeRemaining":"20:00","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":515,"details":{"eventOwnerTeamId":16,"losingPlayerId":8480078,"winningPlayerId":8477450,"xCoord":0,"yCoord":0,"zoneCode":"N"}},
+    {"eventId":137,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"00:52","timeRemaining":"19:08","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":526,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476389,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":138,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"01:29","timeRemaining":"18:31","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":533,"details":{"eventOwnerTeamId":16,"losingPlayerId":8476459,"winningPlayerId":8477987,"xCoord":69,"yCoord":22,"zoneCode":"O"}},
+    {"eventId":139,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"03:50","timeRemaining":"16:10","situationCode":"1541","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":564,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477987,"winningPlayerId":8476389,"xCoord":69,"yCoord":22,"zoneCode":"D"}},
+    {"eventId":142,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"06:56","timeRemaining":"13:04","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":605,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8480078,"xCoord":20,"yCoord":-22,"zoneCode":"N"}},
+    {"eventId":143,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"09:38","timeRemaining":"10:22","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":631,"details":{"eventOwnerTeamId":3,"losingPlayerId":8482117,"winningPlayerId":8475842,"xCoord":-20,"yCoord":22,"zoneCode":"N"}},
+    {"eventId":144,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"14:32","timeRemaining":"05:28","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":694,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476459,"xCoord":-69,"yCoord":-22,"zoneCode":"O"}},
+    {"eventId":145,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"17:16","timeRemaining":"02:44","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":731,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8480078,"xCoord":-20,"yCoord":22,"zoneCode":"N"}},
+    {"eventId":150,"periodDescriptor":{"number":3,"periodType":"REG","maxRegulationPeriods":3},"timeInPeriod":"19:36","timeRemaining":"00:24","situationCode":"1551","homeTeamDefendingSide":"right","typeCode":502,"typeDescKey":"faceoff","sortOrder":758,"details":{"eventOwnerTeamId":3,"losingPlayerId":8477450,"winningPlayerId":8476389,"xCoord":69,"yCoord":22,"zoneCode":"D"}}
+  ],
+  "rosterSpots": [
+    {"teamId":16,"playerId":8474034,"firstName":{"default":"Patrick","cs":"Pat","de":"Pat","es":"Pat","fi":"Pat","sk":"Pat","sv":"Pat"},"lastName":{"default":"Maroon"},"sweaterNumber":77,"positionCode":"L","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8474034.png"},
+    {"teamId":3,"playerId":8475842,"firstName":{"default":"Sam"},"lastName":{"default":"Carrick"},"sweaterNumber":39,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8475842.png"},
+    {"teamId":3,"playerId":8476389,"firstName":{"default":"Vincent"},"lastName":{"default":"Trocheck"},"sweaterNumber":16,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8476389.png"},
+    {"teamId":3,"playerId":8476459,"firstName":{"default":"Mika"},"lastName":{"default":"Zibanejad"},"sweaterNumber":93,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8476459.png"},
+    {"teamId":16,"playerId":8477450,"firstName":{"default":"Jason"},"lastName":{"default":"Dickinson"},"sweaterNumber":16,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8477450.png"},
+    {"teamId":16,"playerId":8477987,"firstName":{"default":"Ryan"},"lastName":{"default":"Donato"},"sweaterNumber":8,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8477987.png"},
+    {"teamId":16,"playerId":8479315,"firstName":{"default":"Joey"},"lastName":{"default":"Anderson"},"sweaterNumber":22,"positionCode":"R","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8479315.png"},
+    {"teamId":3,"playerId":8480078,"firstName":{"default":"Filip"},"lastName":{"default":"Chytil"},"sweaterNumber":72,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8480078.png"},
+    {"teamId":16,"playerId":8480798,"firstName":{"default":"Philipp"},"lastName":{"default":"Kurashev"},"sweaterNumber":23,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8480798.png"},
+    {"teamId":3,"playerId":8481554,"firstName":{"default":"Kaapo"},"lastName":{"default":"Kakko"},"sweaterNumber":24,"positionCode":"R","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8481554.png"},
+    {"teamId":3,"playerId":8481726,"firstName":{"default":"Adam"},"lastName":{"default":"Edstrom","cs":"Edström","fi":"Edström","sk":"Edström","sv":"Edström"},"sweaterNumber":84,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/NYR/8481726.png"},
+    {"teamId":16,"playerId":8482117,"firstName":{"default":"Lukas"},"lastName":{"default":"Reichel"},"sweaterNumber":73,"positionCode":"L","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8482117.png"},
+    {"teamId":16,"playerId":8484144,"firstName":{"default":"Connor"},"lastName":{"default":"Bedard"},"sweaterNumber":98,"positionCode":"C","headshot":"https://assets.nhle.com/mugs/nhl/20242025/CHI/8484144.png"}
+  ]
+}
