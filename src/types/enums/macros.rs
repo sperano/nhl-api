@@ -157,7 +157,6 @@ pub(crate) use nhl_string_enum;
 
 #[cfg(test)]
 mod tests {
-    use super::nhl_string_enum;
     use crate::types::enums::UnknownEnumValue;
     use std::str::FromStr;
 

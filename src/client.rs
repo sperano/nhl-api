@@ -21,6 +21,11 @@ use std::collections::HashMap;
 /// no explicit limit.
 const DEFAULT_SEARCH_LIMIT: i32 = 20;
 
+/// High-level client for the NHL API.
+///
+/// Construct with [`Client::new`] (default configuration) or
+/// [`Client::with_config`] for custom timeouts, TLS settings, redirect
+/// handling, user agent, or an injected `reqwest::Client`.
 pub struct Client {
     client: HttpClient,
 }
@@ -43,6 +48,15 @@ impl Client {
         date.unwrap_or(default)
     }
 
+    /// Returns all NHL teams as of a given date, derived from the standings
+    /// endpoint so a historical date returns the teams active at that time.
+    ///
+    /// # Arguments
+    /// * `date` - Optional [`GameDate`]. If `None`, defaults to the current date.
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the standings request fails or the
+    /// response cannot be deserialized.
     pub async fn teams(&self, date: Option<GameDate>) -> Result<Vec<Team>, NHLApiError> {
         let date = Self::resolve_date_or(date, GameDate::default());
         let standings_response = self.fetch_standings_data(&date.to_api_string()).await?;
@@ -61,10 +75,20 @@ impl Client {
             .await
     }
 
+    /// Returns the current league standings (all teams, current date).
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the standings request fails or the
+    /// response cannot be deserialized.
     pub async fn current_league_standings(&self) -> Result<Vec<Standing>, NHLApiError> {
         self.league_standings_for_date(&GameDate::default()).await
     }
 
+    /// Returns the league standings for a specific date.
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the standings request fails or the
+    /// response cannot be deserialized.
     pub async fn league_standings_for_date(
         &self,
         date: &GameDate,
@@ -75,6 +99,11 @@ impl Client {
             .standings)
     }
 
+    /// Returns the league standings at the end of a season, looked up by season id.
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the season manifest cannot be fetched, the
+    /// season id is not found, or the standings request fails.
     pub async fn league_standings_for_season(
         &self,
         season_id: i64,
@@ -117,10 +146,20 @@ impl Client {
             .await
     }
 
+    /// Returns the boxscore for a game.
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the request fails or the response cannot
+    /// be deserialized.
     pub async fn boxscore(&self, game_id: impl Into<GameId>) -> Result<Boxscore, NHLApiError> {
         self.fetch_gamecenter(game_id, "boxscore").await
     }
 
+    /// Returns play-by-play data for a game.
+    ///
+    /// # Errors
+    /// Returns an [`NHLApiError`] if the request fails or the response cannot
+    /// be deserialized.
     pub async fn play_by_play(
         &self,
         game_id: impl Into<GameId>,

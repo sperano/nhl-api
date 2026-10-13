@@ -507,7 +507,7 @@ pub struct RosterSpot {
 }
 
 /// Game matchup/landing response
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameMatchup {
     pub id: GameId,
     pub season: Season,
