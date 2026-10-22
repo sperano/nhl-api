@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@nextest
-      # The `live` nextest profile (.config/nextest.toml) selects exactly the
-      # two live-NHL-API integration test binaries that ci.yml's `default`
-      # profile excludes, so the list of binaries lives in one place.
-      - run: cargo nextest run --workspace --profile live
+      # Runs every `#[ignore]`d live-NHL-API test: the live sweep over every
+      # Client method (tests/live_sweep.rs) and the integration tests. The
+      # `live` nextest profile (.config/nextest.toml) skips fixture capture.
+      - run: cargo nextest run --workspace --profile live --run-ignored only

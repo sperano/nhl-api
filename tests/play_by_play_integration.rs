@@ -1,6 +1,7 @@
 use nhl_api::{Client, PlayEventType};
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_play_by_play_real_game() {
     let client = Client::new().unwrap();
 
@@ -31,6 +32,7 @@ async fn test_play_by_play_real_game() {
 }
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_recent_plays() {
     let client = Client::new().unwrap();
     let pbp = client.play_by_play(2024020444).await.unwrap();
@@ -43,6 +45,7 @@ async fn test_recent_plays() {
 }
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_play_by_play_helper_methods() {
     let client = Client::new().unwrap();
     let pbp = client.play_by_play(2024020444).await.unwrap();

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
 use crate::date::Season;
@@ -700,6 +700,8 @@ pub struct ThreeStar {
     #[serde(rename = "teamAbbrev")]
     pub team_abbrev: String,
     pub headshot: String,
+    /// The `default` text when the API sends a [`LocalizedString`].
+    #[serde(deserialize_with = "plain_or_localized_name")]
     pub name: String,
     #[serde(rename = "sweaterNo")]
     pub sweater_no: i32,
@@ -721,6 +723,22 @@ pub struct ThreeStar {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "savePctg")]
     pub save_pctg: Option<f64>,
+}
+
+/// `threeStars[].name` is a plain string in the game story but a
+/// [`LocalizedString`] in the landing response; both become its `default` text.
+fn plain_or_localized_name<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Name {
+        Plain(String),
+        Localized(LocalizedString),
+    }
+
+    Ok(match Name::deserialize(deserializer)? {
+        Name::Plain(name) => name,
+        Name::Localized(name) => name.default,
+    })
 }
 
 /// Penalty summary for a period
