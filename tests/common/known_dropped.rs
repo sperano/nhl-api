@@ -9,8 +9,10 @@
 //! dropped, so they turn red when the type is fixed. Fixing a bug means
 //! deleting its paths here.
 //!
-//! Fields the API does not send at all, but that the type reads as a default
-//! anyway, cannot be detected this way; neither can cases listed in
+//! Not detected this way: fields the API does not send at all, but that the
+//! type reads as a default anyway; fields inside values a custom `Deserialize`
+//! buffers through `serde_json::Value` or an untagged enum before reading them
+//! (`GameLog` entries, `ThreeStar.name`); and cases listed in
 //! `KNOWN_FAILURES`, whose deserialization stops at the error.
 
 pub struct KnownDropped {

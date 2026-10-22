@@ -29,7 +29,8 @@ const ACCEPT_JSON: &str = "application/json";
 #[ignore = "calls the live NHL API"]
 async fn live_sweep() {
     let client = Client::new().expect("build client");
-    let (current, mut unexpected) = current_games(&client).await;
+    let mut unexpected = Vec::new();
+    let current = current_games(&client, &mut unexpected).await;
     let mut report = String::new();
 
     for case in cases(&current) {
@@ -63,7 +64,8 @@ async fn capture_fixtures() {
         return;
     }
     let client = Client::new().expect("build client");
-    let (current, mut failures) = current_games(&client).await;
+    let mut failures = Vec::new();
+    let current = current_games(&client, &mut failures).await;
     let http = reqwest::Client::builder()
         .user_agent(nhl_api::DEFAULT_USER_AGENT)
         .timeout(CAPTURE_TIMEOUT)
@@ -112,10 +114,10 @@ async fn record(
     Ok(path)
 }
 
-/// Finds a game not started yet and one in progress, if any, along with the
-/// lookups that failed: a failed lookup is not the same as no such game, and
-/// would otherwise skip every case on that game unnoticed.
-async fn current_games(client: &Client) -> (CurrentGames, Vec<String>) {
+/// Finds a game not started yet and one in progress, if any. A failed lookup
+/// is not the same as no such game, and would otherwise skip every case on
+/// that game unnoticed, so it is pushed to `errors`.
+async fn current_games(client: &Client, errors: &mut Vec<String>) -> CurrentGames {
     let scheduled = client
         .weekly_schedule(Some(GameDate::Now))
         .await
@@ -136,18 +138,21 @@ async fn current_games(client: &Client) -> (CurrentGames, Vec<String>) {
                 .find(|game| game.game_state.is_live())
                 .map(|game| game.id)
         });
-    let mut errors = Vec::new();
-    let mut found = |what: &str, lookup: Result<Option<GameId>, NHLApiError>| {
-        lookup.unwrap_or_else(|err| {
-            errors.push(format!("could not look up a {what}: {err}"));
-            None
-        })
-    };
-    let current = CurrentGames {
-        scheduled: found("scheduled game", scheduled),
-        in_progress: found("game in progress", in_progress),
-    };
-    (current, errors)
+    CurrentGames {
+        scheduled: found_or_report("scheduled game", scheduled, errors),
+        in_progress: found_or_report("game in progress", in_progress, errors),
+    }
+}
+
+fn found_or_report(
+    what: &str,
+    lookup: Result<Option<GameId>, NHLApiError>,
+    errors: &mut Vec<String>,
+) -> Option<GameId> {
+    lookup.unwrap_or_else(|err| {
+        errors.push(format!("could not look up a {what}: {err}"));
+        None
+    })
 }
 
 fn describe(case: &Case, outcome: &Outcome) -> String {

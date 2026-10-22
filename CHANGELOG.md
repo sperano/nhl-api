@@ -48,7 +48,8 @@ All notable changes to this project are documented in this file.
   when the API omits them.
 - `landing()` failed with `invalid type: map, expected a string` for every completed game whose
   response lists its three stars: the landing response sends `threeStars[].name` as a localized
-  object, while the game story sends a plain string. `ThreeStar.name` (still a `String`) now accepts both and keeps the `default` text.
+  object, while the game story sends a plain string. `ThreeStar.name` (still a `String`) now
+  accepts both and keeps the `default` text.
 
 ### Testing
 

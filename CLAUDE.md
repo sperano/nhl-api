@@ -198,7 +198,8 @@ The NHL API returns different data structures based on context:
   them (a renamed key such as Edge `shotSpeed` vs `speed`, so the field reads its default), or a
   whole section the endpoint exists to return; delete a path there when you fix its type. The
   contract test reports dropped fields via `serde_ignored`, so it cannot see fields the API never
-  sends. Unit tests in `src/` may `include_str!` the same files.
+  sends, nor fields inside values deserialized through `serde_json::Value` or an untagged enum
+  (`GameLog` entries, `ThreeStar.name`). Unit tests in `src/` may `include_str!` the same files.
 - **Live tests are `#[ignore]`d** so plain `cargo test` needs no network:
   - Live sweep, every `Client` method against the matrix, prints `ok`/`known`/`FAIL`/`FIXED`
     per case: `cargo nextest run --test live_sweep --run-ignored only live_sweep --no-capture`

@@ -7,9 +7,10 @@
 
 mod common;
 
-use common::known_dropped::KNOWN_DROPPED;
+use common::known_dropped::{KnownDropped, KNOWN_DROPPED};
 use common::known_failures::KNOWN_FAILURES;
-use common::{cases, describe_parse_error, CurrentGames, KnownFailure, Outcome};
+use common::{cases, describe_parse_error, parse_as, Case, CurrentGames, KnownFailure, Outcome};
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -48,41 +49,79 @@ fn test_recorded_responses_deserialize() {
 /// succeeds, so each such field is pinned as dropped until its type is fixed.
 #[test]
 fn test_known_dropped_fields_are_still_dropped() {
-    let cases = cases(&CurrentGames::default());
-    let mut unexpected = Vec::new();
-    for known in KNOWN_DROPPED {
-        let Some((parse, json)) = cases
-            .iter()
-            .find(|case| case.name == known.case)
-            .and_then(|case| case.fixture.map(|json| (case.parse, json)))
-        else {
-            unexpected.push(format!("{} is not a recorded case", known.case));
-            continue;
-        };
-        let dropped = match parse(json) {
-            Ok(dropped) => dropped,
-            Err(err) => {
-                unexpected.push(format!("{}: {err}", known.case));
-                continue;
-            }
-        };
-        for field in known
-            .fields
-            .iter()
-            .filter(|field| !dropped.contains(**field))
-        {
-            unexpected.push(format!(
-                "{}: `{field}` is no longer dropped: remove it from KNOWN_DROPPED",
-                known.case
-            ));
-        }
-    }
+    let all_cases = cases(&CurrentGames::default());
+    let unexpected: Vec<String> = KNOWN_DROPPED
+        .iter()
+        .flat_map(|known| stale_dropped_entries(known, &all_cases))
+        .collect();
     assert!(
         unexpected.is_empty(),
         "{} unexpected KNOWN_DROPPED result(s):\n{}",
         unexpected.len(),
         unexpected.join("\n")
     );
+}
+
+/// Why `known` no longer matches its case: each field it lists that the case's
+/// type now reads, or why the case cannot be checked at all.
+fn stale_dropped_entries(known: &KnownDropped, all_cases: &[Case]) -> Vec<String> {
+    let Some((parse, json)) = all_cases
+        .iter()
+        .find(|case| case.name == known.case)
+        .and_then(|case| case.fixture.map(|json| (case.parse, json)))
+    else {
+        return vec![format!("{} is not a recorded case", known.case)];
+    };
+    match parse(json) {
+        Ok(dropped) => known
+            .fields
+            .iter()
+            .filter(|field| !dropped.contains(**field))
+            .map(|field| {
+                format!(
+                    "{}: `{field}` is no longer dropped: remove it from KNOWN_DROPPED",
+                    known.case
+                )
+            })
+            .collect(),
+        Err(err) => vec![format!("{}: {err}", known.case)],
+    }
+}
+
+#[test]
+fn test_known_dropped_cases_are_unique() {
+    let mut seen = HashSet::new();
+    for known in KNOWN_DROPPED {
+        assert!(
+            seen.insert(known.case),
+            "KNOWN_DROPPED lists {} twice",
+            known.case
+        );
+    }
+}
+
+#[test]
+fn test_parse_as_reports_dropped_fields() {
+    #[derive(Deserialize)]
+    struct Outer {
+        #[allow(dead_code)]
+        items: Option<Vec<Item>>,
+    }
+    #[derive(Deserialize)]
+    struct Item {
+        #[allow(dead_code)]
+        kept: i32,
+    }
+
+    let json =
+        r#"{"items": [{"kept": 1, "speed": 2}, {"kept": 3, "speed": 4}], "extra": {"a": 1}}"#;
+    let dropped = parse_as::<Outer>(json).unwrap();
+
+    assert_eq!(
+        dropped.into_iter().collect::<Vec<_>>(),
+        ["extra", "items.[].speed"]
+    );
+    assert!(parse_as::<Outer>(r#"{"items": null} trailing"#).is_err());
 }
 
 #[test]

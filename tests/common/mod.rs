@@ -37,11 +37,13 @@ pub type Fetch = Box<dyn for<'a> Fn(&'a Client) -> FetchFuture<'a>>;
 
 /// Paths of the fields a response has that its type ignores, such as
 /// `hardestShots.[].shotSpeed`: `[]` stands for every element of an array,
-/// and `Option`s and newtypes add no segment.
+/// and `Option`s and newtypes add no segment. A key containing `.` reads
+/// like a deeper path; the API sends none.
 pub type DroppedFields = BTreeSet<String>;
 
 /// Deserializes a recorded response as the type the `Client` method returns,
-/// reporting the fields that type dropped.
+/// reporting the fields that type dropped, except inside values a custom
+/// `Deserialize` buffers through `serde_json::Value` (see `known_dropped`).
 pub type Parse = fn(&str) -> Result<DroppedFields, serde_json::Error>;
 
 /// How to run a case against the live API.
