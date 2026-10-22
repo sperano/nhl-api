@@ -21,11 +21,12 @@ use serde::de::DeserializeOwned;
 use std::future::Future;
 use std::pin::Pin;
 
-pub use known_failures::known_failure;
+pub use known_failures::{known_failure, KnownFailure};
 pub use matrix::cases;
 
-/// Characters of fixture shown on each side of a deserialization error.
-const ERROR_CONTEXT_CHARS: usize = 80;
+/// Bytes of fixture shown on each side of a deserialization error
+/// (`serde_json` reports columns in bytes).
+const ERROR_CONTEXT_BYTES: usize = 80;
 
 pub type FetchFuture<'a> = Pin<Box<dyn Future<Output = Result<(), NHLApiError>> + 'a>>;
 
@@ -102,7 +103,12 @@ pub enum Outcome {
 
 impl Outcome {
     pub fn classify(case: &str, result: Result<(), String>) -> Self {
-        match (result, known_failure(case)) {
+        Self::classify_with(result, known_failure(case))
+    }
+
+    /// [`Self::classify`] against an explicit [`KNOWN_FAILURES`] entry.
+    pub fn classify_with(result: Result<(), String>, known: Option<&KnownFailure>) -> Self {
+        match (result, known) {
             (Ok(()), None) => Self::Pass,
             (Ok(()), Some(_)) => Self::KnownFailurePassed,
             (Err(err), Some(known)) if err.contains(known.error) => Self::KnownFailure,
@@ -125,7 +131,7 @@ pub fn fetch(f: impl for<'a> Fn(&'a Client) -> FetchFuture<'a> + 'static) -> Fet
     Box::new(f)
 }
 
-fn parse_as<T: DeserializeOwned>(json: &str) -> Result<(), serde_json::Error> {
+pub fn parse_as<T: DeserializeOwned>(json: &str) -> Result<(), serde_json::Error> {
     serde_json::from_str::<T>(json).map(drop)
 }
 
@@ -134,11 +140,12 @@ fn parse_as<T: DeserializeOwned>(json: &str) -> Result<(), serde_json::Error> {
 pub fn describe_parse_error(json: &str, err: &serde_json::Error) -> String {
     let line = json.lines().nth(err.line().saturating_sub(1)).unwrap_or("");
     let column = err.column().min(line.len());
-    let start = floor_char_boundary(line, column.saturating_sub(ERROR_CONTEXT_CHARS));
-    let end = floor_char_boundary(line, (column + ERROR_CONTEXT_CHARS).min(line.len()));
+    let start = floor_char_boundary(line, column.saturating_sub(ERROR_CONTEXT_BYTES));
+    let end = floor_char_boundary(line, (column + ERROR_CONTEXT_BYTES).min(line.len()));
     format!("{err}\n  near: …{}…", &line[start..end])
 }
 
+/// `str::floor_char_boundary` is only stable from Rust 1.91 (MSRV is 1.82).
 fn floor_char_boundary(s: &str, mut index: usize) -> usize {
     while !s.is_char_boundary(index) {
         index -= 1;

@@ -7,7 +7,7 @@
 mod common;
 
 use common::known_failures::KNOWN_FAILURES;
-use common::{cases, describe_parse_error, CurrentGames, Outcome};
+use common::{cases, describe_parse_error, CurrentGames, KnownFailure, Outcome};
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -70,24 +70,29 @@ fn test_known_failures_name_existing_cases() {
 
 #[test]
 fn test_outcome_classify() {
-    let known = &KNOWN_FAILURES[0];
-    let error = format!("unmarshaling response: {} at line 1", known.error);
+    let known = KnownFailure {
+        case: "boxscore/example",
+        error: "missing field `score`",
+    };
+    let classify = |result: Result<(), &str>, known| {
+        Outcome::classify_with(result.map_err(str::to_string), known)
+    };
 
     assert_eq!(
-        Outcome::classify(known.case, Err(error)),
+        classify(
+            Err("parsing: missing field `score` at line 1"),
+            Some(&known)
+        ),
         Outcome::KnownFailure
     );
-    assert_eq!(
-        Outcome::classify(known.case, Ok(())),
-        Outcome::KnownFailurePassed
-    );
+    assert_eq!(classify(Ok(()), Some(&known)), Outcome::KnownFailurePassed);
     assert!(matches!(
-        Outcome::classify(known.case, Err("another error".to_string())),
+        classify(Err("another error"), Some(&known)),
         Outcome::Failure(_)
     ));
-    assert_eq!(Outcome::classify("not/listed", Ok(())), Outcome::Pass);
+    assert_eq!(classify(Ok(()), None), Outcome::Pass);
     assert_eq!(
-        Outcome::classify("not/listed", Err("boom".to_string())),
+        classify(Err("boom"), None),
         Outcome::Failure("boom".to_string())
     );
 }

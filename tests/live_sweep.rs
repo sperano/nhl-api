@@ -10,11 +10,18 @@ mod common;
 
 use common::{cases, Case, CurrentGames, Outcome};
 use nhl_api::{Client, GameDate, NHLApiError};
+use std::error::Error;
 use std::fmt::Write as _;
 use std::path::PathBuf;
+use std::time::Duration;
 
 /// Set to `1` to let `capture_fixtures` overwrite the recorded fixtures.
 const CAPTURE_ENV: &str = "NHL_API_CAPTURE_FIXTURES";
+/// Per-request timeout while recording, matching the library's default order
+/// of magnitude so a stalled connection cannot hang the capture.
+const CAPTURE_TIMEOUT: Duration = Duration::from_secs(30);
+/// The `Accept` header every `Client` request sends.
+const ACCEPT_JSON: &str = "application/json";
 
 #[tokio::test]
 #[ignore = "calls the live NHL API"]
@@ -31,9 +38,10 @@ async fn live_sweep() {
         };
         let result = (live.fetch)(&client).await.map_err(|err| err.to_string());
         let outcome = Outcome::classify(&case.name, result);
-        writeln!(report, "{}", describe(&case, &outcome)).unwrap();
+        let line = describe(&case, &outcome);
+        writeln!(report, "{line}").unwrap();
         if outcome.is_unexpected() {
-            unexpected.push(describe(&case, &outcome));
+            unexpected.push(line);
         }
     }
 
@@ -57,6 +65,7 @@ async fn capture_fixtures() {
     let current = current_games(&client).await;
     let http = reqwest::Client::builder()
         .user_agent(nhl_api::DEFAULT_USER_AGENT)
+        .timeout(CAPTURE_TIMEOUT)
         .build()
         .expect("build reqwest client");
     let mut failures = Vec::new();
@@ -82,21 +91,19 @@ async fn record(
     http: &reqwest::Client,
     case: &Case,
     url: &reqwest::Url,
-) -> Result<PathBuf, String> {
+) -> Result<PathBuf, Box<dyn Error>> {
     let response = http
         .get(url.clone())
-        .header(reqwest::header::ACCEPT, "application/json")
+        .header(reqwest::header::ACCEPT, ACCEPT_JSON)
         .send()
-        .await
-        .and_then(|response| response.error_for_status())
-        .map_err(|err| err.to_string())?;
-    let body = response.bytes().await.map_err(|err| err.to_string())?;
+        .await?
+        .error_for_status()?;
+    let body = response.bytes().await?;
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
         .join(format!("{}.json", case.name));
-    let dir = path.parent().expect("fixture path has a directory");
-    std::fs::create_dir_all(dir).map_err(|err| err.to_string())?;
-    std::fs::write(&path, &body).map_err(|err| err.to_string())?;
+    std::fs::create_dir_all(path.parent().expect("fixture path has a directory"))?;
+    std::fs::write(&path, &body)?;
     Ok(path)
 }
 
