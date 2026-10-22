@@ -147,7 +147,11 @@ fn describe(case: &Case, outcome: &Outcome) -> String {
         Outcome::Pass => format!("ok     {}", case.name),
         Outcome::KnownFailure => format!("known  {}", case.name),
         Outcome::KnownFailurePassed => {
-            format!("FIXED  {} passes; remove it from KNOWN_FAILURES", case.name)
+            format!(
+                "FIXED  {} passes: remove it from KNOWN_FAILURES (re-record its fixture first if \
+                 the live response changed)",
+                case.name
+            )
         }
         Outcome::Failure(err) => format!("FAIL   {}: {err}", case.name),
     }

@@ -187,9 +187,10 @@ The NHL API returns different data structures based on context:
 - Deserialization tests use JSON string literals matching actual API responses; prefer the recorded
   responses below, since hand-written JSON misses whole classes of real payloads
 - **Recorded responses** (`tests/fixtures/<method>/<label>.json`, raw bytes from the live API):
-  `tests/common/matrix.rs` (+ `matrix/edge.rs`) lists one case per `Client` method and argument
-  set (`<method>/<label>`), covering scheduled/final games, regular season/playoffs, 1925/1975/
-  2010/current eras, skaters/goalies, empty weeks, and all Edge endpoints. `tests/contract.rs`
+  `tests/common/matrix.rs` and its `matrix/` submodules (games, league, players, teams, edge) list
+  one case per `Client` method and argument set (`<method>/<label>`), covering scheduled/final
+  games, regular season/playoffs, 1925/1975/2010/current eras, skaters/goalies, empty weeks, and
+  all Edge endpoints. `tests/contract.rs`
   deserializes every recorded case (no network). Cases that fail today are pinned with their error
   in `tests/common/known_failures.rs`; when you fix one, delete its entries (the contract test
   fails until you do). Unit tests in `src/` may `include_str!` the same files.

@@ -24,7 +24,7 @@ fn test_recorded_responses_deserialize() {
         match Outcome::classify(&case.name, result) {
             Outcome::Pass | Outcome::KnownFailure => {}
             Outcome::KnownFailurePassed => unexpected.push(format!(
-                "{} now deserializes; remove it from KNOWN_FAILURES",
+                "{} now deserializes: remove it from KNOWN_FAILURES",
                 case.name
             )),
             Outcome::Failure(err) => unexpected.push(format!("{}: {err}", case.name)),

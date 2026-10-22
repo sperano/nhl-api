@@ -20,6 +20,8 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
     known("landing/fut", "missing field `score`"),
     known("season_series/fut", "missing field `score`"),
     known("game_story/fut", "missing field `score`"),
+    // Its series has unplayed games until 2027-02-24; after that the live
+    // response passes and the fixture needs re-recording before this goes.
     known("season_series/regular_20262027", "missing field `score`"),
     // Playoff games: no top-level `maxPeriods`.
     known(
