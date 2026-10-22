@@ -1,9 +1,9 @@
-# Single source of truth for the live-NHL-API integration test binaries,
-# shared by ci.yml (`default` profile, excludes them) and live-smoke.yml
-# (`live` profile, runs only them), so the list only needs updating here.
-
-[profile.default]
-default-filter = 'not (binary_id(nhl_api::play_by_play_integration) | binary_id(nhl_api::player_game_log_integration))'
+# Tests that call the live NHL API are `#[ignore]`d, so plain `cargo test` and
+# `cargo nextest run` (ci.yml) stay hermetic. live-smoke.yml runs them with
+# `--profile live --run-ignored only`.
 
 [profile.live]
-default-filter = 'binary_id(nhl_api::play_by_play_integration) | binary_id(nhl_api::player_game_log_integration)'
+# `capture_fixtures` rewrites tests/fixtures and only runs on request.
+default-filter = 'not test(=capture_fixtures)'
+# Print the live sweep's per-case report even when it passes.
+success-output = "final"

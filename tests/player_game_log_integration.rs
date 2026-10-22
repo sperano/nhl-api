@@ -6,6 +6,7 @@ const CAREY_PRICE: i64 = 8471679;
 const CONNOR_MCDAVID: i64 = 8478402;
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_goalie_game_log_regular_season() {
     let client = Client::new().unwrap();
     let log = client
@@ -21,6 +22,7 @@ async fn test_goalie_game_log_regular_season() {
 }
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_goalie_game_log_playoffs() {
     let client = Client::new().unwrap();
     let log = client
@@ -36,6 +38,7 @@ async fn test_goalie_game_log_playoffs() {
 }
 
 #[tokio::test]
+#[ignore = "calls the live NHL API"]
 async fn test_skater_game_log_regular_season() {
     let client = Client::new().unwrap();
     let log = client
