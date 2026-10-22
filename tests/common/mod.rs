@@ -12,12 +12,14 @@
 
 #[macro_use]
 mod macros;
+pub mod known_dropped;
 pub mod known_failures;
 mod matrix;
 
 use nhl_api::{Client, GameId, NHLApiError};
 use reqwest::Url;
 use serde::de::DeserializeOwned;
+use std::collections::BTreeSet;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -33,8 +35,14 @@ pub type FetchFuture<'a> = Pin<Box<dyn Future<Output = Result<(), NHLApiError>> 
 /// Calls one `Client` method and discards the deserialized value.
 pub type Fetch = Box<dyn for<'a> Fn(&'a Client) -> FetchFuture<'a>>;
 
-/// Deserializes a recorded response as the type the `Client` method returns.
-pub type Parse = fn(&str) -> Result<(), serde_json::Error>;
+/// Paths of the fields a response has that its type ignores, such as
+/// `hardestShots.[].shotSpeed`: `[]` stands for every element of an array,
+/// and `Option`s and newtypes add no segment.
+pub type DroppedFields = BTreeSet<String>;
+
+/// Deserializes a recorded response as the type the `Client` method returns,
+/// reporting the fields that type dropped.
+pub type Parse = fn(&str) -> Result<DroppedFields, serde_json::Error>;
 
 /// How to run a case against the live API.
 pub struct Live {
@@ -131,8 +139,31 @@ pub fn fetch(f: impl for<'a> Fn(&'a Client) -> FetchFuture<'a> + 'static) -> Fet
     Box::new(f)
 }
 
-pub fn parse_as<T: DeserializeOwned>(json: &str) -> Result<(), serde_json::Error> {
-    serde_json::from_str::<T>(json).map(drop)
+pub fn parse_as<T: DeserializeOwned>(json: &str) -> Result<DroppedFields, serde_json::Error> {
+    let mut dropped = DroppedFields::new();
+    let mut deserializer = serde_json::Deserializer::from_str(json);
+    serde_ignored::deserialize::<_, _, T>(&mut deserializer, |path| {
+        dropped.insert(field_path(&path));
+    })?;
+    deserializer.end()?;
+    Ok(dropped)
+}
+
+/// `path` in the [`DroppedFields`] notation.
+fn field_path(path: &serde_ignored::Path) -> String {
+    use serde_ignored::Path;
+    let (parent, segment) = match path {
+        Path::Root => return String::new(),
+        Path::Seq { parent, .. } => (parent, "[]"),
+        Path::Map { parent, key } => (parent, key.as_str()),
+        Path::Some { parent }
+        | Path::NewtypeStruct { parent }
+        | Path::NewtypeVariant { parent } => return field_path(parent),
+    };
+    match field_path(parent) {
+        prefix if prefix.is_empty() => segment.to_string(),
+        prefix => format!("{prefix}.{segment}"),
+    }
 }
 
 /// Formats `err` with the fixture text around the position it names, since

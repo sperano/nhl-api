@@ -193,16 +193,23 @@ The NHL API returns different data structures based on context:
   all Edge endpoints. `tests/contract.rs`
   deserializes every recorded case (no network). Cases that fail today are pinned with their error
   in `tests/common/known_failures.rs`; when you fix one, delete its entries (the contract test
-  fails until you do). Unit tests in `src/` may `include_str!` the same files.
+  fails until you do). Deserializing succeeding is not enough: `tests/common/known_dropped.rs`
+  pins fields a response sends that its type silently drops although it has a field meant for
+  them (a renamed key such as Edge `shotSpeed` vs `speed`, so the field reads its default), or a
+  whole section the endpoint exists to return; delete a path there when you fix its type. The
+  contract test reports dropped fields via `serde_ignored`, so it cannot see fields the API never
+  sends. Unit tests in `src/` may `include_str!` the same files.
 - **Live tests are `#[ignore]`d** so plain `cargo test` needs no network:
   - Live sweep, every `Client` method against the matrix, prints `ok`/`known`/`FAIL`/`FIXED`
     per case: `cargo nextest run --test live_sweep --run-ignored only live_sweep --no-capture`
   - Re-record fixtures: `NHL_API_CAPTURE_FIXTURES=1 cargo nextest run --test live_sweep
-    --run-ignored only capture_fixtures`. Cases on a scheduled (`fut`) or in-progress (`live`)
-    game use whatever such game exists at that moment. To add a recorded case, add it to the
+    --run-ignored only capture_fixtures`. It rewrites only cases that already have a fixture;
+    cases on a scheduled (`fut`) game use whatever such game exists at that moment. To add a
+    recorded case (including the in-progress `live` game, which has none yet), add it to the
     matrix, create its fixture as an empty file (`include_str!` needs it to compile), then
     re-record.
-  - All live tests, as `.github/workflows/live-smoke.yml` runs them daily:
+  - All live tests except `capture_fixtures` (the `live` nextest profile filters it out), as
+    `.github/workflows/live-smoke.yml` runs them daily:
     `cargo nextest run --workspace --profile live --run-ignored only`
 - Test naming convention: `test_{component}_{scenario}` (e.g., `test_game_date_from_str_invalid`)
 - `fixtures` cargo feature (off by default): `src/fixtures.rs`, gated behind

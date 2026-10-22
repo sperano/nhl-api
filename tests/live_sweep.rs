@@ -4,12 +4,14 @@
 //!   `tests/common/matrix.rs` and reports which ones fail:
 //!   `cargo nextest run --test live_sweep --run-ignored only live_sweep --no-capture`
 //! - `capture_fixtures` re-records `tests/fixtures/<method>/<label>.json` from
-//!   the live API, only when `NHL_API_CAPTURE_FIXTURES=1` is set.
+//!   the live API, only when `NHL_API_CAPTURE_FIXTURES=1` is set. It writes
+//!   only cases that have a fixture: a new case needs an empty placeholder
+//!   file first (see `CLAUDE.md`).
 
 mod common;
 
 use common::{cases, Case, CurrentGames, Outcome};
-use nhl_api::{Client, GameDate, NHLApiError};
+use nhl_api::{Client, GameDate, GameId, NHLApiError};
 use std::error::Error;
 use std::fmt::Write as _;
 use std::path::PathBuf;
@@ -27,9 +29,8 @@ const ACCEPT_JSON: &str = "application/json";
 #[ignore = "calls the live NHL API"]
 async fn live_sweep() {
     let client = Client::new().expect("build client");
-    let current = current_games(&client).await;
+    let (current, mut unexpected) = current_games(&client).await;
     let mut report = String::new();
-    let mut unexpected = Vec::new();
 
     for case in cases(&current) {
         let Some(live) = &case.live else {
@@ -62,15 +63,19 @@ async fn capture_fixtures() {
         return;
     }
     let client = Client::new().expect("build client");
-    let current = current_games(&client).await;
+    let (current, mut failures) = current_games(&client).await;
     let http = reqwest::Client::builder()
         .user_agent(nhl_api::DEFAULT_USER_AGENT)
         .timeout(CAPTURE_TIMEOUT)
         .build()
         .expect("build reqwest client");
-    let mut failures = Vec::new();
 
-    for case in cases(&current) {
+    // A case without a fixture (the in-progress game) has no file to update,
+    // and a file written for it would not belong to any case.
+    for case in cases(&current)
+        .into_iter()
+        .filter(|case| case.fixture.is_some())
+    {
         let Some(url) = case.live.as_ref().and_then(|live| live.url.as_ref()) else {
             continue;
         };
@@ -107,8 +112,10 @@ async fn record(
     Ok(path)
 }
 
-/// Finds a game not started yet and one in progress, if any.
-async fn current_games(client: &Client) -> CurrentGames {
+/// Finds a game not started yet and one in progress, if any, along with the
+/// lookups that failed: a failed lookup is not the same as no such game, and
+/// would otherwise skip every case on that game unnoticed.
+async fn current_games(client: &Client) -> (CurrentGames, Vec<String>) {
     let scheduled = client
         .weekly_schedule(Some(GameDate::Now))
         .await
@@ -129,17 +136,18 @@ async fn current_games(client: &Client) -> CurrentGames {
                 .find(|game| game.game_state.is_live())
                 .map(|game| game.id)
         });
-    CurrentGames {
-        scheduled: found_or_warn("scheduled game", scheduled),
-        in_progress: found_or_warn("game in progress", in_progress),
-    }
-}
-
-fn found_or_warn<T>(what: &str, lookup: Result<Option<T>, NHLApiError>) -> Option<T> {
-    lookup.unwrap_or_else(|err| {
-        eprintln!("could not look up a {what}: {err}");
-        None
-    })
+    let mut errors = Vec::new();
+    let mut found = |what: &str, lookup: Result<Option<GameId>, NHLApiError>| {
+        lookup.unwrap_or_else(|err| {
+            errors.push(format!("could not look up a {what}: {err}"));
+            None
+        })
+    };
+    let current = CurrentGames {
+        scheduled: found("scheduled game", scheduled),
+        in_progress: found("game in progress", in_progress),
+    };
+    (current, errors)
 }
 
 fn describe(case: &Case, outcome: &Outcome) -> String {

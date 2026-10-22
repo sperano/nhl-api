@@ -1,11 +1,13 @@
 //! Contract tests: every response recorded from the live API under
 //! `tests/fixtures/<method>/<label>.json` deserializes as the type its
-//! `Client` method returns, unless `tests/common/known_failures.rs` lists it.
+//! `Client` method returns, unless `tests/common/known_failures.rs` lists it,
+//! and still drops the fields `tests/common/known_dropped.rs` lists.
 //! No network access; re-record with the `capture_fixtures` test in
 //! `tests/live_sweep.rs`.
 
 mod common;
 
+use common::known_dropped::KNOWN_DROPPED;
 use common::known_failures::KNOWN_FAILURES;
 use common::{cases, describe_parse_error, CurrentGames, KnownFailure, Outcome};
 use std::collections::HashSet;
@@ -20,7 +22,9 @@ fn test_recorded_responses_deserialize() {
             continue;
         };
         checked += 1;
-        let result = (case.parse)(json).map_err(|err| describe_parse_error(json, &err));
+        let result = (case.parse)(json)
+            .map(drop)
+            .map_err(|err| describe_parse_error(json, &err));
         match Outcome::classify(&case.name, result) {
             Outcome::Pass | Outcome::KnownFailure => {}
             Outcome::KnownFailurePassed => unexpected.push(format!(
@@ -35,6 +39,47 @@ fn test_recorded_responses_deserialize() {
     assert!(
         unexpected.is_empty(),
         "{} of {checked} recorded responses:\n{}",
+        unexpected.len(),
+        unexpected.join("\n")
+    );
+}
+
+/// Deserializing into a type that ignores a field the API renamed still
+/// succeeds, so each such field is pinned as dropped until its type is fixed.
+#[test]
+fn test_known_dropped_fields_are_still_dropped() {
+    let cases = cases(&CurrentGames::default());
+    let mut unexpected = Vec::new();
+    for known in KNOWN_DROPPED {
+        let Some((parse, json)) = cases
+            .iter()
+            .find(|case| case.name == known.case)
+            .and_then(|case| case.fixture.map(|json| (case.parse, json)))
+        else {
+            unexpected.push(format!("{} is not a recorded case", known.case));
+            continue;
+        };
+        let dropped = match parse(json) {
+            Ok(dropped) => dropped,
+            Err(err) => {
+                unexpected.push(format!("{}: {err}", known.case));
+                continue;
+            }
+        };
+        for field in known
+            .fields
+            .iter()
+            .filter(|field| !dropped.contains(**field))
+        {
+            unexpected.push(format!(
+                "{}: `{field}` is no longer dropped: remove it from KNOWN_DROPPED",
+                known.case
+            ));
+        }
+    }
+    assert!(
+        unexpected.is_empty(),
+        "{} unexpected KNOWN_DROPPED result(s):\n{}",
         unexpected.len(),
         unexpected.join("\n")
     );
@@ -97,8 +142,8 @@ fn test_outcome_classify() {
     );
 }
 
-/// A fixture recorded by `capture_fixtures` but not wired into a case (for
-/// example a game that happened to be in progress) would never be checked.
+/// A fixture file no case references (left behind by a renamed or removed
+/// case) would never be checked.
 #[test]
 fn test_every_recorded_file_belongs_to_a_case() {
     let recorded: HashSet<String> = cases(&CurrentGames::default())

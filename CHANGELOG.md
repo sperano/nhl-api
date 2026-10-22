@@ -46,9 +46,9 @@ All notable changes to this project are documented in this file.
   `default` key deserializes to an empty string instead of failing the whole response.
 - `SeriesGameInfo.referees`/`.linesmen` and `TeamGameInfo.scratches` now default to an empty vec
   when the API omits them.
-- `landing()` failed for every completed game with `invalid type: map, expected a string`: the
-  landing response sends `threeStars[].name` as a localized object, while the game story sends a
-  plain string. `ThreeStar.name` (still a `String`) now accepts both and keeps the `default` text.
+- `landing()` failed with `invalid type: map, expected a string` for every completed game whose
+  response lists its three stars: the landing response sends `threeStars[].name` as a localized
+  object, while the game story sends a plain string. `ThreeStar.name` (still a `String`) now accepts both and keeps the `default` text.
 
 ### Testing
 
@@ -58,7 +58,9 @@ All notable changes to this project are documented in this file.
   (`tests/fixtures/<method>/<label>.json`): scheduled and final games, regular season and
   playoffs, 1925/1975/2010/current games, skaters and goalies, empty schedule weeks, and every
   Edge endpoint. 34 of them fail today; `tests/common/known_failures.rs` pins each error so the
-  suite turns red when one is fixed or changes.
+  suite turns red when one is fixed or changes. `tests/common/known_dropped.rs` likewise pins the
+  fields 16 of the responses that do deserialize silently drop (most Edge per-game speeds and
+  distances, `PlayerLanding`'s `last5Games`).
 - `tests/live_sweep.rs` (opt-in) calls every `Client` method against the same matrix and reports
   which fail; it also re-records the fixtures (`NHL_API_CAPTURE_FIXTURES=1`).
 - Deterministic tests for the `PlayByPlay` helpers and for `GameMatchup`/`MatchupTeam` on recorded
