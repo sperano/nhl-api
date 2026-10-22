@@ -60,8 +60,8 @@ All notable changes to this project are documented in this file.
   playoffs, 1925/1975/2010/current games, skaters and goalies, empty schedule weeks, and every
   Edge endpoint. 34 of them fail today; `tests/common/known_failures.rs` pins each error so the
   suite turns red when one is fixed or changes. `tests/common/known_dropped.rs` likewise pins the
-  fields 16 of the responses that do deserialize silently drop (most Edge per-game speeds and
-  distances, `PlayerLanding`'s `last5Games`).
+  fields that 16 responses silently drop although they deserialize (most Edge per-game speeds
+  and distances, `PlayerLanding`'s `last5Games`).
 - `tests/live_sweep.rs` (opt-in) calls every `Client` method against the same matrix and reports
   which fail; it also re-records the fixtures (`NHL_API_CAPTURE_FIXTURES=1`).
 - Deterministic tests for the `PlayByPlay` helpers and for `GameMatchup`/`MatchupTeam` on recorded
