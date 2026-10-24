@@ -3,7 +3,7 @@ use crate::ids::GameId;
 
 /// Chicago at New York, 2024-12-09 (live API response, trimmed to one goal
 /// and its three stars).
-const GAME_STORY_FIXTURE: &str = include_str!("../../tests/fixtures/game_story.json");
+const GAME_STORY_FIXTURE: &str = include_str!("../../../tests/fixtures/game_story.json");
 
 #[test]
 fn test_game_story_fixture_deserializes_three_star_names() {
@@ -25,7 +25,7 @@ mod play_by_play_helpers {
 
     /// PHI 3 @ BUF 1, 2026-10-21: three regulation periods, no overtime.
     const PLAY_BY_PLAY_FIXTURE: &str =
-        include_str!("../../tests/fixtures/play_by_play/regular_20262027.json");
+        include_str!("../../../tests/fixtures/play_by_play/regular_20262027.json");
     const PLAYS: usize = 286;
     const PHILADELPHIA: i64 = 4;
     const BUFFALO: i64 = 7;
@@ -181,7 +181,7 @@ mod landing {
 
     /// PHI 3 @ BUF 1, 2026-10-21.
     const LANDING_FIXTURE: &str =
-        include_str!("../../tests/fixtures/landing/regular_20262027.json");
+        include_str!("../../../tests/fixtures/landing/regular_20262027.json");
 
     #[test]
     fn test_landing_fixture_deserializes() {
@@ -257,11 +257,11 @@ mod playoffs {
     /// FLA 5 @ EDM 2, 2025-06-14, Stanley Cup Final game 5: no `maxPeriods`,
     /// since playoff overtime is unlimited.
     const PLAY_BY_PLAY_FIXTURE: &str =
-        include_str!("../../tests/fixtures/play_by_play/playoffs_20242025.json");
+        include_str!("../../../tests/fixtures/play_by_play/playoffs_20242025.json");
     const LANDING_FIXTURE: &str =
-        include_str!("../../tests/fixtures/landing/playoffs_20242025.json");
+        include_str!("../../../tests/fixtures/landing/playoffs_20242025.json");
     const GAME_STORY_FIXTURE: &str =
-        include_str!("../../tests/fixtures/game_story/playoffs_20242025.json");
+        include_str!("../../../tests/fixtures/game_story/playoffs_20242025.json");
     const GAME_ID: i64 = 2024030415;
     const REGULATION_PERIODS: i32 = 3;
 

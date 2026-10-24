@@ -78,7 +78,8 @@ The codebase follows a clean layered architecture:
   - `standings.rs` - Standing, StandingsResponse, SeasonInfo, SeasonsResponse
   - `schedule.rs` - ScheduleGame, GameDay, WeeklyScheduleResponse, DailySchedule, DailyScores, TeamScheduleResponse
   - `boxscore.rs` - Boxscore, BoxscoreTeam, SkaterStats, GoalieStats, PeriodDescriptor
-  - `game_center.rs` - PlayByPlay, PlayEvent, GameMatchup, GameSummary, GameStory, ShiftChart
+  - `game_center/` - Game-center response types split by endpoint family: play-by-play,
+    matchup/landing, story, season series, and shift chart
   - `game_state.rs` - GameState enum (FUT, PRE, LIVE, CRIT, FINAL, OFF)
   - `game_type.rs` - GameType enum, 15 variants (regular/playoffs/preseason/all-star plus World Cup,
     Olympics, Young Stars, PWHL Showcase, Lockout, Canada Cup, exhibition-overseas, women's all-star,
@@ -187,7 +188,8 @@ The NHL API returns different data structures based on context:
 
 ### Testing Strategy
 
-- Every module has comprehensive unit tests in `#[cfg(test)] mod tests`
+- Modules have comprehensive unit tests in sibling test modules. Large suites use a
+  `tests/` directory with a small `mod.rs`, keeping production modules focused.
 - Tests cover: happy paths, edge cases, error conditions, deserialization with missing fields
 - Deserialization tests use JSON string literals matching actual API responses; prefer the recorded
   responses below, since hand-written JSON misses whole classes of real payloads
