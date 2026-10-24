@@ -140,11 +140,16 @@ The codebase follows a clean layered architecture:
     is the human `"2023-2024"` form (these two are now deliberately different — do not conflate them)
   - `short_label()` returns `"2023-24"`
   - `from_years(start, end) -> Result<Self, SeasonError>` accepts `end == start` or
-    `end == start + 1`, otherwise errors (no more silent/`debug_assert` truncation)
+    `end == start + 1`, otherwise errors (no more silent/`debug_assert` truncation); both years
+    must be in `1000..=9999` (`SeasonError::YearOutOfRange`), so every `Season` it builds has a
+    `YYYYYYYY` id. `Season::new`/`From<u16>` stay infallible and unchecked
   - `TryFrom<i32>`/`TryFrom<i64>` replace the old unchecked `From` impls — range-checked and routed
     through `from_years`
-  - `parse()`/`FromStr` accept `"20232024"`, `"2023-2024"`, and single-year forms; return
-    `SeasonError`, not `()`
+  - `parse()`/`FromStr` accept `"20232024"`, `"2023-2024"`, and single-year forms, each year
+    exactly four ASCII digits (non-ASCII input is an error, never a panic); return `SeasonError`,
+    not `()`
+  - `current()` delegates to the private `for_date(NaiveDate)`, which holds the October rollover
+    and is what the tests exercise
   - serde: serializes as an integer; deserializes from an integer or either string form
 - `GameDate::today()`, `GameDate::as_date()`, and `Season::current()` use `chrono::Utc::now()`, not
   `Local` — machine-timezone independent. The October season-rollover boundary is unchanged.
