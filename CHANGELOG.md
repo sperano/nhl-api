@@ -32,6 +32,9 @@ All notable changes to this project are documented in this file.
 - `NHLApiError` is now `#[non_exhaustive]`: new variants (and new status-code mappings) can be
   added without that being a breaking change, so an exhaustive `match` on it without a wildcard
   arm no longer compiles.
+- A `403` response is now `NHLApiError::Forbidden` instead of `ApiError`; code that matched
+  `ApiError` to detect a `403` (by status code or message text) now needs to also match
+  `Forbidden`.
 
 ### Added
 

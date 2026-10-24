@@ -165,17 +165,18 @@ impl HttpClient {
         }
 
         let response = request.send().await?;
-        debug!(status = %response.status(), url = %full_url, "Received HTTP response");
+        let request_url = response.url().to_string();
+        debug!(status = %response.status(), url = %request_url, "Received HTTP response");
 
-        let response = self.handle_response(response, &full_url).await?;
+        let response = self.handle_response(response, &request_url).await?;
 
         let body_text = response.text().await?;
         let json =
             serde_json::from_str::<T>(&body_text).map_err(|source| NHLApiError::JsonError {
-                url: full_url.clone(),
+                url: request_url.clone(),
                 source,
             })?;
-        debug!(url = %full_url, "Successfully deserialized response");
+        debug!(url = %request_url, "Successfully deserialized response");
         Ok(json)
     }
 }
@@ -487,6 +488,19 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_status_code_none_for_non_status_variants() {
+        let json_source = serde_json::from_str::<i32>("not json").unwrap_err();
+        let json_error = NHLApiError::JsonError {
+            url: "https://example.com".to_string(),
+            source: json_source,
+        };
+        assert_eq!(json_error.status_code(), None);
+
+        let other_error = NHLApiError::Other("boom".to_string());
+        assert_eq!(other_error.status_code(), None);
+    }
+
     // ===== Integration Tests for get_json with mockito =====
 
     #[tokio::test]
@@ -557,6 +571,43 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().count, 5);
+    }
+
+    #[tokio::test]
+    async fn test_get_json_404_error_message_includes_query_params() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/search")
+            .match_query(mockito::Matcher::UrlEncoded("q".into(), "test".into()))
+            .with_status(404)
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default();
+        let http_client = HttpClient::new(config).unwrap();
+
+        let mut params = HashMap::new();
+        params.insert("q".to_string(), "test".to_string());
+
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "search", Some(params)).await;
+
+        match result.unwrap_err() {
+            NHLApiError::ResourceNotFound { message, .. } => {
+                assert!(
+                    message.contains("q=test"),
+                    "expected message to include the query string, got: {}",
+                    message
+                );
+            }
+            other => panic!("Expected ResourceNotFound error, got {:?}", other),
+        }
     }
 
     #[tokio::test]

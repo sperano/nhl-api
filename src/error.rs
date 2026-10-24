@@ -38,7 +38,7 @@ pub enum NHLApiError {
     ApiError { message: String, status_code: u16 },
 
     /// The request itself failed at the transport level (connection,
-    /// timeout, TLS, ...), before any HTTP status code was received.
+    /// timeout, TLS, ...) or while reading the response body, even after a 2xx status.
     #[error("HTTP request failed: {0}")]
     RequestError(#[from] reqwest::Error),
 
@@ -50,8 +50,8 @@ pub enum NHLApiError {
         source: serde_json::Error,
     },
 
-    /// Any other library-internal error (e.g. building the HTTP client)
-    /// that doesn't correspond to an API response.
+    /// Any other error not tied to an API response, e.g. an invalid season id
+    /// passed by the caller or a failure building the HTTP client.
     #[error("{0}")]
     Other(String),
 }
