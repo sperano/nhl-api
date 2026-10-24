@@ -93,3 +93,27 @@ fn test_season_for_date_from_october_is_new_season() {
     assert_eq!(Season::for_date(date(2024, 10, 1)), Season::new(2024));
     assert_eq!(Season::for_date(date(2024, 12, 31)), Season::new(2024));
 }
+
+#[test]
+fn test_season_try_from_end_half_below_years_is_invalid_integer() {
+    // Inside 10001000..=99999999, but the end half (0500) is not a valid year.
+    assert_eq!(
+        Season::try_from(99_990_500_i64),
+        Err(SeasonError::InvalidInteger(99_990_500))
+    );
+    assert_eq!(
+        Season::try_from(10_500_000_i64),
+        Err(SeasonError::InvalidInteger(10_500_000))
+    );
+}
+
+#[test]
+fn test_season_try_from_gap_year_is_invalid_years() {
+    assert_eq!(
+        Season::try_from(20_232_025_i64),
+        Err(SeasonError::InvalidYears {
+            start: 2023,
+            end: 2025
+        })
+    );
+}

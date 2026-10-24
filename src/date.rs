@@ -10,10 +10,6 @@ const SEASON_YEAR_DIVISOR: i64 = 10_000;
 const MIN_SEASON_YEAR: u16 = 1000;
 /// Largest year a season can start or end in.
 const MAX_SEASON_YEAR: u16 = 9999;
-/// Smallest season id whose halves are both valid years (`10001000`).
-const MIN_SEASON_ID: i64 = MIN_SEASON_YEAR as i64 * SEASON_YEAR_DIVISOR + MIN_SEASON_YEAR as i64;
-/// Largest season id whose halves are both valid years (`99999999`).
-const MAX_SEASON_ID: i64 = MAX_SEASON_YEAR as i64 * SEASON_YEAR_DIVISOR + MAX_SEASON_YEAR as i64;
 /// Number of digits of each year in a season string.
 const SEASON_YEAR_DIGITS: usize = 4;
 /// First month of a new NHL season: dates before it belong to the season that
@@ -27,8 +23,11 @@ pub enum SeasonError {
     #[error("invalid season years: {start}-{end} (end must equal start or start + 1)")]
     InvalidYears { start: u16, end: u16 },
 
-    /// The integer is outside the valid `YYYYYYYY` range.
-    #[error("invalid season integer: {0} (expected {MIN_SEASON_ID}..={MAX_SEASON_ID})")]
+    /// The integer is not a `YYYYYYYY` id whose halves are both four-digit
+    /// years.
+    #[error(
+        "invalid season integer: {0} (expected YYYYYYYY with both years in {MIN_SEASON_YEAR}..={MAX_SEASON_YEAR})"
+    )]
     InvalidInteger(i64),
 
     /// The string is not a recognized season format.
@@ -275,15 +274,19 @@ impl fmt::Display for Season {
 impl TryFrom<i64> for Season {
     type Error = SeasonError;
 
-    /// Create a Season from an i64 season id (e.g. `20232024`), validating the
-    /// `YYYYYYYY` range and the start/end year relationship.
+    /// Create a Season from an i64 season id (e.g. `20232024`).
+    ///
+    /// Returns [`SeasonError::InvalidInteger`] unless both four-digit halves
+    /// are years in `1000..=9999`, and [`SeasonError::InvalidYears`] when the
+    /// end year is neither the start year nor `start_year + 1`.
     fn try_from(season_id: i64) -> Result<Self, Self::Error> {
-        if !(MIN_SEASON_ID..=MAX_SEASON_ID).contains(&season_id) {
+        let year_range = i64::from(MIN_SEASON_YEAR)..=i64::from(MAX_SEASON_YEAR);
+        let start_year = season_id / SEASON_YEAR_DIVISOR;
+        let end_year = season_id % SEASON_YEAR_DIVISOR;
+        if !year_range.contains(&start_year) || !year_range.contains(&end_year) {
             return Err(SeasonError::InvalidInteger(season_id));
         }
-        let start_year = (season_id / SEASON_YEAR_DIVISOR) as u16;
-        let end_year = (season_id % SEASON_YEAR_DIVISOR) as u16;
-        Self::from_years(start_year, end_year)
+        Self::from_years(start_year as u16, end_year as u16)
     }
 }
 
@@ -801,8 +804,8 @@ mod tests {
             Season::try_from(10_000_999_i64),
             Err(SeasonError::InvalidInteger(10_000_999))
         );
-        assert!(Season::try_from(MIN_SEASON_ID).is_ok());
-        assert!(Season::try_from(MAX_SEASON_ID).is_ok());
+        assert!(Season::try_from(10_001_000_i64).is_ok());
+        assert!(Season::try_from(99_999_999_i64).is_ok());
         // Above the range.
         assert!(Season::try_from(202320240_i64).is_err());
         // Negative.

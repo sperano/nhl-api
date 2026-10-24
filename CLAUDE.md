@@ -143,8 +143,9 @@ The codebase follows a clean layered architecture:
     `end == start + 1`, otherwise errors (no more silent/`debug_assert` truncation); both years
     must be in `1000..=9999` (`SeasonError::YearOutOfRange`), so every `Season` it builds has a
     `YYYYYYYY` id. `Season::new`/`From<u16>` stay infallible and unchecked
-  - `TryFrom<i32>`/`TryFrom<i64>` replace the old unchecked `From` impls — range-checked and routed
-    through `from_years`
+  - `TryFrom<i32>`/`TryFrom<i64>` replace the old unchecked `From` impls — `InvalidInteger` unless
+    both four-digit halves are years in `1000..=9999`, then routed through `from_years`
+    (`InvalidYears` for a gap)
   - `parse()`/`FromStr` accept `"20232024"`, `"2023-2024"`, and single-year forms, each year
     exactly four ASCII digits (non-ASCII input is an error, never a panic); return `SeasonError`,
     not `()`
