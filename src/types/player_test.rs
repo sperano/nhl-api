@@ -288,13 +288,20 @@ const GRETZKY_FIXTURE: &str = include_str!("../../tests/fixtures/player_landing/
 /// Bobby Orr (live API response): his 1972 Summit Series row has no stats.
 const ORR_FIXTURE: &str = include_str!("../../tests/fixtures/player_landing/orr.json");
 
-fn season_total(landing: &PlayerLanding, season: Season, league: &str) -> SeasonTotal {
+fn season_total(
+    landing: &PlayerLanding,
+    season: Season,
+    game_type: GameType,
+    league: &str,
+) -> SeasonTotal {
     landing
         .season_totals
         .as_ref()
         .expect("season totals")
         .iter()
-        .find(|total| total.season == season && total.league_abbrev == league)
+        .find(|total| {
+            total.season == season && total.game_type == game_type && total.league_abbrev == league
+        })
         .cloned()
         .expect("season total row")
 }
@@ -311,11 +318,16 @@ fn assert_no_stats(total: &SeasonTotal) {
 #[test]
 fn test_player_landing_gretzky_stat_less_minor_league_row() {
     let landing: PlayerLanding = serde_json::from_str(GRETZKY_FIXTURE).unwrap();
-    let brantford = season_total(&landing, Season::new(1974), "Minor-ON");
+    let brantford = season_total(
+        &landing,
+        Season::new(1974),
+        GameType::RegularSeason,
+        "Minor-ON",
+    );
     assert_eq!(brantford.team_name.default, "Brantford");
     assert_no_stats(&brantford);
 
-    let rookie_nhl = season_total(&landing, Season::new(1979), "NHL");
+    let rookie_nhl = season_total(&landing, Season::new(1979), GameType::RegularSeason, "NHL");
     assert_eq!(rookie_nhl.games_played, Some(79));
     assert_eq!(rookie_nhl.points, Some(137));
 }
@@ -323,7 +335,12 @@ fn test_player_landing_gretzky_stat_less_minor_league_row() {
 #[test]
 fn test_player_landing_orr_stat_less_tournament_row() {
     let landing: PlayerLanding = serde_json::from_str(ORR_FIXTURE).unwrap();
-    let summit = season_total(&landing, Season::new(1972), "Summit-72");
+    let summit = season_total(
+        &landing,
+        Season::new(1972),
+        GameType::RegularSeason,
+        "Summit-72",
+    );
     assert_eq!(summit.sequence, Some(2));
     assert_no_stats(&summit);
 }
