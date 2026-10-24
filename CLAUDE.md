@@ -182,7 +182,8 @@ The NHL API returns different data structures based on context:
 
 **Game Center Endpoints**: Playoff games (unlimited overtime) omit the top-level `maxPeriods`:
 - `PlayByPlay`, `GameMatchup` and `GameStory` use `max_periods: Option<i32>` (`None` for playoffs)
-- Regulation length is always in `regPeriods` and `periodDescriptor.maxRegulationPeriods`
+- Regulation length is always in `regPeriods`; it is also in `periodDescriptor.maxRegulationPeriods`
+  when the response has a top-level `periodDescriptor` (scheduled `FUT` games omit it)
 
 ### Testing Strategy
 
