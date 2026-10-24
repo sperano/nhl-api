@@ -176,9 +176,10 @@ The NHL API returns different data structures based on context:
 - The `ScheduleGame.game_date` field is `Option<String>` to handle this
 
 **Standings Endpoint**: Historical standings data (pre-1975) differs from modern data:
-- Old data lacks `conferenceAbbrev` and `conferenceName` fields
-- The `Standing` struct uses `Option<String>` for conference fields
-- `Standing::to_team()` provides defaults ("UNK"/"Unknown") when conference is None
+- Old data lacks `conferenceAbbrev`, `conferenceName`, `divisionAbbrev`, and `divisionName`
+- `Standing` uses `Option<String>` for the conference and division fields
+- `Standing::to_team()` provides `"UNK"`/`"Unknown"` defaults for missing conference or division
+- `ties` defaults to zero when absent and is included in `Standing::games_played()`
 
 **Game Center Endpoints**: Playoff games (unlimited overtime) omit the top-level `maxPeriods`:
 - `PlayByPlay`, `GameMatchup` and `GameStory` use `max_periods: Option<i32>` (`None` for playoffs)
