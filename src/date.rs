@@ -171,7 +171,7 @@ impl Season {
                 end: end_year,
             });
         }
-        if end_year == start_year || start_year.checked_add(1) == Some(end_year) {
+        if end_year == start_year || start_year + 1 == end_year {
             Ok(Self {
                 start_year,
                 end_year,
