@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ### Breaking changes
 
+- `SeasonTotal.games_played` is now `Option<i32>` (`src/types/player.rs`). Some `seasonTotals`
+  rows (minor-league and tournament seasons) carry only team and league, with no stats, so
+  `player_landing()` failed for players such as Wayne Gretzky and Bobby Orr with
+  `missing field 'gamesPlayed'`. Those rows now read `None`; a listed player who did not play
+  still reads `Some(0)`.
 - **`GameLog` is now an enum** (`src/types/game_log.rs`): `GameLog::Skater(SkaterGameLog)` or
   `GameLog::Goalie(GoalieGameLog)`. `player_game_log()` previously failed for every goalie with
   `missing field 'points'`, because the old `GameLog` struct required skater-only fields. The old
