@@ -192,7 +192,7 @@ mod landing {
         assert_eq!(landing.game_type, GameType::RegularSeason);
         assert_eq!(landing.game_state, GameState::Off);
         assert_eq!(landing.venue.default, "KeyBank Center");
-        assert_eq!(landing.max_periods, 5);
+        assert_eq!(landing.max_periods, Some(5));
         assert!(landing.ot_in_use && landing.shootout_in_use && !landing.ties_in_use);
         assert_eq!(landing.clock.unwrap().seconds_remaining, 0);
         let summary = landing.summary.unwrap();
@@ -246,5 +246,67 @@ mod landing {
             r#"{"star":1,"playerId":1,"teamAbbrev":"PHI","headshot":"","name":42,"sweaterNo":1}"#;
 
         assert!(serde_json::from_str::<ThreeStar>(json).is_err());
+    }
+}
+
+mod playoffs {
+    use super::super::{GameMatchup, GameStory, PlayByPlay};
+    use crate::ids::GameId;
+    use crate::types::GameType;
+
+    /// FLA 5 @ EDM 2, 2025-06-14, Stanley Cup Final game 5: no `maxPeriods`,
+    /// since playoff overtime is unlimited.
+    const PLAY_BY_PLAY_FIXTURE: &str =
+        include_str!("../../tests/fixtures/play_by_play/playoffs_20242025.json");
+    const LANDING_FIXTURE: &str =
+        include_str!("../../tests/fixtures/landing/playoffs_20242025.json");
+    const GAME_STORY_FIXTURE: &str =
+        include_str!("../../tests/fixtures/game_story/playoffs_20242025.json");
+    const GAME_ID: i64 = 2024030415;
+    const REGULATION_PERIODS: i32 = 3;
+
+    #[test]
+    fn test_playoff_play_by_play_has_no_max_periods() {
+        let pbp: PlayByPlay = serde_json::from_str(PLAY_BY_PLAY_FIXTURE).unwrap();
+
+        assert_eq!(pbp.id, GameId::new(GAME_ID));
+        assert_eq!(pbp.game_type, GameType::Playoffs);
+        assert_eq!(pbp.max_periods, None);
+        assert_eq!(pbp.reg_periods, REGULATION_PERIODS);
+        assert_eq!(
+            pbp.period_descriptor.max_regulation_periods,
+            REGULATION_PERIODS
+        );
+    }
+
+    #[test]
+    fn test_playoff_landing_has_no_max_periods() {
+        let landing: GameMatchup = serde_json::from_str(LANDING_FIXTURE).unwrap();
+
+        assert_eq!(landing.id, GameId::new(GAME_ID));
+        assert_eq!(landing.game_type, GameType::Playoffs);
+        assert_eq!(landing.max_periods, None);
+        assert_eq!(landing.reg_periods, REGULATION_PERIODS);
+        assert!(landing.ot_in_use && !landing.shootout_in_use);
+    }
+
+    #[test]
+    fn test_playoff_game_story_has_no_max_periods() {
+        let story: GameStory = serde_json::from_str(GAME_STORY_FIXTURE).unwrap();
+
+        assert_eq!(story.id, GameId::new(GAME_ID));
+        assert_eq!(story.game_type, GameType::Playoffs);
+        assert_eq!(story.max_periods, None);
+        assert_eq!(story.reg_periods, REGULATION_PERIODS);
+    }
+
+    #[test]
+    fn test_playoff_max_periods_omitted_when_serialized() {
+        let landing: GameMatchup = serde_json::from_str(LANDING_FIXTURE).unwrap();
+        let value = serde_json::to_value(&landing).unwrap();
+
+        assert!(value.get("maxPeriods").is_none());
+        let round_trip: GameMatchup = serde_json::from_value(value).unwrap();
+        assert_eq!(round_trip, landing);
     }
 }

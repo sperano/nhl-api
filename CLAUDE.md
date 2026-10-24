@@ -180,6 +180,11 @@ The NHL API returns different data structures based on context:
 - The `Standing` struct uses `Option<String>` for conference fields
 - `Standing::to_team()` provides defaults ("UNK"/"Unknown") when conference is None
 
+**Game Center Endpoints**: Playoff games (unlimited overtime) omit the top-level `maxPeriods`:
+- `PlayByPlay`, `GameMatchup` and `GameStory` use `max_periods: Option<i32>` (`None` for playoffs)
+- Regulation length is always in `regPeriods`; it is also in `periodDescriptor.maxRegulationPeriods`
+  when the response has a top-level `periodDescriptor` (scheduled `FUT` games omit it)
+
 ### Testing Strategy
 
 - Every module has comprehensive unit tests in `#[cfg(test)] mod tests`

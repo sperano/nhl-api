@@ -28,6 +28,11 @@ All notable changes to this project are documented in this file.
   `{ fullName, sweaterNumber }`, not a bare localized string, so `season_series()` previously
   failed with `missing field 'default'`. `GameOfficial` exposes `full_name` and
   `sweater_number`.
+- `max_periods` on `PlayByPlay`, `GameMatchup` and `GameStory` is now `Option<i32>`
+  (`src/types/game_center.rs`). Playoff responses have no top-level `maxPeriods` (playoff
+  overtime is unlimited), so `play_by_play()`, `landing()` and `game_story()` previously failed
+  for every playoff game with `missing field 'maxPeriods'`. It is `None` for those games; the
+  regulation length stays available as `reg_periods` and `period_descriptor.max_regulation_periods`.
 
 - **`TeamGameStats` faceoffs**: `faceoff_wins`/`faceoff_total` are replaced by
   `faceoffs: Option<FaceoffTotals>`, and `faceoff_percentage()` now returns `Option<f64>`.

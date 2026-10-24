@@ -232,8 +232,10 @@ pub struct PlayByPlay {
     pub clock: GameClock,
     #[serde(rename = "displayPeriod")]
     pub display_period: i32,
-    #[serde(rename = "maxPeriods")]
-    pub max_periods: i32,
+    /// `None` for playoff games, whose overtime has no period limit.
+    #[serde(rename = "maxPeriods", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_periods: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "gameOutcome")]
     pub game_outcome: Option<GameOutcome>,
@@ -545,8 +547,10 @@ pub struct GameMatchup {
     pub home_team: MatchupTeam,
     #[serde(rename = "shootoutInUse")]
     pub shootout_in_use: bool,
-    #[serde(rename = "maxPeriods")]
-    pub max_periods: i32,
+    /// `None` for playoff games, whose overtime has no period limit.
+    #[serde(rename = "maxPeriods", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_periods: Option<i32>,
     #[serde(rename = "regPeriods", default)]
     pub reg_periods: i32,
     #[serde(rename = "otInUse")]
@@ -974,8 +978,10 @@ pub struct GameStory {
     pub home_team: StoryTeam,
     #[serde(rename = "shootoutInUse")]
     pub shootout_in_use: bool,
-    #[serde(rename = "maxPeriods")]
-    pub max_periods: i32,
+    /// `None` for playoff games, whose overtime has no period limit.
+    #[serde(rename = "maxPeriods", default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_periods: Option<i32>,
     #[serde(rename = "regPeriods", default)]
     pub reg_periods: i32,
     #[serde(rename = "otInUse")]
