@@ -1,6 +1,9 @@
-use super::super::*;
+use super::super::{Client, DEFAULT_SEARCH_LIMIT};
+use crate::config::ClientConfig;
 use crate::date::{GameDate, Season};
-use crate::ids::TeamId;
+use crate::http_client::Endpoint;
+use crate::ids::{GameId, TeamId};
+use crate::types::{GameType, WeeklyScheduleResponse};
 use chrono::NaiveDate;
 
 // ===== Client Construction Tests =====
