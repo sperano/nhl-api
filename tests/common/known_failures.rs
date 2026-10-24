@@ -71,9 +71,6 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
         "weekly_schedule/1917-12-19",
         "missing field `previousStartDate`",
     ),
-    // Season-total rows with no stats (minor leagues).
-    known("player_landing/gretzky", "missing field `gamesPlayed`"),
-    known("player_landing/orr", "missing field `gamesPlayed`"),
     // Historical game logs lack modern stats; the 1920s goalie log has no
     // `shotsAgainst`, so it is read as a skater log.
     known(
