@@ -188,8 +188,8 @@ The NHL API returns different data structures based on context:
 
 ### Testing Strategy
 
-- Modules have comprehensive unit tests in sibling test modules. Large suites use a
-  `tests/` directory with a small `mod.rs`, keeping production modules focused.
+- Unit tests may be inline `#[cfg(test)] mod tests`, in sibling `_test.rs` modules, or split
+  across a `tests/` directory for larger suites; check the source module's test declarations.
 - Tests cover: happy paths, edge cases, error conditions, deserialization with missing fields
 - Deserialization tests use JSON string literals matching actual API responses; prefer the recorded
   responses below, since hand-written JSON misses whole classes of real payloads

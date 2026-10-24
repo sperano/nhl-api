@@ -385,6 +385,8 @@ fn test_game_situation_empty_net() {
     assert!(!away_en.away_goalie_in);
     assert!(away_en.home_goalie_in);
     assert!(away_en.is_empty_net());
+    assert!(!away_en.is_away_power_play());
+    assert!(!away_en.is_home_power_play());
     assert_eq!(away_en.strength_description(), "6v5 EN");
 
     let home_en = GameSituation::from_code("1560").unwrap();
@@ -393,6 +395,8 @@ fn test_game_situation_empty_net() {
     assert!(home_en.away_goalie_in);
     assert!(!home_en.home_goalie_in);
     assert!(home_en.is_empty_net());
+    assert!(!home_en.is_away_power_play());
+    assert!(!home_en.is_home_power_play());
     assert_eq!(home_en.strength_description(), "5v6 EN");
 }
 

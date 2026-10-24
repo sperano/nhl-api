@@ -159,12 +159,12 @@ impl GameSituation {
 
     /// Returns true if away team has a power play
     pub fn is_away_power_play(&self) -> bool {
-        self.away_skaters > self.home_skaters
+        self.away_goalie_in && self.home_goalie_in && self.away_skaters > self.home_skaters
     }
 
     /// Returns true if home team has a power play
     pub fn is_home_power_play(&self) -> bool {
-        self.home_skaters > self.away_skaters
+        self.away_goalie_in && self.home_goalie_in && self.home_skaters > self.away_skaters
     }
 
     /// Returns true if either team has pulled their goalie

@@ -190,7 +190,7 @@ impl Client {
         edge_id;
         /// Gets Edge zone-time detail (zone time breakdown by strength) for a skater's season.
         ///
-        /// Note the path has no `-details` suffix, unlike the sibling detail
+        /// Note the path has no `-detail` suffix, unlike the sibling detail
         /// endpoints (`edge/skater-zone-time`, not `edge/skater-zone-time-detail`).
         edge_skater_zone_time => edge_skater_zone_time_at;
         player_id: PlayerId;
