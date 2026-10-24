@@ -3,10 +3,6 @@ use std::fmt;
 use std::str::FromStr;
 use thiserror::Error;
 
-/// Smallest valid NHL season id in `YYYYYYYY` form (e.g. `10000000`).
-const MIN_SEASON_ID: i64 = 10_000_000;
-/// Largest valid NHL season id in `YYYYYYYY` form (e.g. `99999999`).
-const MAX_SEASON_ID: i64 = 99_999_999;
 /// Divisor separating the start and end year halves of a season id.
 const SEASON_YEAR_DIVISOR: i64 = 10_000;
 /// Smallest year a season can start or end in: a season id holds two
@@ -14,6 +10,10 @@ const SEASON_YEAR_DIVISOR: i64 = 10_000;
 const MIN_SEASON_YEAR: u16 = 1000;
 /// Largest year a season can start or end in.
 const MAX_SEASON_YEAR: u16 = 9999;
+/// Smallest season id whose halves are both valid years (`10001000`).
+const MIN_SEASON_ID: i64 = MIN_SEASON_YEAR as i64 * SEASON_YEAR_DIVISOR + MIN_SEASON_YEAR as i64;
+/// Largest season id whose halves are both valid years (`99999999`).
+const MAX_SEASON_ID: i64 = MAX_SEASON_YEAR as i64 * SEASON_YEAR_DIVISOR + MAX_SEASON_YEAR as i64;
 /// Number of digits of each year in a season string.
 const SEASON_YEAR_DIGITS: usize = 4;
 /// First month of a new NHL season: dates before it belong to the season that
@@ -796,6 +796,13 @@ mod tests {
             Season::try_from(2023_i32),
             Err(SeasonError::InvalidInteger(2023))
         );
+        // Eight digits, but the end-year half is below the valid years.
+        assert_eq!(
+            Season::try_from(10_000_999_i64),
+            Err(SeasonError::InvalidInteger(10_000_999))
+        );
+        assert!(Season::try_from(MIN_SEASON_ID).is_ok());
+        assert!(Season::try_from(MAX_SEASON_ID).is_ok());
         // Above the range.
         assert!(Season::try_from(202320240_i64).is_err());
         // Negative.
