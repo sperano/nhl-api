@@ -3,12 +3,18 @@ use std::fmt;
 use std::str::FromStr;
 use thiserror::Error;
 
-/// Smallest valid NHL season id in `YYYYYYYY` form (e.g. `10000000`).
-const MIN_SEASON_ID: i64 = 10_000_000;
-/// Largest valid NHL season id in `YYYYYYYY` form (e.g. `99999999`).
-const MAX_SEASON_ID: i64 = 99_999_999;
 /// Divisor separating the start and end year halves of a season id.
 const SEASON_YEAR_DIVISOR: i64 = 10_000;
+/// Smallest year a season can start or end in: a season id holds two
+/// four-digit years.
+const MIN_SEASON_YEAR: u16 = 1000;
+/// Largest year a season can start or end in.
+const MAX_SEASON_YEAR: u16 = 9999;
+/// Number of digits of each year in a season string.
+const SEASON_YEAR_DIGITS: usize = 4;
+/// First month of a new NHL season: dates before it belong to the season that
+/// started the previous calendar year.
+const SEASON_START_MONTH: u32 = 10;
 
 /// Errors produced when constructing or parsing a [`Season`].
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -17,13 +23,22 @@ pub enum SeasonError {
     #[error("invalid season years: {start}-{end} (end must equal start or start + 1)")]
     InvalidYears { start: u16, end: u16 },
 
-    /// The integer is outside the valid `YYYYYYYY` range.
-    #[error("invalid season integer: {0} (expected {MIN_SEASON_ID}..={MAX_SEASON_ID})")]
+    /// The integer is not a `YYYYYYYY` id whose halves are both four-digit
+    /// years.
+    #[error(
+        "invalid season integer: {0} (expected YYYYYYYY with both years in {MIN_SEASON_YEAR}..={MAX_SEASON_YEAR})"
+    )]
     InvalidInteger(i64),
 
     /// The string is not a recognized season format.
     #[error("invalid season format: {0:?}")]
     InvalidFormat(String),
+
+    /// A year is not a four-digit year, so the season has no `YYYYYYYY` id.
+    #[error(
+        "invalid season years: {start}-{end} (years must be in {MIN_SEASON_YEAR}..={MAX_SEASON_YEAR})"
+    )]
+    YearOutOfRange { start: u16, end: u16 },
 }
 
 /// A date wrapper for NHL API calls that can be "now" or a specific date
@@ -144,9 +159,18 @@ impl Season {
     ///
     /// The end year must equal the start year (a single-calendar-year season)
     /// or `start_year + 1` (the typical cross-year season); both are stored as
-    /// given. Any other range returns [`SeasonError::InvalidYears`].
+    /// given. Any other range returns [`SeasonError::InvalidYears`]; a year
+    /// outside `1000..=9999` returns [`SeasonError::YearOutOfRange`], since its
+    /// season would have no `YYYYYYYY` id.
     pub fn from_years(start_year: u16, end_year: u16) -> Result<Self, SeasonError> {
-        if end_year == start_year || start_year.checked_add(1) == Some(end_year) {
+        let year_range = MIN_SEASON_YEAR..=MAX_SEASON_YEAR;
+        if !year_range.contains(&start_year) || !year_range.contains(&end_year) {
+            return Err(SeasonError::YearOutOfRange {
+                start: start_year,
+                end: end_year,
+            });
+        }
+        if end_year == start_year || start_year + 1 == end_year {
             Ok(Self {
                 start_year,
                 end_year,
@@ -191,23 +215,19 @@ impl Season {
 
     /// Parse a season from either `"YYYYYYYY"` (e.g. `"20232024"`) or
     /// `"YYYY-YYYY"` (e.g. `"2023-2024"`) form. Single-year seasons such as
-    /// `"20042004"` are accepted.
+    /// `"20042004"` are accepted. Each year must be exactly four ASCII digits.
     pub fn parse(s: &str) -> Result<Self, SeasonError> {
-        let invalid = || SeasonError::InvalidFormat(s.to_string());
-
-        if let Some((start, end)) = s.split_once('-') {
-            let start_year = start.parse::<u16>().map_err(|_| invalid())?;
-            let end_year = end.parse::<u16>().map_err(|_| invalid())?;
-            return Self::from_years(start_year, end_year);
+        let (start, end) = match s.split_once('-') {
+            Some(halves) => halves,
+            None if s.is_ascii() && s.len() == 2 * SEASON_YEAR_DIGITS => {
+                s.split_at(SEASON_YEAR_DIGITS)
+            }
+            None => return Err(SeasonError::InvalidFormat(s.to_string())),
+        };
+        match (parse_year(start), parse_year(end)) {
+            (Some(start_year), Some(end_year)) => Self::from_years(start_year, end_year),
+            _ => Err(SeasonError::InvalidFormat(s.to_string())),
         }
-
-        if s.len() == 8 {
-            let start_year = s[0..4].parse::<u16>().map_err(|_| invalid())?;
-            let end_year = s[4..8].parse::<u16>().map_err(|_| invalid())?;
-            return Self::from_years(start_year, end_year);
-        }
-
-        Err(invalid())
     }
 
     /// Get the current NHL season based on the current date.
@@ -219,14 +239,27 @@ impl Season {
     /// independent of the machine's timezone configuration (the NHL API
     /// itself is timezone-agnostic about date boundaries).
     pub fn current() -> Self {
-        let now = chrono::Utc::now().date_naive();
-        let year = now.year() as u16;
-        // If it's before October, we're still in the previous season
-        if now.month() < 10 {
+        Self::for_date(chrono::Utc::now().date_naive())
+    }
+
+    /// The NHL season a date falls in: dates before October belong to the
+    /// season that started the previous calendar year.
+    fn for_date(date: NaiveDate) -> Self {
+        let year = date.year() as u16;
+        if date.month() < SEASON_START_MONTH {
             Self::new(year - 1)
         } else {
             Self::new(year)
         }
+    }
+}
+
+/// Parse a year written as exactly four ASCII digits (no sign, no padding).
+fn parse_year(s: &str) -> Option<u16> {
+    if s.len() == SEASON_YEAR_DIGITS && s.bytes().all(|b| b.is_ascii_digit()) {
+        s.parse().ok()
+    } else {
+        None
     }
 }
 
@@ -241,15 +274,19 @@ impl fmt::Display for Season {
 impl TryFrom<i64> for Season {
     type Error = SeasonError;
 
-    /// Create a Season from an i64 season id (e.g. `20232024`), validating the
-    /// `YYYYYYYY` range and the start/end year relationship.
+    /// Create a Season from an i64 season id (e.g. `20232024`).
+    ///
+    /// Returns [`SeasonError::InvalidInteger`] unless both four-digit halves
+    /// are years in `1000..=9999`, and [`SeasonError::InvalidYears`] when the
+    /// end year is neither the start year nor `start_year + 1`.
     fn try_from(season_id: i64) -> Result<Self, Self::Error> {
-        if !(MIN_SEASON_ID..=MAX_SEASON_ID).contains(&season_id) {
+        let year_range = i64::from(MIN_SEASON_YEAR)..=i64::from(MAX_SEASON_YEAR);
+        let start_year = season_id / SEASON_YEAR_DIVISOR;
+        let end_year = season_id % SEASON_YEAR_DIVISOR;
+        if !year_range.contains(&start_year) || !year_range.contains(&end_year) {
             return Err(SeasonError::InvalidInteger(season_id));
         }
-        let start_year = (season_id / SEASON_YEAR_DIVISOR) as u16;
-        let end_year = (season_id % SEASON_YEAR_DIVISOR) as u16;
-        Self::from_years(start_year, end_year)
+        Self::from_years(start_year as u16, end_year as u16)
     }
 }
 
@@ -762,6 +799,13 @@ mod tests {
             Season::try_from(2023_i32),
             Err(SeasonError::InvalidInteger(2023))
         );
+        // Eight digits, but the end-year half is below the valid years.
+        assert_eq!(
+            Season::try_from(10_000_999_i64),
+            Err(SeasonError::InvalidInteger(10_000_999))
+        );
+        assert!(Season::try_from(10_001_000_i64).is_ok());
+        assert!(Season::try_from(99_999_999_i64).is_ok());
         // Above the range.
         assert!(Season::try_from(202320240_i64).is_err());
         // Negative.
@@ -933,8 +977,9 @@ mod tests {
 
     #[test]
     fn test_season_parse_boundary_years() {
-        // Year 0000-0001 (valid cross-year at the low boundary)
-        assert!(Season::parse("00000001").is_ok());
+        // Years below 1000 have no YYYYYYYY id.
+        assert!(Season::parse("00000001").is_err());
+        assert!(Season::parse("10001001").is_ok());
 
         // 99999999 is now a valid single-calendar-year season (end == start).
         let single = Season::parse("99999999").unwrap();
@@ -1032,3 +1077,7 @@ mod tests {
         assert!(serde_json::from_str::<GameDate>("\"not-a-date\"").is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "date_test.rs"]
+mod season_tests;
