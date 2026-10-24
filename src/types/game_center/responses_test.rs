@@ -1,4 +1,4 @@
-use super::super::*;
+use super::*;
 use crate::ids::{GameId, PlayerId, TeamId};
 use crate::types::{PeriodType, Position};
 
@@ -398,6 +398,17 @@ fn test_game_situation_empty_net() {
     assert!(!home_en.is_away_power_play());
     assert!(!home_en.is_home_power_play());
     assert_eq!(home_en.strength_description(), "5v6 EN");
+}
+
+#[test]
+fn test_game_situation_power_play_with_pulled_goalie() {
+    let away_pp = GameSituation::from_code("0641").unwrap();
+    assert!(away_pp.is_away_power_play());
+    assert!(!away_pp.is_home_power_play());
+
+    let home_pp = GameSituation::from_code("1460").unwrap();
+    assert!(!home_pp.is_away_power_play());
+    assert!(home_pp.is_home_power_play());
 }
 
 #[test]

@@ -13,6 +13,7 @@ use super::super::enums::{
 };
 use super::super::game_state::GameState;
 use super::super::game_type::GameType;
+use super::GameSummary;
 
 /// Type of play event in a game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -114,6 +115,8 @@ pub struct GameSituation {
 const MIN_SITUATION_SKATERS: u32 = 1;
 /// Maximum valid skater count encoded in a situation code (goalie excluded).
 const MAX_SITUATION_SKATERS: u32 = 6;
+/// One encoded skater is the goalie-replacement attacker when the goalie is pulled.
+const PULLED_GOALIE_SKATER_ADJUSTMENT: u8 = 1;
 
 impl GameSituation {
     /// Parse a situation code string (e.g., "1551").
@@ -159,17 +162,27 @@ impl GameSituation {
 
     /// Returns true if away team has a power play
     pub fn is_away_power_play(&self) -> bool {
-        self.away_goalie_in && self.home_goalie_in && self.away_skaters > self.home_skaters
+        self.effective_skaters(self.away_skaters, self.away_goalie_in)
+            > self.effective_skaters(self.home_skaters, self.home_goalie_in)
     }
 
     /// Returns true if home team has a power play
     pub fn is_home_power_play(&self) -> bool {
-        self.away_goalie_in && self.home_goalie_in && self.home_skaters > self.away_skaters
+        self.effective_skaters(self.home_skaters, self.home_goalie_in)
+            > self.effective_skaters(self.away_skaters, self.away_goalie_in)
     }
 
     /// Returns true if either team has pulled their goalie
     pub fn is_empty_net(&self) -> bool {
         !self.away_goalie_in || !self.home_goalie_in
+    }
+
+    fn effective_skaters(&self, skaters: u8, goalie_in: bool) -> u8 {
+        if goalie_in {
+            skaters
+        } else {
+            skaters.saturating_sub(PULLED_GOALIE_SKATER_ADJUSTMENT)
+        }
     }
 
     /// Returns the strength description (e.g., "5v5", "5v4 PP", "6v5 EN")
@@ -509,4 +522,3 @@ pub struct RosterSpot {
     pub position: Option<Position>,
     pub headshot: String,
 }
-use super::GameSummary;

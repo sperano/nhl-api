@@ -4,10 +4,12 @@ use crate::ids::TeamId;
 use std::future::Future;
 use std::pin::Pin;
 
+#[path = "client/core_test.rs"]
 mod core;
+#[path = "client/edge_contract_test.rs"]
 mod edge_contract;
 
-// ===== Edge contract tables (step 6.6) =====
+// ===== Edge contract tables =====
 //
 // Every Edge client method is exercised by both tables below via a single
 // `EdgeCase` entry. Adding a 23rd Edge method without adding a call fn +

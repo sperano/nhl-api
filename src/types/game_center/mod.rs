@@ -11,7 +11,19 @@ pub use shift_chart::*;
 pub use story::*;
 
 #[cfg(test)]
-mod tests;
+mod events_test;
 
 #[cfg(test)]
-mod fixture_tests;
+mod game_center_test;
+
+#[cfg(test)]
+mod matchup_test;
+
+#[cfg(test)]
+mod play_by_play_test;
+
+#[cfg(test)]
+mod responses_test;
+
+#[cfg(test)]
+mod season_series_test;

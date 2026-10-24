@@ -1,4 +1,4 @@
-use super::super::*;
+use super::*;
 use crate::date::Season;
 use crate::ids::GameId;
 

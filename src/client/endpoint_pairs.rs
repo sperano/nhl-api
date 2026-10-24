@@ -13,6 +13,9 @@ use crate::types::{
     TeamScheduleResponse,
 };
 
+/// Generates a public endpoint method and its endpoint-selectable core:
+/// `schedule` handles team schedules, `edge_id` handles Edge endpoints with
+/// a player or team id, and `edge_landing` handles id-free Edge leaderboards.
 macro_rules! client_endpoint_pair {
     (
         schedule;
@@ -28,6 +31,7 @@ macro_rules! client_endpoint_pair {
             self.$method_at(Endpoint::ApiWebV1, team_abbr, season).await
         }
 
+        /// Endpoint-param core used by mock path tests.
         pub(super) async fn $method_at(
             &self,
             endpoint: Endpoint,
@@ -66,6 +70,7 @@ macro_rules! client_endpoint_pair {
                 .await
         }
 
+        /// Endpoint-param core used by mock path tests.
         pub(super) async fn $method_at(
             &self,
             endpoint: Endpoint,
@@ -105,6 +110,7 @@ macro_rules! client_endpoint_pair {
                 .await
         }
 
+        /// Endpoint-param core used by mock path tests.
         pub(super) async fn $method_at(
             &self,
             endpoint: Endpoint,
