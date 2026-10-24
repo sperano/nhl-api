@@ -23,13 +23,6 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
     // Its series has unplayed games until 2027-02-24; after that the live
     // response passes and the fixture needs re-recording before this goes.
     known("season_series/regular_20262027", "missing field `score`"),
-    // Playoff games: no top-level `maxPeriods`.
-    known(
-        "play_by_play/playoffs_20242025",
-        "missing field `maxPeriods`",
-    ),
-    known("landing/playoffs_20242025", "missing field `maxPeriods`"),
-    known("game_story/playoffs_20242025", "missing field `maxPeriods`"),
     // Older games: fields modern games always have (`lightLogoUrl`, skater `toi`,
     // `situationCode`, `sog`, officials' `sweaterNumber`).
     known("boxscore/regular_20102011", "missing field `lightLogoUrl`"),
