@@ -12,10 +12,10 @@ pub struct Standing {
     pub conference_abbrev: Option<String>,
     #[serde(rename = "conferenceName", skip_serializing_if = "Option::is_none")]
     pub conference_name: Option<String>,
-    #[serde(rename = "divisionAbbrev")]
-    pub division_abbrev: String,
-    #[serde(rename = "divisionName")]
-    pub division_name: String,
+    #[serde(rename = "divisionAbbrev", skip_serializing_if = "Option::is_none")]
+    pub division_abbrev: Option<String>,
+    #[serde(rename = "divisionName", skip_serializing_if = "Option::is_none")]
+    pub division_name: Option<String>,
     #[serde(rename = "teamName")]
     pub team_name: LocalizedString,
     #[serde(rename = "teamCommonName")]
@@ -30,6 +30,8 @@ pub struct Standing {
     pub losses: i32,
     #[serde(rename = "otLosses")]
     pub ot_losses: i32,
+    #[serde(default)]
+    pub ties: i32,
     #[serde(rename = "points")]
     pub points: i32,
 }
@@ -37,6 +39,8 @@ pub struct Standing {
 impl Standing {
     const UNKNOWN_CONFERENCE_ABBR: &'static str = "UNK";
     const UNKNOWN_CONFERENCE_NAME: &'static str = "Unknown";
+    const UNKNOWN_DIVISION_ABBR: &'static str = "UNK";
+    const UNKNOWN_DIVISION_NAME: &'static str = "Unknown";
 
     fn conference_abbrev(&self) -> &str {
         self.conference_abbrev
@@ -48,6 +52,18 @@ impl Standing {
         self.conference_name
             .as_deref()
             .unwrap_or(Self::UNKNOWN_CONFERENCE_NAME)
+    }
+
+    fn division_abbrev(&self) -> &str {
+        self.division_abbrev
+            .as_deref()
+            .unwrap_or(Self::UNKNOWN_DIVISION_ABBR)
+    }
+
+    fn division_name(&self) -> &str {
+        self.division_name
+            .as_deref()
+            .unwrap_or(Self::UNKNOWN_DIVISION_NAME)
     }
 
     /// Convert a Standing entry into a Team struct
@@ -65,15 +81,15 @@ impl Standing {
                 name: self.conference_name().to_string(),
             },
             division: Division {
-                abbr: self.division_abbrev.clone(),
-                name: self.division_name.clone(),
+                abbr: self.division_abbrev().to_string(),
+                name: self.division_name().to_string(),
             },
             franchise_id: None,
         }
     }
 
     pub fn games_played(&self) -> i32 {
-        self.wins + self.losses + self.ot_losses
+        self.wins + self.losses + self.ot_losses + self.ties
     }
 }
 
@@ -126,6 +142,10 @@ pub struct SeasonsResponse {
 }
 
 #[cfg(test)]
+#[path = "standings_test.rs"]
+mod standings_test;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -162,8 +182,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("W".to_string()),
             conference_name: Some("Western".to_string()),
-            division_abbrev: "PAC".to_string(),
-            division_name: "Pacific".to_string(),
+            division_abbrev: Some("PAC".to_string()),
+            division_name: Some("Pacific".to_string()),
             team_name: LocalizedString {
                 default: "Vegas Golden Knights".to_string(),
             },
@@ -177,6 +197,7 @@ mod tests {
             wins: 12,
             losses: 3,
             ot_losses: 1,
+            ties: 0,
             points: 25,
         };
 
@@ -202,8 +223,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("E".to_string()),
             conference_name: Some("Eastern".to_string()),
-            division_abbrev: "ATL".to_string(),
-            division_name: "Atlantic".to_string(),
+            division_abbrev: Some("ATL".to_string()),
+            division_name: Some("Atlantic".to_string()),
             team_name: LocalizedString {
                 default: "Boston Bruins".to_string(),
             },
@@ -217,6 +238,7 @@ mod tests {
             wins: 15,
             losses: 2,
             ot_losses: 1,
+            ties: 0,
             points: 31,
         };
 
@@ -290,7 +312,7 @@ mod tests {
         let standing = &response.standings[0];
         assert_eq!(standing.conference_abbrev, None);
         assert_eq!(standing.conference_name, None);
-        assert_eq!(standing.division_abbrev, "EAST");
+        assert_eq!(standing.division_abbrev.as_deref(), Some("EAST"));
         assert_eq!(standing.team_abbrev.default, "BOS");
         assert_eq!(standing.wins, 20);
     }
@@ -301,8 +323,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: None,
             conference_name: None,
-            division_abbrev: "EAST".to_string(),
-            division_name: "East".to_string(),
+            division_abbrev: None,
+            division_name: None,
             team_name: LocalizedString {
                 default: "Montreal Canadiens".to_string(),
             },
@@ -316,6 +338,7 @@ mod tests {
             wins: 25,
             losses: 8,
             ot_losses: 3,
+            ties: 0,
             points: 53,
         };
 
@@ -327,8 +350,8 @@ mod tests {
         assert_eq!(team.abbr, "MTL");
         assert_eq!(team.conference.abbr, "UNK");
         assert_eq!(team.conference.name, "Unknown");
-        assert_eq!(team.division.abbr, "EAST");
-        assert_eq!(team.division.name, "East");
+        assert_eq!(team.division.abbr, "UNK");
+        assert_eq!(team.division.name, "Unknown");
     }
 
     #[test]
@@ -336,8 +359,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("E".to_string()),
             conference_name: Some("Eastern".to_string()),
-            division_abbrev: "ATL".to_string(),
-            division_name: "Atlantic".to_string(),
+            division_abbrev: Some("ATL".to_string()),
+            division_name: Some("Atlantic".to_string()),
             team_name: LocalizedString {
                 default: "Toronto Maple Leafs".to_string(),
             },
@@ -351,6 +374,7 @@ mod tests {
             wins: 15,
             losses: 10,
             ot_losses: 2,
+            ties: 0,
             points: 32,
         };
 
@@ -362,8 +386,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("W".to_string()),
             conference_name: Some("Western".to_string()),
-            division_abbrev: "CEN".to_string(),
-            division_name: "Central".to_string(),
+            division_abbrev: Some("CEN".to_string()),
+            division_name: Some("Central".to_string()),
             team_name: LocalizedString {
                 default: "Test Team".to_string(),
             },
@@ -377,6 +401,7 @@ mod tests {
             wins: 0,
             losses: 0,
             ot_losses: 0,
+            ties: 0,
             points: 0,
         };
 
@@ -388,8 +413,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("E".to_string()),
             conference_name: Some("Eastern".to_string()),
-            division_abbrev: "ATL".to_string(),
-            division_name: "Atlantic".to_string(),
+            division_abbrev: Some("ATL".to_string()),
+            division_name: Some("Atlantic".to_string()),
             team_name: LocalizedString {
                 default: "Undefeated Team".to_string(),
             },
@@ -403,6 +428,7 @@ mod tests {
             wins: 10,
             losses: 0,
             ot_losses: 0,
+            ties: 0,
             points: 20,
         };
 
@@ -414,8 +440,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("W".to_string()),
             conference_name: Some("Western".to_string()),
-            division_abbrev: "PAC".to_string(),
-            division_name: "Pacific".to_string(),
+            division_abbrev: Some("PAC".to_string()),
+            division_name: Some("Pacific".to_string()),
             team_name: LocalizedString {
                 default: "Winless Team".to_string(),
             },
@@ -429,6 +455,7 @@ mod tests {
             wins: 0,
             losses: 15,
             ot_losses: 0,
+            ties: 0,
             points: 0,
         };
 
@@ -440,8 +467,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("E".to_string()),
             conference_name: Some("Eastern".to_string()),
-            division_abbrev: "MET".to_string(),
-            division_name: "Metropolitan".to_string(),
+            division_abbrev: Some("MET".to_string()),
+            division_name: Some("Metropolitan".to_string()),
             team_name: LocalizedString {
                 default: "OT Loss Team".to_string(),
             },
@@ -455,6 +482,7 @@ mod tests {
             wins: 0,
             losses: 0,
             ot_losses: 5,
+            ties: 0,
             points: 5,
         };
 
@@ -466,8 +494,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("W".to_string()),
             conference_name: Some("Western".to_string()),
-            division_abbrev: "CEN".to_string(),
-            division_name: "Central".to_string(),
+            division_abbrev: Some("CEN".to_string()),
+            division_name: Some("Central".to_string()),
             team_name: LocalizedString {
                 default: "Colorado Avalanche".to_string(),
             },
@@ -481,6 +509,7 @@ mod tests {
             wins: 50,
             losses: 20,
             ot_losses: 12,
+            ties: 0,
             points: 112,
         };
 
@@ -493,8 +522,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("E".to_string()),
             conference_name: Some("Eastern".to_string()),
-            division_abbrev: "ATL".to_string(),
-            division_name: "Atlantic".to_string(),
+            division_abbrev: Some("ATL".to_string()),
+            division_name: Some("Atlantic".to_string()),
             team_name: LocalizedString {
                 default: "Buffalo Sabres".to_string(),
             },
@@ -508,6 +537,7 @@ mod tests {
             wins: 10,
             losses: 5,
             ot_losses: 2,
+            ties: 0,
             points: 22,
         };
 
@@ -576,8 +606,8 @@ mod tests {
         let standing = Standing {
             conference_abbrev: Some("W".to_string()),
             conference_name: Some("Western".to_string()),
-            division_abbrev: "PAC".to_string(),
-            division_name: "Pacific".to_string(),
+            division_abbrev: Some("PAC".to_string()),
+            division_name: Some("Pacific".to_string()),
             team_name: LocalizedString {
                 default: "Vegas Golden Knights".to_string(),
             },
@@ -591,6 +621,7 @@ mod tests {
             wins: 0,
             losses: 0,
             ot_losses: 0,
+            ties: 0,
             points: 0,
         };
 

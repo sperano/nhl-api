@@ -53,12 +53,6 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
         "missing field `sweaterNumber`",
     ),
     known("game_story/regular_19251926", "missing field `sog`"),
-    // Standings before divisions existed.
-    known(
-        "league_standings_for_date/1925-03-01",
-        "missing field `divisionAbbrev`",
-    ),
-    known("teams/1925-03-01", "missing field `divisionAbbrev`"),
     // The first week on record has no previous week.
     known(
         "weekly_schedule/1917-12-19",
