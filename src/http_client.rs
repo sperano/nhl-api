@@ -33,6 +33,10 @@ impl Endpoint {
 /// message, so a large (or hostile) body can't be slurped into memory whole.
 const MAX_ERROR_BODY_BYTES: usize = 4096;
 
+/// Upper bound on the number of redirects followed when
+/// `ClientConfig::follow_redirects` is enabled.
+const MAX_REDIRECTS: usize = 10;
+
 pub struct HttpClient {
     client: Client,
 }
@@ -70,7 +74,8 @@ impl HttpClient {
             .default_headers(headers);
 
         if follow_redirects {
-            client_builder = client_builder.redirect(reqwest::redirect::Policy::limited(10));
+            client_builder =
+                client_builder.redirect(reqwest::redirect::Policy::limited(MAX_REDIRECTS));
         } else {
             client_builder = client_builder.redirect(reqwest::redirect::Policy::none());
         }
@@ -100,6 +105,7 @@ impl HttpClient {
             429 => error_variant!(RateLimitExceeded),
             400 => error_variant!(BadRequest),
             401 => error_variant!(Unauthorized),
+            403 => error_variant!(Forbidden),
             500..=599 => error_variant!(ServerError),
             _ => NHLApiError::ApiError {
                 message: format!("Unexpected error: {}", message),
@@ -159,17 +165,18 @@ impl HttpClient {
         }
 
         let response = request.send().await?;
-        debug!(status = %response.status(), url = %full_url, "Received HTTP response");
+        let request_url = response.url().to_string();
+        debug!(status = %response.status(), url = %request_url, "Received HTTP response");
 
-        let response = self.handle_response(response, resource).await?;
+        let response = self.handle_response(response, &request_url).await?;
 
         let body_text = response.text().await?;
         let json =
             serde_json::from_str::<T>(&body_text).map_err(|source| NHLApiError::JsonError {
-                url: full_url.clone(),
+                url: request_url.clone(),
                 source,
             })?;
-        debug!(url = %full_url, "Successfully deserialized response");
+        debug!(url = %request_url, "Successfully deserialized response");
         Ok(json)
     }
 }
@@ -361,11 +368,13 @@ mod tests {
             NHLApiError::RateLimitExceeded { status_code, .. } => *status_code,
             NHLApiError::BadRequest { status_code, .. } => *status_code,
             NHLApiError::Unauthorized { status_code, .. } => *status_code,
+            NHLApiError::Forbidden { status_code, .. } => *status_code,
             NHLApiError::ServerError { status_code, .. } => *status_code,
             NHLApiError::ApiError { status_code, .. } => *status_code,
             _ => panic!("Unexpected error variant: {:?}", error),
         };
         assert_eq!(actual_status, status_code);
+        assert_eq!(error.status_code(), Some(status_code));
 
         // Verify the message contains expected text
         let actual_message = match &error {
@@ -373,6 +382,7 @@ mod tests {
             NHLApiError::RateLimitExceeded { message, .. } => message,
             NHLApiError::BadRequest { message, .. } => message,
             NHLApiError::Unauthorized { message, .. } => message,
+            NHLApiError::Forbidden { message, .. } => message,
             NHLApiError::ServerError { message, .. } => message,
             NHLApiError::ApiError { message, .. } => message,
             _ => panic!("Unexpected error variant"),
@@ -415,6 +425,11 @@ mod tests {
                 expected_variant: |e| matches!(e, NHLApiError::Unauthorized { .. }),
                 expected_message_contains: "Request to /test/resource failed",
             },
+            ErrorTestCase {
+                status_code: 403,
+                expected_variant: |e| matches!(e, NHLApiError::Forbidden { .. }),
+                expected_message_contains: "Request to /test/resource failed",
+            },
             // Server error range (500-599)
             ErrorTestCase {
                 status_code: 500,
@@ -448,11 +463,6 @@ mod tests {
                 expected_message_contains: "Unexpected error",
             },
             ErrorTestCase {
-                status_code: 403,
-                expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
-                expected_message_contains: "Unexpected error",
-            },
-            ErrorTestCase {
                 status_code: 600,
                 expected_variant: |e| matches!(e, NHLApiError::ApiError { .. }),
                 expected_message_contains: "Unexpected error",
@@ -476,6 +486,19 @@ mod tests {
                 test_case.expected_message_contains,
             );
         }
+    }
+
+    #[test]
+    fn test_status_code_none_for_non_status_variants() {
+        let json_source = serde_json::from_str::<i32>("not json").unwrap_err();
+        let json_error = NHLApiError::JsonError {
+            url: "https://example.com".to_string(),
+            source: json_source,
+        };
+        assert_eq!(json_error.status_code(), None);
+
+        let other_error = NHLApiError::Other("boom".to_string());
+        assert_eq!(other_error.status_code(), None);
     }
 
     // ===== Integration Tests for get_json with mockito =====
@@ -551,6 +574,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_json_404_error_message_includes_query_params() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/search")
+            .match_query(mockito::Matcher::UrlEncoded("q".into(), "test".into()))
+            .with_status(404)
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default();
+        let http_client = HttpClient::new(config).unwrap();
+
+        let mut params = HashMap::new();
+        params.insert("q".to_string(), "test".to_string());
+
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "search", Some(params)).await;
+
+        match result.unwrap_err() {
+            NHLApiError::ResourceNotFound { message, .. } => {
+                assert!(
+                    message.contains("q=test"),
+                    "expected message to include the query string, got: {}",
+                    message
+                );
+            }
+            other => panic!("Expected ResourceNotFound error, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
     async fn test_get_json_404_not_found() {
         use serde::Deserialize;
 
@@ -578,8 +638,12 @@ mod tests {
                 message,
             } => {
                 assert_eq!(status_code, 404);
-                // Empty body: message keeps the pre-4.1 shape, no trailing colon/snippet.
-                assert_eq!(message, "Request to missing failed");
+                // Empty body: no trailing colon/snippet, but the full URL
+                // (including host), not just the relative resource path.
+                assert_eq!(
+                    message,
+                    format!("Request to {}/missing failed", server.url())
+                );
             }
             _ => panic!("Expected ResourceNotFound error"),
         }
@@ -648,7 +712,8 @@ mod tests {
 
         match result.unwrap_err() {
             NHLApiError::BadRequest { message, .. } => {
-                let snippet_len = message.len() - "Request to huge-error failed: ".len();
+                let prefix = format!("Request to {}/huge-error failed: ", server.url());
+                let snippet_len = message.len() - prefix.len();
                 assert_eq!(
                     snippet_len, MAX_ERROR_BODY_BYTES,
                     "expected the body snippet to be truncated to the {}-byte cap",
@@ -756,6 +821,44 @@ mod tests {
                 assert_eq!(status_code, 429);
             }
             _ => panic!("Expected RateLimitExceeded"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_json_forbidden() {
+        use serde::Deserialize;
+
+        #[derive(Debug, Deserialize)]
+        struct TestResponse {}
+
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("GET", "/forbidden")
+            .with_status(403)
+            .create_async()
+            .await;
+
+        let config = ClientConfig::default();
+        let http_client = HttpClient::new(config).unwrap();
+
+        let endpoint = Endpoint::Custom(server.url());
+        let result: Result<TestResponse, NHLApiError> =
+            http_client.get_json(endpoint, "forbidden", None).await;
+
+        let error = result.unwrap_err();
+        assert_eq!(error.status_code(), Some(403));
+        match error {
+            NHLApiError::Forbidden {
+                status_code,
+                message,
+            } => {
+                assert_eq!(status_code, 403);
+                assert_eq!(
+                    message,
+                    format!("Request to {}/forbidden failed", server.url())
+                );
+            }
+            other => panic!("Expected Forbidden error, got {:?}", other),
         }
     }
 

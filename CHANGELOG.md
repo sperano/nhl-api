@@ -35,6 +35,12 @@ All notable changes to this project are documented in this file.
   wrong numbers (shifts are not faceoffs, and wingers take faceoffs too). The boxscore carries no
   faceoff counts, so `from_team_player_stats()` now leaves `faceoffs` as `None`; attach real
   totals with `with_faceoffs(play_by_play.faceoff_totals().home)` (or `.away`).
+- `NHLApiError` is now `#[non_exhaustive]`: new variants (and new status-code mappings) can be
+  added without that being a breaking change, so an exhaustive `match` on it without a wildcard
+  arm no longer compiles.
+- A `403` response is now `NHLApiError::Forbidden` instead of `ApiError`; code that matched
+  `ApiError` to detect a `403` (by status code or message text) now needs to also match
+  `Forbidden`.
 
 ### Added
 
@@ -45,6 +51,10 @@ All notable changes to this project are documented in this file.
 - `GoalieGameLog`: `games_started`, `decision: Option<GoalieDecision>` (`None` when the goalie
   was not credited with the decision), `shots_against`, `goals_against`, `save_pctg`,
   `shutouts`, `goals`, `assists`, `toi`, `pim`.
+- `NHLApiError::Forbidden` for a `403` response (previously fell into `ApiError` with an
+  "Unexpected error" message). `NHLApiError::status_code() -> Option<u16>` returns the HTTP status
+  code for every status-carrying variant, `None` for `RequestError`/`JsonError`/`Other`. Every
+  variant now has rustdoc explaining when it occurs.
 
 ### Fixed
 
@@ -56,6 +66,10 @@ All notable changes to this project are documented in this file.
   response lists its three stars: the landing response sends `threeStars[].name` as a localized
   object, while the game story sends a plain string. `ThreeStar.name` (still a `String`) now
   accepts both and keeps the `default` text.
+- Status-code error messages (`NHLApiError::ResourceNotFound` and friends) now read
+  `Request to {full_url} failed`, with the scheme and host, instead of the bare relative resource
+  path (`get_json` was passing `resource` instead of the already-built `full_url` to
+  `handle_response`).
 
 ### Testing
 

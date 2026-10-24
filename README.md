@@ -223,10 +223,16 @@ All client methods return `Result<T, NHLApiError>`. Error variants include:
 - `ResourceNotFound` - 404 errors
 - `RateLimitExceeded` - 429 errors
 - `BadRequest` - 400 errors
+- `Unauthorized` - 401 errors
+- `Forbidden` - 403 errors
 - `ServerError` - 5xx errors
+- `ApiError` - other non-2xx status codes
 - `RequestError` - Network/connection issues
 - `JsonError` - Deserialization failures; carries the request URL and the underlying
   `serde_json::Error`
+
+`NHLApiError` is `#[non_exhaustive]`, so a `match` on it must always carry a wildcard arm; use
+`status_code()` to get the HTTP status code without matching on every variant.
 
 Error messages for non-2xx responses include a snippet of the response body (truncated to 4096
 bytes) for easier diagnosis. Unrecognized enum values from the API (e.g. a new game type NHL adds
