@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ### Breaking changes
 
+- `Standing.division_abbrev` and `Standing.division_name` are now `Option<String>` because
+  pre-division seasons previously made standings deserialization fail with
+  `missing field 'divisionAbbrev'`; `Standing::to_team()` falls back to `"UNK"`/`"Unknown"`
+  when either field is absent. The new public `Standing.ties` field defaults to zero when absent
+  and is included in `Standing::games_played()`.
 - `SeasonTotal.games_played` is now `Option<i32>` (`src/types/player.rs`). Some `seasonTotals`
   rows (minor-league and tournament seasons) carry only team and league, with no stats, so
   `player_landing()` failed for players such as Wayne Gretzky and Bobby Orr with

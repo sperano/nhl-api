@@ -30,7 +30,7 @@ pub struct Standing {
     pub losses: i32,
     #[serde(rename = "otLosses")]
     pub ot_losses: i32,
-    #[serde(default)]
+    #[serde(rename = "ties", default)]
     pub ties: i32,
     #[serde(rename = "points")]
     pub points: i32,
