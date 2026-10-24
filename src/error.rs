@@ -2,10 +2,9 @@ use thiserror::Error;
 
 /// Errors returned by this crate's HTTP calls and response deserialization.
 ///
-/// `#[non_exhaustive]`: new variants (and new status-code mappings in
-/// [`crate::http_client::HttpClient::error_from_status`]) may be added without
-/// that being a breaking change, so a `match` on this type must always carry
-/// a wildcard arm.
+/// `#[non_exhaustive]`: new variants (and new status-code mappings) may be
+/// added without that being a breaking change, so a `match` on this type
+/// must always carry a wildcard arm.
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum NHLApiError {

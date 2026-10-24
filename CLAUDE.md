@@ -109,7 +109,7 @@ The codebase follows a clean layered architecture:
 
 **Error Handling (`error.rs`)**
 - Custom error types: `NHLApiError` enum with variants for different HTTP status codes
-- Specific errors: ResourceNotFound (404), RateLimitExceeded (429), BadRequest (400), Unauthorized (401), ServerError (5xx)
+- Specific errors: ResourceNotFound (404), RateLimitExceeded (429), BadRequest (400), Unauthorized (401), Forbidden (403), ServerError (5xx)
 - Non-2xx responses capture up to `MAX_ERROR_BODY_BYTES` (4096, `http_client.rs`) of the response
   body and append it to the error message (`"Request to {url} failed: {snippet}"`)
 - `JsonError` is a struct variant carrying both the request `url` and the source `serde_json::Error`,
