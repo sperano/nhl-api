@@ -13,46 +13,16 @@ pub struct KnownFailure {
 }
 
 pub const KNOWN_FAILURES: &[KnownFailure] = &[
-    // Scheduled games: no `score`/`sog` before puck drop, including the unplayed
-    // games listed in a season series.
+    // Scheduled games: no `score` before puck drop, including the unplayed
+    // games listed in a season series, and no `periodDescriptor` in play-by-play.
     known("boxscore/fut", "missing field `score`"),
-    known("play_by_play/fut", "missing field `sog`"),
+    known("play_by_play/fut", "missing field `periodDescriptor`"),
     known("landing/fut", "missing field `score`"),
     known("season_series/fut", "missing field `score`"),
     known("game_story/fut", "missing field `score`"),
     // Its series has unplayed games until 2027-02-24; after that the live
     // response passes and the fixture needs re-recording before this goes.
     known("season_series/regular_20262027", "missing field `score`"),
-    // Older games: fields modern games always have (`lightLogoUrl`, skater `toi`,
-    // `situationCode`, `sog`, officials' `sweaterNumber`).
-    known("boxscore/regular_20102011", "missing field `lightLogoUrl`"),
-    known(
-        "play_by_play/regular_20102011",
-        "missing field `lightLogoUrl`",
-    ),
-    known("landing/regular_20102011", "missing field `lightLogoUrl`"),
-    known("boxscore/regular_19751976", "missing field `toi`"),
-    known(
-        "play_by_play/regular_19751976",
-        "missing field `situationCode`",
-    ),
-    known("landing/regular_19751976", "missing field `situationCode`"),
-    known(
-        "season_series/regular_19751976",
-        "missing field `sweaterNumber`",
-    ),
-    known(
-        "game_story/regular_19751976",
-        "missing field `situationCode`",
-    ),
-    known("boxscore/regular_19251926", "missing field `sog`"),
-    known("play_by_play/regular_19251926", "missing field `sog`"),
-    known("landing/regular_19251926", "missing field `sog`"),
-    known(
-        "season_series/regular_19251926",
-        "missing field `sweaterNumber`",
-    ),
-    known("game_story/regular_19251926", "missing field `sog`"),
     // The first week on record has no previous week.
     known(
         "weekly_schedule/1917-12-19",

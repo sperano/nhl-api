@@ -38,7 +38,7 @@ fn fixture_boxscore_team() -> BoxscoreTeam {
         common_name: LocalizedString::default(),
         abbrev: String::new(),
         score: 0,
-        sog: 0,
+        sog: Some(0),
         logo: String::new(),
         dark_logo: String::new(),
         place_name: LocalizedString::default(),
@@ -70,7 +70,7 @@ fn fixture_story_team() -> StoryTeam {
         abbrev: String::new(),
         place_name: LocalizedString::default(),
         score: 0,
-        sog: 0,
+        sog: Some(0),
         logo: String::new(),
     }
 }

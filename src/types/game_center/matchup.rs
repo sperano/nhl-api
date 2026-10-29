@@ -76,7 +76,9 @@ pub struct MatchupTeam {
     #[serde(rename = "placeNameWithPreposition")]
     pub place_name_with_preposition: LocalizedString,
     pub score: i32,
-    pub sog: i32,
+    /// `None` for early games without shot counts (e.g. 1925-26).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sog: Option<i32>,
     pub logo: String,
     #[serde(rename = "darkLogo")]
     pub dark_logo: String,
@@ -106,8 +108,10 @@ pub struct PeriodScoring {
 /// Goal summary information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GoalSummary {
+    /// `None` for goals in older games (2008-09 and earlier).
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "situationCode")]
-    pub situation_code: String,
+    pub situation_code: Option<String>,
     #[serde(rename = "eventId")]
     pub event_id: i64,
     pub strength: String,
@@ -142,8 +146,10 @@ pub struct GoalSummary {
     pub leading_team_abbrev: Option<LocalizedString>,
     #[serde(rename = "timeInPeriod")]
     pub time_in_period: String,
+    /// `None` for goals in the 1990s and earlier.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shotType")]
-    pub shot_type: String,
+    pub shot_type: Option<String>,
     #[serde(rename = "goalModifier")]
     pub goal_modifier: String,
     #[serde(default)]

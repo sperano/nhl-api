@@ -67,6 +67,8 @@ pub struct StoryTeam {
     #[serde(rename = "placeName")]
     pub place_name: LocalizedString,
     pub score: i32,
-    pub sog: i32,
+    /// `None` for early games without shot counts (e.g. 1925-26).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sog: Option<i32>,
     pub logo: String,
 }

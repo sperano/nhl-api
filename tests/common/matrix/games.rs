@@ -68,6 +68,8 @@ pub(super) fn cases(out: &mut Vec<Case>, current: &CurrentGames) {
         recorded_game!("regular_20262027", 2026020152),
         recorded_game!("playoffs_20242025", 2024030415),
         recorded_game!("regular_20102011", 2010020001),
+        recorded_game!("regular_20052006", 2005020001),
+        recorded_game!("regular_19951996", 1995020001),
         recorded_game!("regular_19751976", 1975020001),
         recorded_game!("regular_19251926", 1925020001),
     ];

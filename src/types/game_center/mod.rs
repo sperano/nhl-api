@@ -21,6 +21,9 @@ mod events_test;
 mod game_center_test;
 
 #[cfg(test)]
+mod historical_test;
+
+#[cfg(test)]
 mod matchup_test;
 
 #[cfg(test)]
