@@ -35,7 +35,8 @@ pub struct Boxscore {
     pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
     pub game_schedule_state: GameScheduleState,
-    #[serde(rename = "periodDescriptor")]
+    /// All defaults before puck drop, when the API omits it.
+    #[serde(rename = "periodDescriptor", default)]
     pub period_descriptor: PeriodDescriptor,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "specialEvent")]
@@ -44,8 +45,11 @@ pub struct Boxscore {
     pub away_team: BoxscoreTeam,
     #[serde(rename = "homeTeam")]
     pub home_team: BoxscoreTeam,
-    pub clock: GameClock,
-    #[serde(rename = "playerByGameStats")]
+    /// `None` before puck drop, when the API omits it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub clock: Option<GameClock>,
+    /// Empty before puck drop, when the API omits it.
+    #[serde(rename = "playerByGameStats", default)]
     pub player_by_game_stats: PlayerByGameStats,
 }
 
@@ -99,9 +103,12 @@ pub struct BoxscoreTeam {
     #[serde(rename = "commonName")]
     pub common_name: LocalizedString,
     pub abbrev: String,
-    pub score: i32,
-    /// `None` for early games without shot counts (e.g. 1925-26).
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// `None` before puck drop, when the API omits it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<i32>,
+    /// `None` before puck drop, when the API omits it, and for early games
+    /// without shot counts (e.g. 1925-26).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sog: Option<i32>,
     pub logo: String,
     #[serde(rename = "darkLogo")]
@@ -125,7 +132,7 @@ pub struct GameClock {
 }
 
 /// Player statistics organized by team
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PlayerByGameStats {
     #[serde(rename = "awayTeam")]
     pub away_team: TeamPlayerStats,
@@ -134,7 +141,7 @@ pub struct PlayerByGameStats {
 }
 
 /// Team's player statistics grouped by position
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct TeamPlayerStats {
     #[serde(default)]
     pub forwards: Vec<SkaterStats>,
@@ -378,11 +385,12 @@ mod tests {
         assert_eq!(boxscore.game_schedule_state, GameScheduleState::Ok);
         assert_eq!(boxscore.away_team.abbrev, "NJD");
         assert_eq!(boxscore.home_team.abbrev, "BUF");
-        assert_eq!(boxscore.away_team.score, 2);
-        assert_eq!(boxscore.home_team.score, 1);
-        assert_eq!(boxscore.clock.time_remaining, "10:15");
-        assert_eq!(boxscore.clock.seconds_remaining, 615);
-        assert!(boxscore.clock.running);
+        assert_eq!(boxscore.away_team.score, Some(2));
+        assert_eq!(boxscore.home_team.score, Some(1));
+        let clock = boxscore.clock.unwrap();
+        assert_eq!(clock.time_remaining, "10:15");
+        assert_eq!(clock.seconds_remaining, 615);
+        assert!(clock.running);
         assert_eq!(boxscore.period_descriptor.number, 2);
     }
 
@@ -753,7 +761,7 @@ mod tests {
         assert_eq!(team.id, TeamId::new(8));
         assert_eq!(team.common_name.default, "Canadiens");
         assert_eq!(team.abbrev, "MTL");
-        assert_eq!(team.score, 3);
+        assert_eq!(team.score, Some(3));
         assert_eq!(team.sog, Some(28));
     }
 

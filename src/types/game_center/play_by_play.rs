@@ -40,7 +40,8 @@ pub struct PlayByPlay {
     pub game_state: GameState,
     #[serde(rename = "gameScheduleState")]
     pub game_schedule_state: GameScheduleState,
-    #[serde(rename = "periodDescriptor")]
+    /// All defaults before puck drop, when the API omits it.
+    #[serde(rename = "periodDescriptor", default)]
     pub period_descriptor: PeriodDescriptor,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "specialEvent")]

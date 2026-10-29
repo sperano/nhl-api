@@ -37,7 +37,7 @@ fn fixture_boxscore_team() -> BoxscoreTeam {
         id: TeamId::new(0),
         common_name: LocalizedString::default(),
         abbrev: String::new(),
-        score: 0,
+        score: Some(0),
         sog: Some(0),
         logo: String::new(),
         dark_logo: String::new(),
@@ -69,7 +69,7 @@ fn fixture_story_team() -> StoryTeam {
         name: LocalizedString::default(),
         abbrev: String::new(),
         place_name: LocalizedString::default(),
-        score: 0,
+        score: Some(0),
         sog: Some(0),
         logo: String::new(),
     }
@@ -95,7 +95,7 @@ pub fn boxscore() -> Boxscore {
         special_event: None,
         away_team: fixture_boxscore_team(),
         home_team: fixture_boxscore_team(),
-        clock: fixture_game_clock(),
+        clock: Some(fixture_game_clock()),
         player_by_game_stats: PlayerByGameStats {
             away_team: fixture_team_player_stats(),
             home_team: fixture_team_player_stats(),

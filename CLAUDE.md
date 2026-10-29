@@ -207,6 +207,15 @@ The NHL API returns different data structures based on context:
 - `GoalieStats`: a backup who did not play has no stat line in 1990s-2008-09 games (1975-76 and
   modern games send zeros); 1920s starters have goals against but no shots/saves
 
+**Scheduled (`FUT`) games**: before puck drop the game-center responses omit what the game has not
+produced yet:
+- Team `score`/`sog` (`BoxscoreTeam`, `MatchupTeam`, `StoryTeam`; `SeriesTeam.score` for unplayed
+  series games) are `Option<i32>`; play-by-play sends `score: 0` but no `sog`
+- `Boxscore.clock` is `Option<GameClock>`; `Boxscore.player_by_game_stats` and the top-level
+  `period_descriptor` (and `SeriesGame.period_descriptor`) are `#[serde(default)]`
+- Landing and game story return a pre-game `matchup`/`preGameMatchup` section instead of a
+  summary; it is not modeled yet (pinned in `known_dropped.rs`)
+
 ### Testing Strategy
 
 - Unit tests may be inline `#[cfg(test)] mod tests` or in sibling `_test.rs` modules declared by

@@ -31,7 +31,8 @@ pub struct GameMatchup {
     pub venue_utc_offset: String,
     #[serde(rename = "venueTimezone")]
     pub venue_timezone: String,
-    #[serde(rename = "periodDescriptor")]
+    /// All defaults before puck drop, when the API omits it.
+    #[serde(rename = "periodDescriptor", default)]
     pub period_descriptor: PeriodDescriptor,
     #[serde(rename = "tvBroadcasts", default)]
     pub tv_broadcasts: Vec<TvBroadcast>,
@@ -75,9 +76,12 @@ pub struct MatchupTeam {
     pub place_name: LocalizedString,
     #[serde(rename = "placeNameWithPreposition")]
     pub place_name_with_preposition: LocalizedString,
-    pub score: i32,
-    /// `None` for early games without shot counts (e.g. 1925-26).
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// `None` before puck drop, when the API omits it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<i32>,
+    /// `None` before puck drop, when the API omits it, and for early games
+    /// without shot counts (e.g. 1925-26).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sog: Option<i32>,
     pub logo: String,
     #[serde(rename = "darkLogo")]

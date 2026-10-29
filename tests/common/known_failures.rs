@@ -13,16 +13,6 @@ pub struct KnownFailure {
 }
 
 pub const KNOWN_FAILURES: &[KnownFailure] = &[
-    // Scheduled games: no `score` before puck drop, including the unplayed
-    // games listed in a season series, and no `periodDescriptor` in play-by-play.
-    known("boxscore/fut", "missing field `score`"),
-    known("play_by_play/fut", "missing field `periodDescriptor`"),
-    known("landing/fut", "missing field `score`"),
-    known("season_series/fut", "missing field `score`"),
-    known("game_story/fut", "missing field `score`"),
-    // Its series has unplayed games until 2027-02-24; after that the live
-    // response passes and the fixture needs re-recording before this goes.
-    known("season_series/regular_20262027", "missing field `score`"),
     // The first week on record has no previous week.
     known(
         "weekly_schedule/1917-12-19",
