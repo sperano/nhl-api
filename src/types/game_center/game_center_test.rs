@@ -210,9 +210,9 @@ mod landing {
         assert_eq!(away.common_name.default, "Flyers");
         assert_eq!(away.place_name.default, "Philadelphia");
         assert_eq!(away.place_name_with_preposition.default, "Philadelphia");
-        assert_eq!((away.score, away.sog), (3, 26));
+        assert_eq!((away.score, away.sog), (Some(3), Some(26)));
         assert_eq!(home.abbrev, "BUF");
-        assert_eq!((home.score, home.sog), (1, 28));
+        assert_eq!((home.score, home.sog), (Some(1), Some(28)));
         assert!(home.logo.ends_with(".svg"));
     }
 

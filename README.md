@@ -44,9 +44,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get boxscore for a specific game
     let boxscore = client.boxscore(2024020001).await?;
+    // Scores are `None` until puck drop
     println!("{} {} - {} {}",
-        boxscore.away_team.abbrev, boxscore.away_team.score,
-        boxscore.home_team.abbrev, boxscore.home_team.score
+        boxscore.away_team.abbrev, boxscore.away_team.score.unwrap_or_default(),
+        boxscore.home_team.abbrev, boxscore.home_team.score.unwrap_or_default()
     );
 
     Ok(())
