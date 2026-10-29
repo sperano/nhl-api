@@ -27,6 +27,9 @@ mod matchup_test;
 mod play_by_play_test;
 
 #[cfg(test)]
+mod pre_game_test;
+
+#[cfg(test)]
 mod responses_test;
 
 #[cfg(test)]

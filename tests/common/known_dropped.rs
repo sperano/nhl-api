@@ -30,6 +30,11 @@ pub const KNOWN_DROPPED: &[KnownDropped] = &[
     dropped("player_landing/price_goalie", &["last5Games"]),
     dropped("player_landing/morenz", &["last5Games"]),
     dropped("player_landing/vezina_goalie", &["last5Games"]),
+    // Before puck drop, landing and game story return the pre-game matchup
+    // (skater and goalie comparisons, season leaders) instead of a summary;
+    // neither type models it yet.
+    dropped("landing/fut", &["matchup"]),
+    dropped("game_story/fut", &["preGameMatchup"]),
     // Speeds come as `skatingSpeed`/`shotSpeed`, not `speed`, and the
     // per-game distance entries as `distanceSkatedAll` (plus even-strength,
     // power-play and penalty-kill splits with their TOI), not `distance`.

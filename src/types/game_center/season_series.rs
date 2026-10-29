@@ -44,7 +44,8 @@ pub struct SeriesGame {
     pub away_team: SeriesTeam,
     #[serde(rename = "homeTeam")]
     pub home_team: SeriesTeam,
-    #[serde(rename = "periodDescriptor")]
+    /// All defaults for a game not played yet, when the API omits it.
+    #[serde(rename = "periodDescriptor", default)]
     pub period_descriptor: PeriodDescriptor,
     #[serde(rename = "gameCenterLink")]
     pub game_center_link: String,
@@ -58,7 +59,9 @@ pub struct SeriesTeam {
     pub id: TeamId,
     pub abbrev: String,
     pub logo: String,
-    pub score: i32,
+    /// `None` before puck drop, when the API omits it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<i32>,
 }
 
 /// Season series win counts

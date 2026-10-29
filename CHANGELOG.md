@@ -6,6 +6,16 @@ All notable changes to this project are documented in this file.
 
 ### Breaking changes
 
+- Game-center responses for scheduled (`FUT`) games now deserialize. Before puck drop the API
+  omits team `score`/`sog`, the boxscore `clock` and `playerByGameStats`, and the top-level
+  `periodDescriptor`, so `boxscore()`, `play_by_play()`, `landing()`, `season_series()` and
+  `game_story()` previously failed with `missing field 'score'` (or `'sog'`); `season_series()`
+  also failed for any game whose series still had unplayed games. `score` and `sog` on
+  `BoxscoreTeam`, `MatchupTeam` and `StoryTeam`, and `score` on `SeriesTeam`, are now
+  `Option<i32>` (`None` when absent, omitted when serialized); `Boxscore.clock` is now
+  `Option<GameClock>`. `Boxscore.player_by_game_stats` (`PlayerByGameStats` and
+  `TeamPlayerStats` now derive `Default`) and the `period_descriptor` of `Boxscore`,
+  `PlayByPlay`, `GameMatchup` and `SeriesGame` default when absent.
 - `Standing.division_abbrev` and `Standing.division_name` are now `Option<String>` because
   pre-division seasons previously made standings deserialization fail with
   `missing field 'divisionAbbrev'`; `Standing::to_team()` falls back to `"UNK"`/`"Unknown"`
