@@ -115,13 +115,16 @@ impl ClubGoalieStats {
     /// them (`31-24-7` today, `20-4-3` in 1980-81). Missing wins or losses
     /// count as zero.
     pub fn record(&self) -> String {
+        use fmt::Write as _;
+
         let mut record = format!(
             "{}-{}",
             self.wins.unwrap_or_default(),
             self.losses.unwrap_or_default()
         );
         for extra in [self.ties, self.overtime_losses].into_iter().flatten() {
-            record.push_str(&format!("-{extra}"));
+            // Writing to a `String` cannot fail.
+            let _ = write!(record, "-{extra}");
         }
         record
     }
