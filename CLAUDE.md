@@ -100,7 +100,9 @@ The codebase follows a clean layered architecture:
     counts, so `TeamGameStats::from_team_player_stats()` leaves `faceoffs: None`; attach real totals
     with `with_faceoffs()`. Tests in sibling `faceoffs_test.rs`
   - `club_stats.rs` - ClubStats (`season: Season`), SeasonGameTypes (`season: Season`),
-    ClubSkaterStats, ClubGoalieStats
+    ClubSkaterStats, ClubGoalieStats. Era- and playoff-dependent stats (plus-minus, shots, TOI,
+    shifts, faceoffs; goalie W/L/T/OTL, saves, PIM) are `Option`, `None` when the API omits them;
+    tests in sibling `club_stats_test.rs`, using the recorded `club_stats/` fixtures
   - `edge/` - Edge puck/player-tracking stats (`common.rs`, `skater.rs`, `goalie.rs`, `team.rs`,
     ~80 structs). Every Edge struct deserializes from `{}` (all fields default; nullability is
     reserved for genuinely-optional pointers) — see `edge/mod.rs` module docs for the full rule set
