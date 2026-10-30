@@ -63,6 +63,12 @@ pub enum NHLApiError {
     #[error(transparent)]
     InvalidStatsQuery(#[from] StatsQueryError),
 
+    /// A playoff series letter passed to
+    /// [`Client::playoff_series_schedule`](crate::Client::playoff_series_schedule)
+    /// is not an ASCII letter; no request was sent.
+    #[error("invalid playoff series letter {0:?}: expected an ASCII letter")]
+    InvalidSeriesLetter(char),
+
     /// Any other error not tied to an API response, e.g. an invalid season id
     /// passed by the caller or a failure building the HTTP client.
     #[error("{0}")]
@@ -74,7 +80,8 @@ impl NHLApiError {
     /// non-2xx response. `None` for transport-level failures
     /// ([`NHLApiError::RequestError`]), deserialization failures
     /// ([`NHLApiError::JsonError`]), rejected arguments
-    /// ([`NHLApiError::InvalidTeamAbbrev`], [`NHLApiError::InvalidStatsQuery`]),
+    /// ([`NHLApiError::InvalidTeamAbbrev`], [`NHLApiError::InvalidStatsQuery`],
+    /// [`NHLApiError::InvalidSeriesLetter`]),
     /// and [`NHLApiError::Other`].
     pub fn status_code(&self) -> Option<u16> {
         match self {
@@ -89,6 +96,7 @@ impl NHLApiError {
             | NHLApiError::JsonError { .. }
             | NHLApiError::InvalidTeamAbbrev(_)
             | NHLApiError::InvalidStatsQuery(_)
+            | NHLApiError::InvalidSeriesLetter(_)
             | NHLApiError::Other(_) => None,
         }
     }

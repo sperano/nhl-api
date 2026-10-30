@@ -106,6 +106,10 @@ All notable changes to this project are documented in this file.
   and stay exhaustive.
 - `Franchise.id` is a `FranchiseId` (new `i64` newtype, like `TeamId`) instead of `i32`.
   `Team.franchise_id` is removed: it was never set (no endpoint `teams()` reads sends one).
+- `RosterPlayer.sweater_number` is now `Option<i32>`, omitted on serialization when `None`.
+  Prospects without an NHL number and 1920s roster entries have none, so `roster_season()`
+  failed for Montreal 1925-26 with `missing field 'sweaterNumber'`. `Roster` now derives
+  `PartialEq`.
 
 ### Added
 
@@ -139,6 +143,17 @@ All notable changes to this project are documented in this file.
   `limit(0)`; `query_pairs()` exposes the request parameters.
 - `NHLApiError::InvalidStatsQuery` wraps the new `StatsQueryError`; no request is sent when a
   stats query or report name is rejected.
+- Playoff endpoints: `playoff_bracket(season)` (`/playoff-bracket/{end year}`, a
+  `PlayoffBracket`), `playoff_series_carousel(season)` (`/playoff-series/carousel/{season}`, a
+  `PlayoffSeriesCarousel`) and `playoff_series_schedule(season, letter)`
+  (`/schedule/playoff-series/{season}/{letter}`, a `PlayoffSeriesSchedule`). Undecided series
+  read `None` winners (the API sends `0` or nothing) and, in the bracket, `None` teams;
+  `CarouselSeed::is_tbd()` spots the carousel's placeholder seed. A series letter that is not an
+  ASCII letter is the new `NHLApiError::InvalidSeriesLetter`, with no request sent.
+- `team_monthly_schedule(team, month)` (`/club-schedule/{team}/month/{YYYY-MM}`, a
+  `TeamMonthScheduleResponse`, with `GameDate::to_api_month_string()`), `schedule_calendar(date)`
+  (`/schedule-calendar/{date}`, a `ScheduleCalendar` of `CalendarTeam`s) and
+  `team_prospects(team)` (`/prospects/{team}`, a `Roster`).
 
 ### Fixed
 

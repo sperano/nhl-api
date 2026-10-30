@@ -27,11 +27,6 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
         "player_game_log/vezina_19241925_regular",
         "missing field `points`",
     ),
-    // 1920s rosters without sweater numbers.
-    known(
-        "roster_season/mtl_19251926",
-        "missing field `sweaterNumber`",
-    ),
     // `shootingPctg` is null for an area with no shots on goal.
     known(
         "edge_skater_shot_location_detail/mcdavid_20252026_regular",

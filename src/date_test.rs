@@ -117,3 +117,16 @@ fn test_season_try_from_gap_year_is_invalid_years() {
         })
     );
 }
+
+#[test]
+fn test_game_date_to_api_month_string() {
+    assert_eq!(GameDate::Now.to_api_month_string(), "now");
+    assert_eq!(
+        GameDate::Date(date(2026, 10, 21)).to_api_month_string(),
+        "2026-10"
+    );
+    assert_eq!(
+        GameDate::Date(date(1917, 1, 31)).to_api_month_string(),
+        "1917-01"
+    );
+}

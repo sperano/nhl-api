@@ -70,3 +70,29 @@ pub(super) fn club_stats_cases(out: &mut Vec<Case>) {
         |c| c.club_stats_season(CANADIENS)
     );
 }
+
+/// The prospect pool has no season: a full pool, a small one, and a relocated
+/// team's empty one.
+pub(super) fn prospect_cases(out: &mut Vec<Case>) {
+    case!(
+        out,
+        Roster,
+        "team_prospects" / "mtl",
+        web("prospects/MTL"),
+        |c| c.team_prospects(CANADIENS)
+    );
+    case!(
+        out,
+        Roster,
+        "team_prospects" / "tor",
+        web("prospects/TOR"),
+        |c| c.team_prospects("TOR")
+    );
+    case!(
+        out,
+        Roster,
+        "team_prospects" / "ari_relocated",
+        web("prospects/ARI"),
+        |c| c.team_prospects("ARI")
+    );
+}

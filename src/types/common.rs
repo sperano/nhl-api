@@ -87,7 +87,7 @@ pub struct FranchisesResponse {
 
 /// Team roster information
 /// Team roster with players by position
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Roster {
     #[serde(default)]
     pub forwards: Vec<RosterPlayer>,
@@ -106,8 +106,14 @@ pub struct RosterPlayer {
     pub first_name: LocalizedString,
     #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
-    #[serde(rename = "sweaterNumber")]
-    pub sweater_number: i32,
+    /// `None` for 1920s roster entries and for prospects without an NHL
+    /// number.
+    #[serde(
+        rename = "sweaterNumber",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub sweater_number: Option<i32>,
     /// `None` for historical roster entries (e.g. 1988 BOS) where the API
     /// returns an empty position code.
     #[serde(
@@ -201,6 +207,10 @@ impl RosterPlayer {
         u32::try_from(years).ok()
     }
 }
+
+#[cfg(test)]
+#[path = "common_test.rs"]
+mod roster_tests;
 
 #[cfg(test)]
 mod tests {
@@ -525,7 +535,7 @@ mod tests {
             last_name: LocalizedString {
                 default: "McDavid".to_string(),
             },
-            sweater_number: 97,
+            sweater_number: Some(97),
             position: Some(Position::Center),
             shoots_catches: Some(Handedness::Left),
             height_in_inches: 73,

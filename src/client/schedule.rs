@@ -3,7 +3,10 @@ use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
 use crate::team_abbrev::TeamAbbrev;
-use crate::types::{DailySchedule, DailyScores, TeamScheduleResponse, WeeklyScheduleResponse};
+use crate::types::{
+    DailySchedule, DailyScores, ScheduleCalendar, TeamMonthScheduleResponse, TeamScheduleResponse,
+    WeeklyScheduleResponse,
+};
 
 impl Client {
     async fn fetch_weekly_schedule(
@@ -100,6 +103,64 @@ impl Client {
             .get_json(
                 Endpoint::ApiWebV1,
                 &format!("club-schedule/{}/week/{}", team, date.to_api_string()),
+                None,
+            )
+            .await
+    }
+
+    /// Gets a team's schedule for one month.
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
+    /// * `month` - Optional GameDate in the month (only its year and month are sent). If None,
+    ///   defaults to "now".
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use nhl_api::{Client, GameDate};
+    /// # async fn example() -> Result<(), nhl_api::NHLApiError> {
+    /// let client = Client::new()?;
+    /// let month = client
+    ///     .team_monthly_schedule("MTL", GameDate::from_ymd(2026, 10, 1))
+    ///     .await?;
+    /// println!("{}: {} games", month.current_month, month.games.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn team_monthly_schedule(
+        &self,
+        team_abbr: impl AsRef<str>,
+        month: Option<GameDate>,
+    ) -> Result<TeamMonthScheduleResponse, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
+        let month = Self::resolve_date_or(month, GameDate::default());
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!(
+                    "club-schedule/{}/month/{}",
+                    team,
+                    month.to_api_month_string()
+                ),
+                None,
+            )
+            .await
+    }
+
+    /// Gets the teams playing in the week starting on a date (the calendar
+    /// view of the schedule).
+    ///
+    /// # Arguments
+    /// * `date` - Optional GameDate for the week start. If None, defaults to "now".
+    pub async fn schedule_calendar(
+        &self,
+        date: Option<GameDate>,
+    ) -> Result<ScheduleCalendar, NHLApiError> {
+        let date = Self::resolve_date_or(date, GameDate::default());
+        self.client
+            .get_json(
+                Endpoint::ApiWebV1,
+                &format!("schedule-calendar/{}", date.to_api_string()),
                 None,
             )
             .await

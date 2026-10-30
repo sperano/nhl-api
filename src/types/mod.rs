@@ -1,4 +1,5 @@
 pub mod boxscore;
+pub mod calendar;
 pub mod club_stats;
 pub mod common;
 pub mod edge;
@@ -9,12 +10,14 @@ pub mod game_log;
 pub mod game_state;
 pub mod game_type;
 pub mod player;
+pub mod playoffs;
 pub mod schedule;
 pub mod standings;
 pub mod stats_rest;
 pub mod stats_summary;
 
 pub use boxscore::*;
+pub use calendar::*;
 pub use club_stats::*;
 pub use common::*;
 // Re-export Edge shared types (`edge::common::*` rather than `edge::*` to avoid
@@ -30,6 +33,7 @@ pub use game_log::*;
 pub use game_state::*;
 pub use game_type::*;
 pub use player::*;
+pub use playoffs::*;
 pub use schedule::*;
 pub use standings::*;
 pub use stats_rest::*;

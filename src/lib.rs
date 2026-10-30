@@ -79,10 +79,17 @@ pub use types::{
     PlayerGameLog, PlayerLanding, PlayerSearchResult, PlayerStats, SeasonTotal, SkaterGameLog,
 };
 
+// Playoff types
+pub use types::{
+    BracketSeries, BracketTeam, CarouselRound, CarouselSeed, CarouselSeries, PlayoffBracket,
+    PlayoffConference, PlayoffGameTeam, PlayoffSeriesCarousel, PlayoffSeriesGame,
+    PlayoffSeriesSchedule, PlayoffSeriesTeam, SeriesGameStatus,
+};
+
 // Schedule types
 pub use types::{
-    DailySchedule, DailyScores, GameDay, GameScore, ScheduleGame, ScheduleTeam,
-    TeamScheduleResponse, WeeklyScheduleResponse,
+    CalendarTeam, DailySchedule, DailyScores, GameDay, GameScore, ScheduleCalendar, ScheduleGame,
+    ScheduleTeam, TeamMonthScheduleResponse, TeamScheduleResponse, WeeklyScheduleResponse,
 };
 
 // Standings types
