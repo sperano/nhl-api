@@ -28,6 +28,18 @@ All notable changes to this project are documented in this file.
   `missing field 'gamesPlayed'`. Those rows now read `None`; a listed player who did not play
   still reads `Some(0)`. Serialization now omits `gamesPlayed` when it is `None`, instead of
   always emitting it.
+- `club_stats()` now parses older seasons and playoffs (`src/types/club_stats.rs`). It failed
+  for Montreal 1980-81 with `missing field 'avgTimeOnIcePerGame'`, 1925-26 with
+  `missing field 'plusMinus'` and the 2024-25 playoffs with `missing field 'penaltyMinutes'`.
+  `ClubSkaterStats.plus_minus`, `power_play_goals`, `shorthanded_goals`, `shots`,
+  `shooting_pctg`, `avg_time_on_ice_per_game`, `avg_shifts_per_game` and `faceoff_win_pctg`, and
+  `ClubGoalieStats.wins`, `losses`, `overtime_losses`, `save_percentage`, `shots_against`,
+  `saves` and `penalty_minutes` are now `Option`s, `None` when the API omits them, and are
+  omitted on serialization when `None`. The new `ClubGoalieStats.ties: Option<i32>` carries the
+  ties older seasons send, and `ClubGoalieStats::record()` formats `W-L[-T][-OTL]`; `Display`
+  uses it and leaves out the save percentage when there is none.
+- An unknown `SeasonGameTypes.game_types` code now fails with the shared `UnknownEnumValue`
+  message (`invalid game type: "99"`) instead of `Unknown game type: 99`.
 - **`GameLog` is now an enum** (`src/types/game_log.rs`): `GameLog::Skater(SkaterGameLog)` or
   `GameLog::Goalie(GoalieGameLog)`. `player_game_log()` previously failed for every goalie with
   `missing field 'points'`, because the old `GameLog` struct required skater-only fields. The old

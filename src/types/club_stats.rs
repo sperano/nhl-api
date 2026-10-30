@@ -8,15 +8,18 @@ use super::common::LocalizedString;
 use super::enums::{empty_string_as_none, Position};
 use super::game_type::GameType;
 
-/// Skater season statistics for a team
+/// Skater season statistics for a team.
+///
+/// The `Option` fields are `None` when the API omits them, which depends on
+/// the era: 1925-26 rows have no plus-minus, special-teams goals or shots,
+/// 1980-81 rows no time on ice, shifts or faceoffs, and `shootingPctg` is
+/// missing for a skater without a shot.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ClubSkaterStats {
-    #[serde(rename = "playerId")]
     pub player_id: PlayerId,
     pub headshot: String,
-    #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
-    #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
     /// `None` for historical data where the API returns an empty position code.
     #[serde(
@@ -26,32 +29,29 @@ pub struct ClubSkaterStats {
     )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
-    #[serde(rename = "gamesPlayed")]
     pub games_played: i32,
     pub goals: i32,
     pub assists: i32,
     pub points: i32,
-    #[serde(rename = "plusMinus")]
-    pub plus_minus: i32,
-    #[serde(rename = "penaltyMinutes")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plus_minus: Option<i32>,
     pub penalty_minutes: i32,
-    #[serde(rename = "powerPlayGoals")]
-    pub power_play_goals: i32,
-    #[serde(rename = "shorthandedGoals")]
-    pub shorthanded_goals: i32,
-    #[serde(rename = "gameWinningGoals")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub power_play_goals: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shorthanded_goals: Option<i32>,
     pub game_winning_goals: i32,
-    #[serde(rename = "overtimeGoals")]
     pub overtime_goals: i32,
-    pub shots: i32,
-    #[serde(rename = "shootingPctg")]
-    pub shooting_pctg: f64,
-    #[serde(rename = "avgTimeOnIcePerGame")]
-    pub avg_time_on_ice_per_game: f64,
-    #[serde(rename = "avgShiftsPerGame")]
-    pub avg_shifts_per_game: f64,
-    #[serde(rename = "faceoffWinPctg")]
-    pub faceoff_win_pctg: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shots: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shooting_pctg: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avg_time_on_ice_per_game: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avg_shifts_per_game: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub faceoff_win_pctg: Option<f64>,
 }
 
 impl fmt::Display for ClubSkaterStats {
@@ -69,66 +69,90 @@ impl fmt::Display for ClubSkaterStats {
     }
 }
 
-/// Goalie season statistics for a team
+/// Goalie season statistics for a team.
+///
+/// The `Option` fields are `None` when the API omits them: `ties` and
+/// `overtimeLosses` only come for seasons that had them, 1925-26 rows have no
+/// shots or saves, a goalie never credited with a decision has no
+/// `wins`/`losses`, and some rows (every 2024-25 Montreal playoff goalie) have
+/// no `penaltyMinutes`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ClubGoalieStats {
-    #[serde(rename = "playerId")]
     pub player_id: PlayerId,
     pub headshot: String,
-    #[serde(rename = "firstName")]
     pub first_name: LocalizedString,
-    #[serde(rename = "lastName")]
     pub last_name: LocalizedString,
-    #[serde(rename = "gamesPlayed")]
     pub games_played: i32,
-    #[serde(rename = "gamesStarted")]
     pub games_started: i32,
-    pub wins: i32,
-    pub losses: i32,
-    #[serde(rename = "overtimeLosses")]
-    pub overtime_losses: i32,
-    #[serde(rename = "goalsAgainstAverage")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wins: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub losses: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ties: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overtime_losses: Option<i32>,
     pub goals_against_average: f64,
-    #[serde(rename = "savePercentage")]
-    pub save_percentage: f64,
-    #[serde(rename = "shotsAgainst")]
-    pub shots_against: i32,
-    pub saves: i32,
-    #[serde(rename = "goalsAgainst")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub save_percentage: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shots_against: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub saves: Option<i32>,
     pub goals_against: i32,
     pub shutouts: i32,
     pub goals: i32,
     pub assists: i32,
     pub points: i32,
-    #[serde(rename = "penaltyMinutes")]
-    pub penalty_minutes: i32,
-    #[serde(rename = "timeOnIce")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub penalty_minutes: Option<i32>,
     pub time_on_ice: i64,
+}
+
+impl ClubGoalieStats {
+    /// The record as `W-L`, followed by `-T` and `-OTL` when the API sends
+    /// them (`31-24-7` today, `20-4-3` in 1980-81). Missing wins or losses
+    /// count as zero.
+    pub fn record(&self) -> String {
+        use fmt::Write as _;
+
+        let mut record = format!(
+            "{}-{}",
+            self.wins.unwrap_or_default(),
+            self.losses.unwrap_or_default()
+        );
+        for extra in [self.ties, self.overtime_losses].into_iter().flatten() {
+            // Writing to a `String` cannot fail.
+            let _ = write!(record, "-{extra}");
+        }
+        record
+    }
 }
 
 impl fmt::Display for ClubGoalieStats {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} - {} GP, {}-{}-{}, {:.3} GAA, {:.3} SV%",
+            "{} {} - {} GP, {}, {:.3} GAA",
             self.first_name.default,
             self.last_name.default,
             self.games_played,
-            self.wins,
-            self.losses,
-            self.overtime_losses,
-            self.goals_against_average,
-            self.save_percentage
-        )
+            self.record(),
+            self.goals_against_average
+        )?;
+        if let Some(save_percentage) = self.save_percentage {
+            write!(f, ", {save_percentage:.3} SV%")?;
+        }
+        Ok(())
     }
 }
 
 /// Club statistics response containing skater and goalie stats
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ClubStats {
-    #[serde(rename = "season")]
     pub season: Season,
-    #[serde(rename = "gameType")]
     pub game_type: GameType,
     pub skaters: Vec<ClubSkaterStats>,
     pub goalies: Vec<ClubGoalieStats>,
@@ -136,41 +160,10 @@ pub struct ClubStats {
 
 /// Season game type availability for a team
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub struct SeasonGameTypes {
     pub season: Season,
-    #[serde(rename = "gameTypes")]
-    #[serde(with = "game_types_vec")]
     pub game_types: Vec<GameType>,
-}
-
-mod game_types_vec {
-    use super::GameType;
-    use serde::{Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S>(game_types: &[GameType], serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut seq = serializer.serialize_seq(Some(game_types.len()))?;
-        for gt in game_types {
-            seq.serialize_element(&gt.to_int())?;
-        }
-        seq.end()
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<GameType>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let ints = Vec::<i32>::deserialize(deserializer)?;
-        ints.into_iter()
-            .map(|i| {
-                GameType::from_int(i)
-                    .ok_or_else(|| serde::de::Error::custom(format!("Unknown game type: {}", i)))
-            })
-            .collect()
-    }
 }
 
 impl fmt::Display for SeasonGameTypes {
@@ -186,937 +179,5 @@ impl fmt::Display for SeasonGameTypes {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_skater_stats_deserialization() {
-        let json = r#"{
-            "playerId": 8475233,
-            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
-            "firstName": {
-                "default": "David"
-            },
-            "lastName": {
-                "default": "Savard"
-            },
-            "positionCode": "D",
-            "gamesPlayed": 75,
-            "goals": 1,
-            "assists": 14,
-            "points": 15,
-            "plusMinus": -8,
-            "penaltyMinutes": 36,
-            "powerPlayGoals": 0,
-            "shorthandedGoals": 0,
-            "gameWinningGoals": 0,
-            "overtimeGoals": 0,
-            "shots": 48,
-            "shootingPctg": 0.020833,
-            "avgTimeOnIcePerGame": 995.36,
-            "avgShiftsPerGame": 19.84,
-            "faceoffWinPctg": 0.0
-        }"#;
-
-        let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, PlayerId::new(8475233));
-        assert_eq!(stats.first_name.default, "David");
-        assert_eq!(stats.last_name.default, "Savard");
-        assert_eq!(stats.position, Some(Position::Defense));
-        assert_eq!(stats.games_played, 75);
-        assert_eq!(stats.goals, 1);
-        assert_eq!(stats.assists, 14);
-        assert_eq!(stats.points, 15);
-        assert_eq!(stats.plus_minus, -8);
-        assert_eq!(stats.shots, 48);
-    }
-
-    /// Historical club stats data (some older seasons) return an empty
-    /// position code.
-    #[test]
-    fn test_club_skater_stats_empty_position() {
-        let json = r#"{
-            "playerId": 8475233,
-            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
-            "firstName": {"default": "David"},
-            "lastName": {"default": "Savard"},
-            "positionCode": "",
-            "gamesPlayed": 75,
-            "goals": 1,
-            "assists": 14,
-            "points": 15,
-            "plusMinus": -8,
-            "penaltyMinutes": 36,
-            "powerPlayGoals": 0,
-            "shorthandedGoals": 0,
-            "gameWinningGoals": 0,
-            "overtimeGoals": 0,
-            "shots": 48,
-            "shootingPctg": 0.020833,
-            "avgTimeOnIcePerGame": 995.36,
-            "avgShiftsPerGame": 19.84,
-            "faceoffWinPctg": 0.0
-        }"#;
-
-        let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.position, None);
-    }
-
-    #[test]
-    fn test_club_skater_stats_missing_position() {
-        let json = r#"{
-            "playerId": 8475233,
-            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
-            "firstName": {"default": "David"},
-            "lastName": {"default": "Savard"},
-            "gamesPlayed": 75,
-            "goals": 1,
-            "assists": 14,
-            "points": 15,
-            "plusMinus": -8,
-            "penaltyMinutes": 36,
-            "powerPlayGoals": 0,
-            "shorthandedGoals": 0,
-            "gameWinningGoals": 0,
-            "overtimeGoals": 0,
-            "shots": 48,
-            "shootingPctg": 0.020833,
-            "avgTimeOnIcePerGame": 995.36,
-            "avgShiftsPerGame": 19.84,
-            "faceoffWinPctg": 0.0
-        }"#;
-
-        let stats: ClubSkaterStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.position, None);
-    }
-
-    #[test]
-    fn test_goalie_stats_deserialization() {
-        let json = r#"{
-            "playerId": 8478470,
-            "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8478470.png",
-            "firstName": {
-                "default": "Sam"
-            },
-            "lastName": {
-                "default": "Montembeault"
-            },
-            "gamesPlayed": 62,
-            "gamesStarted": 60,
-            "wins": 31,
-            "losses": 24,
-            "overtimeLosses": 7,
-            "goalsAgainstAverage": 2.818349,
-            "savePercentage": 0.901669,
-            "shotsAgainst": 1678,
-            "saves": 1513,
-            "goalsAgainst": 166,
-            "shutouts": 4,
-            "goals": 0,
-            "assists": 1,
-            "points": 1,
-            "penaltyMinutes": 0,
-            "timeOnIce": 212039
-        }"#;
-
-        let stats: ClubGoalieStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.player_id, PlayerId::new(8478470));
-        assert_eq!(stats.first_name.default, "Sam");
-        assert_eq!(stats.last_name.default, "Montembeault");
-        assert_eq!(stats.games_played, 62);
-        assert_eq!(stats.wins, 31);
-        assert_eq!(stats.losses, 24);
-        assert_eq!(stats.overtime_losses, 7);
-        assert_eq!(stats.shutouts, 4);
-    }
-
-    /// `ClubSkaterStats.player_id`/`ClubGoalieStats.player_id` accept
-    /// numeric-string forms too (1.3).
-    #[test]
-    fn test_club_stats_player_id_deserializes_from_numeric_string() {
-        let skater_json = r#"{
-            "playerId": "8475233",
-            "headshot": "test.png",
-            "firstName": {"default": "David"},
-            "lastName": {"default": "Savard"},
-            "positionCode": "D",
-            "gamesPlayed": 0,
-            "goals": 0,
-            "assists": 0,
-            "points": 0,
-            "plusMinus": 0,
-            "penaltyMinutes": 0,
-            "powerPlayGoals": 0,
-            "shorthandedGoals": 0,
-            "gameWinningGoals": 0,
-            "overtimeGoals": 0,
-            "shots": 0,
-            "shootingPctg": 0.0,
-            "avgTimeOnIcePerGame": 0.0,
-            "avgShiftsPerGame": 0.0,
-            "faceoffWinPctg": 0.0
-        }"#;
-        let skater: ClubSkaterStats = serde_json::from_str(skater_json).unwrap();
-        assert_eq!(skater.player_id, PlayerId::new(8475233));
-
-        let goalie_json = r#"{
-            "playerId": "8478470",
-            "headshot": "test.png",
-            "firstName": {"default": "Sam"},
-            "lastName": {"default": "Montembeault"},
-            "gamesPlayed": 0,
-            "gamesStarted": 0,
-            "wins": 0,
-            "losses": 0,
-            "overtimeLosses": 0,
-            "goalsAgainstAverage": 0.0,
-            "savePercentage": 0.0,
-            "shotsAgainst": 0,
-            "saves": 0,
-            "goalsAgainst": 0,
-            "shutouts": 0,
-            "goals": 0,
-            "assists": 0,
-            "points": 0,
-            "penaltyMinutes": 0,
-            "timeOnIce": 0
-        }"#;
-        let goalie: ClubGoalieStats = serde_json::from_str(goalie_json).unwrap();
-        assert_eq!(goalie.player_id, PlayerId::new(8478470));
-    }
-
-    #[test]
-    fn test_club_stats_deserialization() {
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 2,
-            "skaters": [
-                {
-                    "playerId": 8475233,
-                    "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8475233.png",
-                    "firstName": {"default": "David"},
-                    "lastName": {"default": "Savard"},
-                    "positionCode": "D",
-                    "gamesPlayed": 75,
-                    "goals": 1,
-                    "assists": 14,
-                    "points": 15,
-                    "plusMinus": -8,
-                    "penaltyMinutes": 36,
-                    "powerPlayGoals": 0,
-                    "shorthandedGoals": 0,
-                    "gameWinningGoals": 0,
-                    "overtimeGoals": 0,
-                    "shots": 48,
-                    "shootingPctg": 0.020833,
-                    "avgTimeOnIcePerGame": 995.36,
-                    "avgShiftsPerGame": 19.84,
-                    "faceoffWinPctg": 0.0
-                }
-            ],
-            "goalies": [
-                {
-                    "playerId": 8478470,
-                    "headshot": "https://assets.nhle.com/mugs/nhl/20242025/MTL/8478470.png",
-                    "firstName": {"default": "Sam"},
-                    "lastName": {"default": "Montembeault"},
-                    "gamesPlayed": 62,
-                    "gamesStarted": 60,
-                    "wins": 31,
-                    "losses": 24,
-                    "overtimeLosses": 7,
-                    "goalsAgainstAverage": 2.818349,
-                    "savePercentage": 0.901669,
-                    "shotsAgainst": 1678,
-                    "saves": 1513,
-                    "goalsAgainst": 166,
-                    "shutouts": 4,
-                    "goals": 0,
-                    "assists": 1,
-                    "points": 1,
-                    "penaltyMinutes": 0,
-                    "timeOnIce": 212039
-                }
-            ]
-        }"#;
-
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.season, Season::new(2024));
-        assert_eq!(stats.game_type, GameType::RegularSeason);
-        assert_eq!(stats.skaters.len(), 1);
-        assert_eq!(stats.goalies.len(), 1);
-    }
-
-    /// `ClubStats.season` is typed `Season`, which accepts the API's string
-    /// form (e.g. `"20242025"`) as well as the plain-integer form.
-    #[test]
-    fn test_club_stats_season_deserializes_from_string_and_int_forms() {
-        let from_string: ClubStats = serde_json::from_str(
-            r#"{"season": "20242025", "gameType": 2, "skaters": [], "goalies": []}"#,
-        )
-        .unwrap();
-        assert_eq!(from_string.season, Season::new(2024));
-        assert_eq!(from_string.season.to_api_string(), "20242025");
-
-        let from_int: ClubStats = serde_json::from_str(
-            r#"{"season": 20242025, "gameType": 2, "skaters": [], "goalies": []}"#,
-        )
-        .unwrap();
-        assert_eq!(from_int.season, Season::new(2024));
-    }
-
-    #[test]
-    fn test_season_game_types_deserialization() {
-        let json = r#"{
-            "season": 20242025,
-            "gameTypes": [2, 3]
-        }"#;
-
-        let season: SeasonGameTypes = serde_json::from_str(json).unwrap();
-        assert_eq!(season.season, Season::new(2024));
-        assert_eq!(
-            season.game_types,
-            vec![GameType::RegularSeason, GameType::Playoffs]
-        );
-    }
-
-    /// The API's `club-stats-season` endpoint returns `season` as a plain
-    /// integer, but `Season`'s string forms must also deserialize here since
-    /// the type is shared across endpoints with differing shapes (1.1).
-    #[test]
-    fn test_season_game_types_season_deserializes_from_string_form() {
-        let json = r#"{"season": "20242025", "gameTypes": [2]}"#;
-        let season: SeasonGameTypes = serde_json::from_str(json).unwrap();
-        assert_eq!(season.season, Season::new(2024));
-    }
-
-    #[test]
-    fn test_season_game_types_display() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason, GameType::Playoffs],
-        };
-        assert_eq!(format!("{}", season), "20242025: Regular Season, Playoffs");
-    }
-
-    #[test]
-    fn test_season_game_types_display_regular_only() {
-        let season = SeasonGameTypes {
-            season: Season::new(2023),
-            game_types: vec![GameType::RegularSeason],
-        };
-        assert_eq!(format!("{}", season), "20232024: Regular Season");
-    }
-
-    #[test]
-    fn test_skater_stats_display() {
-        let stats = ClubSkaterStats {
-            player_id: PlayerId::new(8475233),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "David".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Savard".to_string(),
-            },
-            position: Some(Position::Defense),
-            games_played: 75,
-            goals: 1,
-            assists: 14,
-            points: 15,
-            plus_minus: -8,
-            penalty_minutes: 36,
-            power_play_goals: 0,
-            shorthanded_goals: 0,
-            game_winning_goals: 0,
-            overtime_goals: 0,
-            shots: 48,
-            shooting_pctg: 0.020833,
-            avg_time_on_ice_per_game: 995.36,
-            avg_shifts_per_game: 19.84,
-            faceoff_win_pctg: 0.0,
-        };
-
-        assert_eq!(
-            format!("{}", stats),
-            "David Savard - 75 GP, 1 G, 14 A, 15 PTS"
-        );
-    }
-
-    #[test]
-    fn test_goalie_stats_display() {
-        let stats = ClubGoalieStats {
-            player_id: PlayerId::new(8478470),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "Sam".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Montembeault".to_string(),
-            },
-            games_played: 62,
-            games_started: 60,
-            wins: 31,
-            losses: 24,
-            overtime_losses: 7,
-            goals_against_average: 2.818349,
-            save_percentage: 0.901669,
-            shots_against: 1678,
-            saves: 1513,
-            goals_against: 166,
-            shutouts: 4,
-            goals: 0,
-            assists: 1,
-            points: 1,
-            penalty_minutes: 0,
-            time_on_ice: 212039,
-        };
-
-        assert_eq!(
-            format!("{}", stats),
-            "Sam Montembeault - 62 GP, 31-24-7, 2.818 GAA, 0.902 SV%"
-        );
-    }
-
-    #[test]
-    fn test_club_stats_empty_lists() {
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 2,
-            "skaters": [],
-            "goalies": []
-        }"#;
-
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.skaters.len(), 0);
-        assert_eq!(stats.goalies.len(), 0);
-    }
-
-    #[test]
-    fn test_season_game_types_display_with_all_star() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![
-                GameType::RegularSeason,
-                GameType::Playoffs,
-                GameType::AllStar,
-            ],
-        };
-        assert_eq!(
-            format!("{}", season),
-            "20242025: Regular Season, Playoffs, All-Star"
-        );
-    }
-
-    #[test]
-    fn test_season_game_types_display_preseason() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::Preseason],
-        };
-        assert_eq!(format!("{}", season), "20242025: Preseason");
-    }
-
-    #[test]
-    fn test_season_game_types_display_all_star() {
-        let season = SeasonGameTypes {
-            season: Season::new(2023),
-            game_types: vec![GameType::AllStar],
-        };
-        assert_eq!(format!("{}", season), "20232024: All-Star");
-    }
-
-    #[test]
-    fn test_season_game_types_display_mixed_order() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![
-                GameType::Preseason,
-                GameType::RegularSeason,
-                GameType::AllStar,
-                GameType::Playoffs,
-            ],
-        };
-        assert_eq!(
-            format!("{}", season),
-            "20242025: Preseason, Regular Season, All-Star, Playoffs"
-        );
-    }
-
-    #[test]
-    fn test_club_skater_stats_clone() {
-        let stats = ClubSkaterStats {
-            player_id: PlayerId::new(8475233),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "David".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Savard".to_string(),
-            },
-            position: Some(Position::Defense),
-            games_played: 75,
-            goals: 1,
-            assists: 14,
-            points: 15,
-            plus_minus: -8,
-            penalty_minutes: 36,
-            power_play_goals: 0,
-            shorthanded_goals: 0,
-            game_winning_goals: 0,
-            overtime_goals: 0,
-            shots: 48,
-            shooting_pctg: 0.020833,
-            avg_time_on_ice_per_game: 995.36,
-            avg_shifts_per_game: 19.84,
-            faceoff_win_pctg: 0.0,
-        };
-
-        let cloned = stats.clone();
-        assert_eq!(stats, cloned);
-        assert_eq!(stats.player_id, cloned.player_id);
-    }
-
-    #[test]
-    fn test_club_skater_stats_debug() {
-        let stats = ClubSkaterStats {
-            player_id: PlayerId::new(8475233),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "David".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Savard".to_string(),
-            },
-            position: Some(Position::Defense),
-            games_played: 75,
-            goals: 1,
-            assists: 14,
-            points: 15,
-            plus_minus: -8,
-            penalty_minutes: 36,
-            power_play_goals: 0,
-            shorthanded_goals: 0,
-            game_winning_goals: 0,
-            overtime_goals: 0,
-            shots: 48,
-            shooting_pctg: 0.020833,
-            avg_time_on_ice_per_game: 995.36,
-            avg_shifts_per_game: 19.84,
-            faceoff_win_pctg: 0.0,
-        };
-
-        let debug_str = format!("{:?}", stats);
-        assert!(debug_str.contains("ClubSkaterStats"));
-        assert!(debug_str.contains("8475233"));
-        assert!(debug_str.contains("David"));
-    }
-
-    #[test]
-    fn test_club_goalie_stats_clone() {
-        let stats = ClubGoalieStats {
-            player_id: PlayerId::new(8478470),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "Sam".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Montembeault".to_string(),
-            },
-            games_played: 62,
-            games_started: 60,
-            wins: 31,
-            losses: 24,
-            overtime_losses: 7,
-            goals_against_average: 2.818349,
-            save_percentage: 0.901669,
-            shots_against: 1678,
-            saves: 1513,
-            goals_against: 166,
-            shutouts: 4,
-            goals: 0,
-            assists: 1,
-            points: 1,
-            penalty_minutes: 0,
-            time_on_ice: 212039,
-        };
-
-        let cloned = stats.clone();
-        assert_eq!(stats, cloned);
-        assert_eq!(stats.player_id, cloned.player_id);
-    }
-
-    #[test]
-    fn test_club_goalie_stats_debug() {
-        let stats = ClubGoalieStats {
-            player_id: PlayerId::new(8478470),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "Sam".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Montembeault".to_string(),
-            },
-            games_played: 62,
-            games_started: 60,
-            wins: 31,
-            losses: 24,
-            overtime_losses: 7,
-            goals_against_average: 2.818349,
-            save_percentage: 0.901669,
-            shots_against: 1678,
-            saves: 1513,
-            goals_against: 166,
-            shutouts: 4,
-            goals: 0,
-            assists: 1,
-            points: 1,
-            penalty_minutes: 0,
-            time_on_ice: 212039,
-        };
-
-        let debug_str = format!("{:?}", stats);
-        assert!(debug_str.contains("ClubGoalieStats"));
-        assert!(debug_str.contains("8478470"));
-        assert!(debug_str.contains("Sam"));
-    }
-
-    #[test]
-    fn test_club_stats_clone() {
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 2,
-            "skaters": [],
-            "goalies": []
-        }"#;
-
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        let cloned = stats.clone();
-        assert_eq!(stats, cloned);
-    }
-
-    #[test]
-    fn test_club_stats_debug() {
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 2,
-            "skaters": [],
-            "goalies": []
-        }"#;
-
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        let debug_str = format!("{:?}", stats);
-        assert!(debug_str.contains("ClubStats"));
-        assert!(debug_str.contains("2024"));
-        assert!(debug_str.contains("2025"));
-    }
-
-    #[test]
-    fn test_season_game_types_clone() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason, GameType::Playoffs],
-        };
-
-        let cloned = season.clone();
-        assert_eq!(season, cloned);
-    }
-
-    #[test]
-    fn test_season_game_types_debug() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason],
-        };
-
-        let debug_str = format!("{:?}", season);
-        assert!(debug_str.contains("SeasonGameTypes"));
-        assert!(debug_str.contains("2024"));
-        assert!(debug_str.contains("2025"));
-    }
-
-    #[test]
-    fn test_season_game_types_hash() {
-        use std::collections::HashSet;
-
-        let season1 = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason],
-        };
-        let season2 = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason],
-        };
-        let season3 = SeasonGameTypes {
-            season: Season::new(2023),
-            game_types: vec![GameType::RegularSeason],
-        };
-
-        let mut set = HashSet::new();
-        set.insert(season1.clone());
-        set.insert(season2); // Duplicate
-        set.insert(season3);
-
-        assert_eq!(set.len(), 2);
-    }
-
-    #[test]
-    fn test_season_game_types_serialization_roundtrip() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason, GameType::Playoffs],
-        };
-
-        let serialized = serde_json::to_string(&season).unwrap();
-        let deserialized: SeasonGameTypes = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(season, deserialized);
-    }
-
-    #[test]
-    fn test_club_skater_stats_serialization_roundtrip() {
-        let stats = ClubSkaterStats {
-            player_id: PlayerId::new(8475233),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "David".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Savard".to_string(),
-            },
-            position: Some(Position::Defense),
-            games_played: 75,
-            goals: 1,
-            assists: 14,
-            points: 15,
-            plus_minus: -8,
-            penalty_minutes: 36,
-            power_play_goals: 0,
-            shorthanded_goals: 0,
-            game_winning_goals: 0,
-            overtime_goals: 0,
-            shots: 48,
-            shooting_pctg: 0.020833,
-            avg_time_on_ice_per_game: 995.36,
-            avg_shifts_per_game: 19.84,
-            faceoff_win_pctg: 0.0,
-        };
-
-        let serialized = serde_json::to_string(&stats).unwrap();
-        let deserialized: ClubSkaterStats = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(stats, deserialized);
-    }
-
-    #[test]
-    fn test_club_goalie_stats_serialization_roundtrip() {
-        let stats = ClubGoalieStats {
-            player_id: PlayerId::new(8478470),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "Sam".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Montembeault".to_string(),
-            },
-            games_played: 62,
-            games_started: 60,
-            wins: 31,
-            losses: 24,
-            overtime_losses: 7,
-            goals_against_average: 2.818349,
-            save_percentage: 0.901669,
-            shots_against: 1678,
-            saves: 1513,
-            goals_against: 166,
-            shutouts: 4,
-            goals: 0,
-            assists: 1,
-            points: 1,
-            penalty_minutes: 0,
-            time_on_ice: 212039,
-        };
-
-        let serialized = serde_json::to_string(&stats).unwrap();
-        let deserialized: ClubGoalieStats = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(stats, deserialized);
-    }
-
-    #[test]
-    fn test_season_game_types_unknown_game_type() {
-        // Test deserializing an unknown game type (should error)
-        let json = r#"{
-            "season": 20242025,
-            "gameTypes": [2, 99]
-        }"#;
-
-        let result: Result<SeasonGameTypes, _> = serde_json::from_str(json);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_season_game_types_display_empty() {
-        let season = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![],
-        };
-        assert_eq!(format!("{}", season), "20242025: ");
-    }
-
-    #[test]
-    fn test_skater_stats_equality() {
-        let stats1 = ClubSkaterStats {
-            player_id: PlayerId::new(8475233),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "David".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Savard".to_string(),
-            },
-            position: Some(Position::Defense),
-            games_played: 75,
-            goals: 1,
-            assists: 14,
-            points: 15,
-            plus_minus: -8,
-            penalty_minutes: 36,
-            power_play_goals: 0,
-            shorthanded_goals: 0,
-            game_winning_goals: 0,
-            overtime_goals: 0,
-            shots: 48,
-            shooting_pctg: 0.020833,
-            avg_time_on_ice_per_game: 995.36,
-            avg_shifts_per_game: 19.84,
-            faceoff_win_pctg: 0.0,
-        };
-
-        let stats2 = stats1.clone();
-        let mut stats3 = stats1.clone();
-        stats3.goals = 10;
-
-        assert_eq!(stats1, stats2);
-        assert_ne!(stats1, stats3);
-    }
-
-    #[test]
-    fn test_goalie_stats_equality() {
-        let stats1 = ClubGoalieStats {
-            player_id: PlayerId::new(8478470),
-            headshot: "test.png".to_string(),
-            first_name: LocalizedString {
-                default: "Sam".to_string(),
-            },
-            last_name: LocalizedString {
-                default: "Montembeault".to_string(),
-            },
-            games_played: 62,
-            games_started: 60,
-            wins: 31,
-            losses: 24,
-            overtime_losses: 7,
-            goals_against_average: 2.818349,
-            save_percentage: 0.901669,
-            shots_against: 1678,
-            saves: 1513,
-            goals_against: 166,
-            shutouts: 4,
-            goals: 0,
-            assists: 1,
-            points: 1,
-            penalty_minutes: 0,
-            time_on_ice: 212039,
-        };
-
-        let stats2 = stats1.clone();
-        let mut stats3 = stats1.clone();
-        stats3.wins = 40;
-
-        assert_eq!(stats1, stats2);
-        assert_ne!(stats1, stats3);
-    }
-
-    #[test]
-    fn test_club_stats_equality() {
-        let stats1 = ClubStats {
-            season: Season::new(2024),
-            game_type: GameType::RegularSeason,
-            skaters: vec![],
-            goalies: vec![],
-        };
-
-        let stats2 = stats1.clone();
-        let mut stats3 = stats1.clone();
-        stats3.game_type = GameType::Playoffs;
-
-        assert_eq!(stats1, stats2);
-        assert_ne!(stats1, stats3);
-    }
-
-    #[test]
-    fn test_season_game_types_equality() {
-        let season1 = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason],
-        };
-
-        let season2 = SeasonGameTypes {
-            season: Season::new(2024),
-            game_types: vec![GameType::RegularSeason],
-        };
-
-        let season3 = SeasonGameTypes {
-            season: Season::new(2023),
-            game_types: vec![GameType::RegularSeason],
-        };
-
-        assert_eq!(season1, season2);
-        assert_ne!(season1, season3);
-    }
-
-    #[test]
-    fn test_club_stats_serialization_roundtrip() {
-        let stats = ClubStats {
-            season: Season::new(2024),
-            game_type: GameType::RegularSeason,
-            skaters: vec![],
-            goalies: vec![],
-        };
-
-        let serialized = serde_json::to_string(&stats).unwrap();
-        let deserialized: ClubStats = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(stats, deserialized);
-    }
-
-    #[test]
-    fn test_club_stats_with_all_game_types() {
-        // Test Preseason game type
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 1,
-            "skaters": [],
-            "goalies": []
-        }"#;
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.game_type, GameType::Preseason);
-
-        // Test Playoffs game type
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 3,
-            "skaters": [],
-            "goalies": []
-        }"#;
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.game_type, GameType::Playoffs);
-
-        // Test AllStar game type
-        let json = r#"{
-            "season": "20242025",
-            "gameType": 4,
-            "skaters": [],
-            "goalies": []
-        }"#;
-        let stats: ClubStats = serde_json::from_str(json).unwrap();
-        assert_eq!(stats.game_type, GameType::AllStar);
-    }
-}
+#[path = "club_stats_test.rs"]
+mod tests;

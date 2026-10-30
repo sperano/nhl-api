@@ -37,19 +37,6 @@ pub const KNOWN_FAILURES: &[KnownFailure] = &[
         "roster_season/mtl_19251926",
         "missing field `sweaterNumber`",
     ),
-    // Club stats rows without era- or playoff-dependent fields.
-    known(
-        "club_stats/mtl_20242025_playoffs",
-        "missing field `penaltyMinutes`",
-    ),
-    known(
-        "club_stats/mtl_19801981_regular",
-        "missing field `avgTimeOnIcePerGame`",
-    ),
-    known(
-        "club_stats/mtl_19251926_regular",
-        "missing field `plusMinus`",
-    ),
     // `shootingPctg` is null for an area with no shots on goal.
     known(
         "edge_skater_shot_location_detail/mcdavid_20252026_regular",
