@@ -58,6 +58,8 @@ const WEEKLY_SCHEDULE: &str = include_str!("../../tests/fixtures/weekly_schedule
 const DAILY_SCORES: &str = include_str!("../../tests/fixtures/daily_scores/2026-10-21.json");
 const TEAM_WEEK: &str =
     include_str!("../../tests/fixtures/team_weekly_schedule/mtl_2026-10-21.json");
+const TEAM_SEASON_SCHEDULE: &str =
+    include_str!("../../tests/fixtures/club_schedule_season/mtl_20252026.json");
 const PLAYER_LANDING: &str = include_str!("../../tests/fixtures/player_landing/mcdavid.json");
 const PLAYER_GAME_LOG: &str =
     include_str!("../../tests/fixtures/player_game_log/mcdavid_20252026_regular.json");
@@ -237,6 +239,14 @@ fn schedule_cases() -> Vec<MethodCase> {
             "team_weekly_schedule(None)",
             request(today_path("/v1/club-schedule/MTL/week/"), TEAM_WEEK),
             call!(c => c.team_weekly_schedule(TEAM, None)),
+        ),
+        case(
+            "club_schedule_season",
+            request(
+                "/v1/club-schedule-season/MTL/20252026",
+                TEAM_SEASON_SCHEDULE,
+            ),
+            call!(c => c.club_schedule_season(TEAM, season())),
         ),
     ]
 }
