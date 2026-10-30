@@ -79,6 +79,14 @@ impl GameDate {
         }
     }
 
+    /// Convert to the API's month format (`YYYY-MM` or "now").
+    pub fn to_api_month_string(&self) -> String {
+        match self {
+            Self::Now => "now".to_string(),
+            Self::Date(date) => date.format("%Y-%m").to_string(),
+        }
+    }
+
     /// Convert to a concrete date (resolves "now" to today's date, UTC).
     fn as_date(&self) -> NaiveDate {
         match self {

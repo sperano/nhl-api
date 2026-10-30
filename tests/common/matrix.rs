@@ -10,6 +10,7 @@ mod edge;
 mod games;
 mod league;
 mod players;
+mod playoffs;
 mod stats;
 mod teams;
 
@@ -33,11 +34,16 @@ pub fn cases(current: &CurrentGames) -> Vec<Case> {
     games::cases(&mut out, current);
     league::standings_cases(&mut out);
     league::schedule_cases(&mut out);
+    league::calendar_cases(&mut out);
+    playoffs::bracket_cases(&mut out);
+    playoffs::carousel_cases(&mut out);
+    playoffs::series_schedule_cases(&mut out);
     players::landing_cases(&mut out);
     players::game_log_cases(&mut out);
     players::search_cases(&mut out);
     teams::roster_cases(&mut out);
     teams::club_stats_cases(&mut out);
+    teams::prospect_cases(&mut out);
     edge::skater_cases(&mut out);
     edge::goalie_cases(&mut out);
     edge::team_cases(&mut out);

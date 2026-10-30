@@ -129,4 +129,20 @@ impl Client {
             )
             .await
     }
+
+    /// Gets a team's prospect pool: players whose rights the team holds who
+    /// are not on its roster.
+    ///
+    /// Prospects without an NHL number have no
+    /// [`sweater_number`](crate::RosterPlayer::sweater_number). A defunct or
+    /// relocated team (e.g. "ARI") answers an empty pool.
+    ///
+    /// # Arguments
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
+    pub async fn team_prospects(&self, team_abbr: impl AsRef<str>) -> Result<Roster, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
+        self.client
+            .get_json(Endpoint::ApiWebV1, &format!("prospects/{}", team), None)
+            .await
+    }
 }

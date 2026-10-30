@@ -10,6 +10,7 @@ const DEFAULT_SEARCH_LIMIT: i32 = 20;
 mod endpoint_pairs;
 mod game;
 mod player;
+mod playoffs;
 mod schedule;
 mod standings;
 mod stats;

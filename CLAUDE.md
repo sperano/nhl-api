@@ -58,11 +58,17 @@ The codebase follows a clean layered architecture:
   `TeamAbbrev::new` (`src/team_abbrev.rs`: exactly three ASCII letters, normalized uppercase)
   before building the path; a bad value returns `NHLApiError::InvalidTeamAbbrev` without a request
 - Key methods by category:
-  - **Schedule**: `daily_schedule()`, `weekly_schedule()`, `team_weekly_schedule()`, `club_schedule_season()`, `daily_scores()`
+  - **Schedule**: `daily_schedule()`, `weekly_schedule()`, `team_weekly_schedule()`, `team_monthly_schedule()`,
+    `club_schedule_season()`, `schedule_calendar()`, `daily_scores()`
   - **Standings**: `current_league_standings()`, `league_standings_for_date()`, `league_standings_for_season()`, `season_standing_manifest()`
   - **Game**: `boxscore()`, `play_by_play()`, `landing()`, `game_story()`, `season_series()`, `shift_chart()`
   - **Player**: `player_landing()`, `player_game_log()`, `search_player()`
-  - **Team**: `franchises()`, `roster_current()`, `roster_season()`, `club_stats()`, `club_stats_season()`
+  - **Team**: `franchises()`, `roster_current()`, `roster_season()`, `team_prospects()` (a `Roster`),
+    `club_stats()`, `club_stats_season()`
+  - **Playoffs** (`src/client/playoffs.rs`): `playoff_bracket(season)` (path holds
+    `season.end_year()`), `playoff_series_carousel(season)` (404 for a season without playoffs or
+    not started), `playoff_series_schedule(season, letter: char)` (ASCII letter, sent lowercase;
+    anything else is `NHLApiError::InvalidSeriesLetter` without a request)
   - **Stats** (`stats/rest`, `src/client/stats.rs`): `glossary()`, `stats_config()`, `countries()`,
     `season_rules()`, `draft_rounds()`, the generic `skater_report::<T>(report, &StatsQuery)` /
     `goalie_report` / `team_report`, and typed `skater_summary()` / `goalie_summary()` /
@@ -112,10 +118,22 @@ The codebase follows a clean layered architecture:
 - Modular organization:
   - `common.rs` - LocalizedString, Team (incl. `place_name`), Conference, Division, Franchise
     (`id: FranchiseId`), Roster,
-    RosterPlayer (with `full_name()`/`birth_place()`/`height_feet_inches()`/`age()` helpers)
+    RosterPlayer (with `full_name()`/`birth_place()`/`height_feet_inches()`/`age()` helpers;
+    `sweater_number: Option<i32>`, `None` for prospects and 1920s rosters); roster tests against
+    the recorded fixtures in sibling `common_test.rs`
   - `standings.rs` - Standing, StandingsResponse, SeasonInfo, SeasonsResponse
   - `schedule.rs` - ScheduleGame, GameDay, WeeklyScheduleResponse, DailySchedule, DailyScores, TeamScheduleResponse;
     tests in sibling `schedule_test.rs`, using the recorded schedule/score fixtures
+  - `calendar.rs` - TeamMonthScheduleResponse (`previous_month`/`next_month` are `None` at the
+    ends of a team's history; empty months skip to the nearest month with games), ScheduleCalendar,
+    CalendarTeam; tests in sibling `calendar_test.rs`
+  - `playoffs.rs` - PlayoffBracket/BracketSeries/BracketTeam, PlayoffSeriesCarousel/CarouselRound/
+    CarouselSeries/CarouselSeed, PlayoffSeriesSchedule/PlayoffSeriesTeam/PlayoffSeriesGame. While a
+    postseason runs, later-round bracket series have no teams/URL, carousel seeds are a `TBD`
+    placeholder (`id: -1`, `is_tbd()`), and winners/losers are `0` or absent, read as `None`.
+    Brackets served before 2024-25 lacked `commonName`/`darkLogo` (defaulted). Tests in sibling
+    `playoffs_test.rs`, which also uses archived in-progress responses
+    (`tests/fixtures/playoff_*_in_progress.json`, from web.archive.org; not re-recordable)
   - `boxscore.rs` - Boxscore, BoxscoreTeam, SkaterStats, GoalieStats, PeriodDescriptor
   - `game_center/` - Game-center response types split by endpoint family: play-by-play,
     matchup/landing, story, season series, shift chart, play-event types, and situation-code
@@ -386,6 +404,12 @@ The NHL API has four base URLs defined in `http_client.rs`:
 - `GET /club-stats-season/{team}` - Available seasons for club stats
 - `GET /club-schedule/{team}/week/{date}` - Team weekly schedule
 - `GET /club-schedule-season/{team}/{season}` - Team schedule for a full season
+- `GET /club-schedule/{team}/month/{YYYY-MM}` - Team monthly schedule ("now" accepted)
+- `GET /schedule-calendar/{date}` - Teams playing in the week starting on a date
+- `GET /prospects/{team}` - Team prospect pool (roster-shaped; defunct teams answer empty lists)
+- `GET /playoff-bracket/{year}` - Bracket of the playoffs ending in `year` (`{}` for 2005)
+- `GET /playoff-series/carousel/{season}` - Series by round, up to the current round
+- `GET /schedule/playoff-series/{season}/{letter}` - One series and its games
 
 Edge stats (player/puck tracking), all under `/edge/...`, params `{p}`=`PlayerId`, `{t}`=`TeamId`,
 `{s}`=`Season::to_api_string()`, `{gt}`=`GameType::to_int()`. Skater and goalie stats are

@@ -320,6 +320,9 @@ fn team_cases() -> Vec<MethodCase> {
     ]
 }
 
+#[path = "calendar_playoffs_contract_test.rs"]
+mod calendar_playoffs;
+
 fn method_cases() -> Vec<MethodCase> {
     [
         standings_cases(),
@@ -327,6 +330,7 @@ fn method_cases() -> Vec<MethodCase> {
         schedule_cases(),
         player_cases(),
         team_cases(),
+        calendar_playoffs::cases(),
     ]
     .into_iter()
     .flatten()
