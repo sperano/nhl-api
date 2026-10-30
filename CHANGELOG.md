@@ -62,6 +62,18 @@ All notable changes to this project are documented in this file.
 - A `403` response is now `NHLApiError::Forbidden` instead of `ApiError`; code that matched
   `ApiError` to detect a `403` (by status code or message text) now needs to also match
   `Forbidden`.
+- Fields older games omit are now `Option`, so `boxscore()`, `play_by_play()`, `landing()`,
+  `season_series()` and `game_story()` work for games of every recorded era (1925-26, 1975-76,
+  1995-96, 2005-06, 2010-11) instead of failing with `missing field`:
+  `SpecialEvent.light_logo_url` (absent for the 2008-09 and 2010-11 openers),
+  `PlayEvent.situation_code` and `GoalSummary.situation_code` (absent before 2010-11, and on
+  period starts and ends later), `GoalSummary.shot_type` (1990s and earlier),
+  `GameOfficial.sweater_number` (2000-01 and earlier), `SkaterStats.toi` (before 1997-98), team
+  `sog` on `BoxscoreTeam`/`MatchupTeam`/`StoryTeam` (1920s), and every `GoalieStats` stat but
+  `save_pctg`/`pim` (already optional): a backup who did not play has no stat line in older games,
+  where modern ones send zeros, and 1920s starters have goals against but no shots or saves.
+  `PlayEvent::situation()` returns `None` for an event without a code. Serialization omits these
+  fields when they are `None`.
 
 ### Added
 
@@ -96,10 +108,10 @@ All notable changes to this project are documented in this file.
 
 - `cargo test` no longer needs network access: the live-API tests in
   `tests/play_by_play_integration.rs` and `tests/player_game_log_integration.rs` are `#[ignore]`d.
-- `tests/contract.rs` deserializes 98 responses recorded from the live API
+- `tests/contract.rs` deserializes 110 responses recorded from the live API
   (`tests/fixtures/<method>/<label>.json`): scheduled and final games, regular season and
-  playoffs, 1925/1975/2010/current games, skaters and goalies, empty schedule weeks, and every
-  Edge endpoint. 34 of them fail today; `tests/common/known_failures.rs` pins each error so the
+  playoffs, 1925/1975/1995/2005/2010/current games, skaters and goalies, empty schedule weeks,
+  and every Edge endpoint. 15 of them fail today; `tests/common/known_failures.rs` pins each error so the
   suite turns red when one is fixed or changes. `tests/common/known_dropped.rs` likewise pins the
   fields that 16 responses silently drop although they deserialize (most Edge per-game speeds
   and distances, `PlayerLanding`'s `last5Games`).

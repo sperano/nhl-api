@@ -63,7 +63,7 @@ fn left_winger_with_faceoffs() -> SkaterStats {
         power_play_goals: 0,
         sog: 0,
         faceoff_winning_pctg: 0.5,
-        toi: "12:00".to_string(),
+        toi: Some("12:00".to_string()),
         blocked_shots: 1,
         shifts: 15,
         giveaways: 0,

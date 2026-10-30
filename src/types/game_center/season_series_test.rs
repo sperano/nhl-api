@@ -113,13 +113,13 @@ fn test_season_series_matchup_officials_deserialization() {
 
     assert_eq!(game_info.referees.len(), 2);
     assert_eq!(game_info.referees[0].full_name.default, "Kelly Sutherland");
-    assert_eq!(game_info.referees[0].sweater_number, 11);
+    assert_eq!(game_info.referees[0].sweater_number, Some(11));
     assert_eq!(game_info.referees[1].full_name.default, "Mitch Dunning");
-    assert_eq!(game_info.referees[1].sweater_number, 20);
+    assert_eq!(game_info.referees[1].sweater_number, Some(20));
 
     assert_eq!(game_info.linesmen.len(), 1);
     assert_eq!(game_info.linesmen[0].full_name.default, "Derek Nansen");
-    assert_eq!(game_info.linesmen[0].sweater_number, 70);
+    assert_eq!(game_info.linesmen[0].sweater_number, Some(70));
 
     assert_eq!(game_info.away_team.head_coach.default, "Anders Sorensen");
     assert_eq!(game_info.away_team.scratches.len(), 1);

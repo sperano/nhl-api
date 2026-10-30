@@ -159,8 +159,11 @@ pub struct PlayEvent {
     pub time_in_period: String,
     #[serde(rename = "timeRemaining")]
     pub time_remaining: String,
+    /// `None` for every event of older games (2008-09 and earlier) and for
+    /// some events of later ones (period starts and ends).
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "situationCode")]
-    pub situation_code: String,
+    pub situation_code: Option<String>,
     /// `None` for historical games that lack defending-side data.
     #[serde(
         rename = "homeTeamDefendingSide",
@@ -185,7 +188,7 @@ pub struct PlayEvent {
 impl PlayEvent {
     /// Parse the situation code into a GameSituation
     pub fn situation(&self) -> Option<GameSituation> {
-        GameSituation::from_code(&self.situation_code)
+        GameSituation::from_code(self.situation_code.as_deref()?)
     }
 }
 

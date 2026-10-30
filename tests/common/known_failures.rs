@@ -13,42 +13,6 @@ pub struct KnownFailure {
 }
 
 pub const KNOWN_FAILURES: &[KnownFailure] = &[
-    // Older games: fields modern games always have (`lightLogoUrl`, skater `toi`,
-    // `situationCode`, officials' `sweaterNumber`).
-    known("boxscore/regular_20102011", "missing field `lightLogoUrl`"),
-    known(
-        "play_by_play/regular_20102011",
-        "missing field `lightLogoUrl`",
-    ),
-    known("landing/regular_20102011", "missing field `lightLogoUrl`"),
-    known("boxscore/regular_19751976", "missing field `toi`"),
-    known(
-        "play_by_play/regular_19751976",
-        "missing field `situationCode`",
-    ),
-    known("landing/regular_19751976", "missing field `situationCode`"),
-    known(
-        "season_series/regular_19751976",
-        "missing field `sweaterNumber`",
-    ),
-    known(
-        "game_story/regular_19751976",
-        "missing field `situationCode`",
-    ),
-    known("boxscore/regular_19251926", "missing field `toi`"),
-    known(
-        "play_by_play/regular_19251926",
-        "missing field `situationCode`",
-    ),
-    known("landing/regular_19251926", "missing field `situationCode`"),
-    known(
-        "season_series/regular_19251926",
-        "missing field `sweaterNumber`",
-    ),
-    known(
-        "game_story/regular_19251926",
-        "missing field `situationCode`",
-    ),
     // The first week on record has no previous week.
     known(
         "weekly_schedule/1917-12-19",

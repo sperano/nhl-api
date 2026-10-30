@@ -199,6 +199,14 @@ The NHL API returns different data structures based on context:
 - Regulation length is always in `regPeriods`; it is also in `periodDescriptor.maxRegulationPeriods`
   when the response has a top-level `periodDescriptor` (scheduled `FUT` games omit it)
 
+**Game Center Endpoints, older games**: fields modern games always send are `Option`:
+- `situationCode` (play events, scoring summary): none before 2010-11; later, none on period
+  starts/ends. `PlayEvent::situation()` is `None` then
+- Skater `toi` (before 1997-98), goal `shotType` (1990s), officials' `sweaterNumber` (2000-01 and
+  earlier), team `sog` (1920s), special-event `lightLogoUrl` (2008-09, 2010-11 openers)
+- `GoalieStats`: a backup who did not play has no stat line in 1990s-2008-09 games (1975-76 and
+  modern games send zeros); 1920s starters have goals against but no shots/saves
+
 **Scheduled (`FUT`) games**: before puck drop the game-center responses omit what the game has not
 produced yet:
 - Team `score`/`sog` (`BoxscoreTeam`, `MatchupTeam`, `StoryTeam`; `SeriesTeam.score` for unplayed
@@ -218,8 +226,8 @@ produced yet:
 - **Recorded responses** (`tests/fixtures/<method>/<label>.json`, raw bytes from the live API):
   `tests/common/matrix.rs` and its `matrix/` submodules (games, league, players, teams, edge) list
   one case per `Client` method and argument set (`<method>/<label>`), covering scheduled/final
-  games, regular season/playoffs, 1925/1975/2010/current eras, skaters/goalies, empty weeks, and
-  all Edge endpoints. `tests/contract.rs`
+  games, regular season/playoffs, 1925/1975/1995/2005/2010/current eras, skaters/goalies, empty
+  weeks, and all Edge endpoints. `tests/contract.rs`
   deserializes every recorded case (no network). Cases that fail today are pinned with their error
   in `tests/common/known_failures.rs`; when you fix one, delete its entries (the contract test
   fails until you do). Deserializing succeeding is not enough: `tests/common/known_dropped.rs`

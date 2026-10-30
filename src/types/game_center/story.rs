@@ -69,7 +69,8 @@ pub struct StoryTeam {
     /// `None` before puck drop, when the API omits it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub score: Option<i32>,
-    /// `None` before puck drop, when the API omits it.
+    /// `None` before puck drop, when the API omits it, and for early games
+    /// without shot counts (e.g. 1925-26).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sog: Option<i32>,
     pub logo: String,

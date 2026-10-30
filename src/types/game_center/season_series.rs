@@ -95,8 +95,10 @@ pub struct SeriesGameInfo {
 pub struct GameOfficial {
     #[serde(rename = "fullName")]
     pub full_name: LocalizedString,
+    /// `None` for officials in older games (2000-01 and earlier).
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "sweaterNumber")]
-    pub sweater_number: i32,
+    pub sweater_number: Option<i32>,
 }
 
 /// Team-specific game information

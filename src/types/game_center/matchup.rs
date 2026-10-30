@@ -79,7 +79,8 @@ pub struct MatchupTeam {
     /// `None` before puck drop, when the API omits it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub score: Option<i32>,
-    /// `None` before puck drop, when the API omits it.
+    /// `None` before puck drop, when the API omits it, and for early games
+    /// without shot counts (e.g. 1925-26).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sog: Option<i32>,
     pub logo: String,
@@ -111,8 +112,10 @@ pub struct PeriodScoring {
 /// Goal summary information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GoalSummary {
+    /// `None` for goals in older games (2008-09 and earlier).
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "situationCode")]
-    pub situation_code: String,
+    pub situation_code: Option<String>,
     #[serde(rename = "eventId")]
     pub event_id: i64,
     pub strength: String,
@@ -147,8 +150,10 @@ pub struct GoalSummary {
     pub leading_team_abbrev: Option<LocalizedString>,
     #[serde(rename = "timeInPeriod")]
     pub time_in_period: String,
+    /// `None` for goals in the 1990s and earlier.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shotType")]
-    pub shot_type: String,
+    pub shot_type: Option<String>,
     #[serde(rename = "goalModifier")]
     pub goal_modifier: String,
     #[serde(default)]

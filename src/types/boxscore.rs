@@ -71,8 +71,10 @@ pub struct SpecialEvent {
     #[serde(rename = "parentId")]
     pub parent_id: i64,
     pub name: LocalizedString,
+    /// `None` for older special events (e.g. the 2008-09 and 2010-11 openers).
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "lightLogoUrl")]
-    pub light_logo_url: LocalizedString,
+    pub light_logo_url: Option<LocalizedString>,
 }
 
 /// Period descriptor with game period information
@@ -104,7 +106,8 @@ pub struct BoxscoreTeam {
     /// `None` before puck drop, when the API omits it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub score: Option<i32>,
-    /// `None` before puck drop, when the API omits it.
+    /// `None` before puck drop, when the API omits it, and for early games
+    /// without shot counts (e.g. 1925-26).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sog: Option<i32>,
     pub logo: String,
@@ -235,7 +238,9 @@ pub struct SkaterStats {
     pub sog: i32,
     #[serde(rename = "faceoffWinningPctg")]
     pub faceoff_winning_pctg: f64,
-    pub toi: String,
+    /// `None` before 1997-98, when time on ice was not tracked.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub toi: Option<String>,
     #[serde(rename = "blockedShots")]
     pub blocked_shots: i32,
     pub shifts: i32,
@@ -244,6 +249,10 @@ pub struct SkaterStats {
 }
 
 /// Goalie statistics
+///
+/// Older games omit most of the stat line: a backup who did not play has
+/// none of it (modern games send zeros), and 1920s starters have goals
+/// against but no shots or saves, so those fields are `None` there.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GoalieStats {
     #[serde(rename = "playerId")]
@@ -255,36 +264,51 @@ pub struct GoalieStats {
     #[serde(deserialize_with = "empty_string_as_none", default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "evenStrengthShotsAgainst")]
-    pub even_strength_shots_against: String,
+    pub even_strength_shots_against: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "powerPlayShotsAgainst")]
-    pub power_play_shots_against: String,
+    pub power_play_shots_against: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shorthandedShotsAgainst")]
-    pub shorthanded_shots_against: String,
+    pub shorthanded_shots_against: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "saveShotsAgainst")]
-    pub save_shots_against: String,
+    pub save_shots_against: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "savePctg")]
     pub save_pctg: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "evenStrengthGoalsAgainst")]
-    pub even_strength_goals_against: i32,
+    pub even_strength_goals_against: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "powerPlayGoalsAgainst")]
-    pub power_play_goals_against: i32,
+    pub power_play_goals_against: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shorthandedGoalsAgainst")]
-    pub shorthanded_goals_against: i32,
+    pub shorthanded_goals_against: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pim: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "goalsAgainst")]
-    pub goals_against: i32,
-    pub toi: String,
+    pub goals_against: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub toi: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub starter: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decision: Option<GoalieDecision>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "shotsAgainst")]
-    pub shots_against: i32,
-    pub saves: i32,
+    pub shots_against: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub saves: Option<i32>,
 }
+
+#[cfg(test)]
+#[path = "boxscore_test.rs"]
+mod historical_tests;
 
 #[cfg(test)]
 mod tests {
@@ -493,9 +517,9 @@ mod tests {
         assert_eq!(stats.name.default, "J. Markstrom");
         assert_eq!(stats.position, Some(Position::Goalie));
         assert_eq!(stats.save_pctg, Some(0.967));
-        assert_eq!(stats.goals_against, 1);
-        assert_eq!(stats.saves, 30);
-        assert_eq!(stats.shots_against, 31);
+        assert_eq!(stats.goals_against, Some(1));
+        assert_eq!(stats.saves, Some(30));
+        assert_eq!(stats.shots_against, Some(31));
         assert_eq!(stats.starter, Some(true));
         assert_eq!(stats.decision, Some(GoalieDecision::Win));
     }
@@ -636,7 +660,10 @@ mod tests {
         let event: SpecialEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.parent_id, 999);
         assert_eq!(event.name.default, "Winter Classic");
-        assert_eq!(event.light_logo_url.default, "https://example.com/logo.png");
+        assert_eq!(
+            event.light_logo_url.unwrap().default,
+            "https://example.com/logo.png"
+        );
     }
 
     #[test]
@@ -1157,7 +1184,7 @@ mod tests {
                 power_play_goals: 1,
                 sog: 4,
                 faceoff_winning_pctg: 0.6,
-                toi: "18:00".to_string(),
+                toi: Some("18:00".to_string()),
                 blocked_shots: 2,
                 shifts: 25,
                 giveaways: 1,
@@ -1179,7 +1206,7 @@ mod tests {
                 power_play_goals: 0,
                 sog: 3,
                 faceoff_winning_pctg: 0.0,
-                toi: "22:00".to_string(),
+                toi: Some("22:00".to_string()),
                 blocked_shots: 5,
                 shifts: 30,
                 giveaways: 2,
@@ -1210,21 +1237,21 @@ mod tests {
                     default: "Goalie 1".to_string(),
                 },
                 position: Some(Position::Goalie),
-                even_strength_shots_against: "20/22".to_string(),
-                power_play_shots_against: "3/5".to_string(),
-                shorthanded_shots_against: "0/0".to_string(),
-                save_shots_against: "23/27".to_string(),
+                even_strength_shots_against: Some("20/22".to_string()),
+                power_play_shots_against: Some("3/5".to_string()),
+                shorthanded_shots_against: Some("0/0".to_string()),
+                save_shots_against: Some("23/27".to_string()),
                 save_pctg: Some(0.852),
-                even_strength_goals_against: 2,
-                power_play_goals_against: 2,
-                shorthanded_goals_against: 0,
+                even_strength_goals_against: Some(2),
+                power_play_goals_against: Some(2),
+                shorthanded_goals_against: Some(0),
                 pim: Some(2),
-                goals_against: 4,
-                toi: "60:00".to_string(),
+                goals_against: Some(4),
+                toi: Some("60:00".to_string()),
                 starter: Some(true),
                 decision: Some(GoalieDecision::Loss),
-                shots_against: 27,
-                saves: 23,
+                shots_against: Some(27),
+                saves: Some(23),
             }],
         };
 

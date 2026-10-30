@@ -1,5 +1,6 @@
 //! Every `Client` method, called across game states (scheduled, in progress,
-//! final), regular season and playoffs, eras (1920s, 1970s, 2010, current),
+//! final), regular season and playoffs, eras (1920s, 1970s, 1990s, 2000s,
+//! 2010, current),
 //! skaters and goalies, and empty schedule weeks.
 //!
 //! Each submodule's macros build a case's URL from the same arguments as its
