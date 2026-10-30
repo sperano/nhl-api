@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::team_abbrev::TeamAbbrevError;
+
 /// Errors returned by this crate's HTTP calls and response deserialization.
 ///
 /// `#[non_exhaustive]`: new variants (and new status-code mappings) may be
@@ -50,6 +52,11 @@ pub enum NHLApiError {
         source: serde_json::Error,
     },
 
+    /// A team abbreviation passed to a client method is not a valid
+    /// [`TeamAbbrev`](crate::TeamAbbrev); no request was sent.
+    #[error(transparent)]
+    InvalidTeamAbbrev(#[from] TeamAbbrevError),
+
     /// Any other error not tied to an API response, e.g. an invalid season id
     /// passed by the caller or a failure building the HTTP client.
     #[error("{0}")]
@@ -60,7 +67,8 @@ impl NHLApiError {
     /// The HTTP status code the NHL API returned, if this error came from a
     /// non-2xx response. `None` for transport-level failures
     /// ([`NHLApiError::RequestError`]), deserialization failures
-    /// ([`NHLApiError::JsonError`]), and [`NHLApiError::Other`].
+    /// ([`NHLApiError::JsonError`]), rejected arguments
+    /// ([`NHLApiError::InvalidTeamAbbrev`]), and [`NHLApiError::Other`].
     pub fn status_code(&self) -> Option<u16> {
         match self {
             NHLApiError::ResourceNotFound { status_code, .. }
@@ -72,6 +80,7 @@ impl NHLApiError {
             | NHLApiError::ApiError { status_code, .. } => Some(*status_code),
             NHLApiError::RequestError(_)
             | NHLApiError::JsonError { .. }
+            | NHLApiError::InvalidTeamAbbrev(_)
             | NHLApiError::Other(_) => None,
         }
     }

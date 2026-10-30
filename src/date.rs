@@ -17,7 +17,11 @@ const SEASON_YEAR_DIGITS: usize = 4;
 const SEASON_START_MONTH: u32 = 10;
 
 /// Errors produced when constructing or parsing a [`Season`].
+///
+/// `#[non_exhaustive]`, like [`NHLApiError`](crate::NHLApiError): new
+/// validation failures may be added without a breaking change.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[non_exhaustive]
 pub enum SeasonError {
     /// The end year is neither equal to the start year nor start year + 1.
     #[error("invalid season years: {start}-{end} (end must equal start or start + 1)")]

@@ -1,6 +1,6 @@
 //! Franchises, rosters and club stats.
 
-use super::{url, web, CANADIENS, STATS_BASE};
+use super::{season_from_id, url, web, CANADIENS, STATS_BASE};
 use crate::common::Case;
 use nhl_api::{ClubStats, FranchisesResponse, GameType, Roster, SeasonGameTypes};
 
@@ -15,7 +15,7 @@ macro_rules! roster_season {
             Roster,
             "roster_season" / $label,
             web(&format!("roster/{CANADIENS}/{}", $season)),
-            |c| c.roster_season(CANADIENS, $season)
+            |c| c.roster_season(CANADIENS, season_from_id($season))
         )
     };
 }
@@ -32,7 +32,7 @@ macro_rules! club_stats {
                 $season,
                 $game_type.to_int()
             )),
-            |c| c.club_stats(CANADIENS, $season, $game_type)
+            |c| c.club_stats(CANADIENS, season_from_id($season), $game_type)
         )
     };
 }

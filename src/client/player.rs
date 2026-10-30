@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::{Client, DEFAULT_SEARCH_LIMIT};
+use crate::date::Season;
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
 use crate::ids::PlayerId;
@@ -29,12 +30,12 @@ impl Client {
     ///
     /// # Arguments
     /// * `player_id` - NHL player ID
-    /// * `season` - Season in YYYYYYYY format (e.g., 20232024)
+    /// * `season` - The season to fetch, e.g. `Season::new(2023)` for 2023-24
     /// * `game_type` - Game type (RegularSeason, Playoffs, etc.)
     pub async fn player_game_log(
         &self,
         player_id: impl Into<PlayerId>,
-        season: i32,
+        season: Season,
         game_type: GameType,
     ) -> Result<PlayerGameLog, NHLApiError> {
         let player_id = player_id.into();
@@ -45,7 +46,7 @@ impl Client {
                 &format!(
                     "player/{}/game-log/{}/{}",
                     player_id,
-                    season,
+                    season.to_api_string(),
                     game_type.to_int()
                 ),
                 None,

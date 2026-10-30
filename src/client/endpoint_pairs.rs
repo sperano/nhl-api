@@ -3,6 +3,7 @@ use crate::date::Season;
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
 use crate::ids::{PlayerId, TeamId};
+use crate::team_abbrev::TeamAbbrev;
 use crate::types::{
     EdgeGoalie5v5Detail, EdgeGoalieComparison, EdgeGoalieDetail, EdgeGoalieLanding,
     EdgeGoalieSavePctgDetail, EdgeGoalieShotLocationDetail, EdgeSkaterComparison, EdgeSkaterDetail,
@@ -25,7 +26,7 @@ macro_rules! client_endpoint_pair {
         $(#[$meta])*
         pub async fn $method(
             &self,
-            team_abbr: &str,
+            team_abbr: impl AsRef<str>,
             season: Season,
         ) -> Result<TeamScheduleResponse, NHLApiError> {
             self.$method_at(Endpoint::ApiWebV1, team_abbr, season).await
@@ -35,15 +36,16 @@ macro_rules! client_endpoint_pair {
         pub(super) async fn $method_at(
             &self,
             endpoint: Endpoint,
-            team_abbr: &str,
+            team_abbr: impl AsRef<str>,
             season: Season,
         ) -> Result<TeamScheduleResponse, NHLApiError> {
+            let team = TeamAbbrev::new(team_abbr.as_ref())?;
             self.client
                 .get_json(
                     endpoint,
                     &format!(
                         "club-schedule-season/{}/{}",
-                        team_abbr,
+                        team,
                         season.to_api_string()
                     ),
                     None,
@@ -142,7 +144,8 @@ impl Client {
         /// single week.
         ///
         /// # Arguments
-        /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+        /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a
+        ///   [`TeamAbbrev`]
         /// * `season` - The NHL season to fetch the schedule for
         club_schedule_season => club_schedule_season_at
     }

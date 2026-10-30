@@ -1,8 +1,10 @@
 use super::super::{Client, DEFAULT_SEARCH_LIMIT};
 use crate::config::ClientConfig;
 use crate::date::{GameDate, Season};
+use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
 use crate::ids::{GameId, TeamId};
+use crate::team_abbrev::TeamAbbrev;
 use crate::types::{GameType, WeeklyScheduleResponse};
 use chrono::NaiveDate;
 
@@ -297,4 +299,60 @@ async fn test_club_schedule_season_deserializes_fixture() {
     assert_eq!(result.games[0].game_state, GameState::Off);
     assert_eq!(result.games[1].game_type, GameType::Playoffs);
     assert_eq!(result.games[1].id, GameId::new(2023030111));
+}
+
+// ===== Team abbreviation validation Tests =====
+
+#[tokio::test]
+async fn test_club_schedule_season_normalizes_team_abbrev() {
+    let mut server = mockito::Server::new_async().await;
+    let mock = server
+        .mock("GET", "/club-schedule-season/FLA/20232024")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"games": []}"#)
+        .expect(2)
+        .create_async()
+        .await;
+
+    let client = Client::new().unwrap();
+    let endpoint = || Endpoint::Custom(server.url());
+    let abbrev = TeamAbbrev::new("FLA").unwrap();
+    for result in [
+        client
+            .club_schedule_season_at(endpoint(), "fla", Season::new(2023))
+            .await,
+        client
+            .club_schedule_season_at(endpoint(), &abbrev, Season::new(2023))
+            .await,
+    ] {
+        assert!(result.is_ok(), "request should succeed: {:?}", result.err());
+    }
+    mock.assert_async().await;
+}
+
+/// Every team-abbreviation method rejects a path-changing argument before
+/// sending a request (the default endpoint is never reached).
+#[tokio::test]
+async fn test_team_abbrev_methods_reject_invalid_abbrev() {
+    const BAD: &str = "../MTL";
+    let client = Client::new().unwrap();
+    let season = Season::new(2023);
+    let errors = [
+        client
+            .club_stats(BAD, season, GameType::RegularSeason)
+            .await
+            .err(),
+        client.club_stats_season(BAD).await.err(),
+        client.roster_current(BAD).await.err(),
+        client.roster_season(BAD, season).await.err(),
+        client.team_weekly_schedule(BAD, None).await.err(),
+        client.club_schedule_season(BAD, season).await.err(),
+    ];
+    for error in errors {
+        match error {
+            Some(NHLApiError::InvalidTeamAbbrev(err)) => assert_eq!(err.value(), BAD),
+            other => panic!("expected InvalidTeamAbbrev, got {other:?}"),
+        }
+    }
 }

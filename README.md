@@ -66,8 +66,9 @@ let standings = client.current_league_standings().await?;
 let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 let standings = client.league_standings_for_date(&GameDate::Date(date)).await?;
 
-// Standings for a season (by season ID)
-let standings = client.league_standings_for_season(20232024).await?;
+// Standings at the end of a season
+use nhl_api::Season;
+let standings = client.league_standings_for_season(Season::new(2023)).await?;
 
 // Season metadata (date ranges, etc.)
 let seasons = client.season_standing_manifest().await?;
@@ -126,8 +127,8 @@ let shifts = client.shift_chart(2024020001).await?;
 let player = client.player_landing(8478402).await?; // Connor McDavid
 
 // Player game log
-use nhl_api::GameType;
-let log = client.player_game_log(8478402, 20242025, GameType::RegularSeason).await?;
+use nhl_api::{GameType, Season};
+let log = client.player_game_log(8478402, Season::new(2024), GameType::RegularSeason).await?;
 for entry in &log.game_log {
     match entry {
         nhl_api::GameLog::Skater(s) => println!("{}: {} pts", s.game_date, s.points),
@@ -145,14 +146,14 @@ let results = client.search_player("McDavid", Some(10)).await?;
 // All teams (derived from standings)
 let teams = client.teams(None).await?;
 
-// Current roster
+// Current roster (team abbreviations are validated: three ASCII letters)
 let roster = client.roster_current("BOS").await?;
 
 // Historical roster
-let roster = client.roster_season("BOS", 20232024).await?;
+let roster = client.roster_season("BOS", Season::new(2023)).await?;
 
 // Club stats for a season
-let stats = client.club_stats("BOS", 20242025, GameType::RegularSeason).await?;
+let stats = client.club_stats("BOS", Season::new(2024), GameType::RegularSeason).await?;
 
 // Available seasons for a team
 let seasons = client.club_stats_season("BOS").await?;
@@ -208,11 +209,14 @@ The library provides strongly-typed responses for all API endpoints. Key types i
 - `Roster` - Team roster with player details
 - `Season` - An NHL season (e.g. `2023-2024`); parses from `"20232024"`, `"2023-2024"`, or an
   integer, and serializes/deserializes accordingly
-- `GameId`, `PlayerId`, `TeamId` - Typed numeric identifiers used throughout response structs and
-  client method parameters (`impl Into<GameId>` etc., so plain `i64` call sites still work)
+- `GameId`, `PlayerId`, `TeamId`, `FranchiseId` - Typed numeric identifiers used throughout
+  response structs and client method parameters (`impl Into<GameId>` etc., so plain `i64` call
+  sites still work)
+- `TeamAbbrev` - A validated team abbreviation (three ASCII letters, stored uppercase); client
+  methods take `impl AsRef<str>`, so `"MTL"` and a `TeamAbbrev` both work
 - `GameType` - 15 variants (`RegularSeason`, `Playoffs`, `Preseason`, `AllStar`, plus historical/
   special event types); `label()` returns a stable snake_case string (e.g. `"regular_season"`)
-- `GameState` - FUT, PRE, LIVE, CRIT, FINAL, OFF
+- `GameState` - FUT, PRE, LIVE, CRIT, FINAL, OFF, PPD, SUSP
 - `GameDate` - Either `Now` or `Date(NaiveDate)`
 - Edge stats types (`EdgeSkaterDetail`, `EdgeGoalieDetail`, `EdgeTeamDetail`, and friends) - puck/
   player-tracking data returned by the `edge_*` client methods
@@ -231,9 +235,13 @@ All client methods return `Result<T, NHLApiError>`. Error variants include:
 - `RequestError` - Network/connection issues
 - `JsonError` - Deserialization failures; carries the request URL and the underlying
   `serde_json::Error`
+- `InvalidTeamAbbrev` - A team abbreviation argument is not three ASCII letters; no request is sent
 
 `NHLApiError` is `#[non_exhaustive]`, so a `match` on it must always carry a wildcard arm; use
-`status_code()` to get the HTTP status code without matching on every variant.
+`status_code()` to get the HTTP status code without matching on every variant. The enums that
+mirror NHL code lists (`GameType`, `GameState`, `GameScheduleState`, `PeriodType`, `Position`,
+`GoalieDecision`, `PlayEventType`) are `#[non_exhaustive]` too, so new API values can be added
+without a breaking release.
 
 Error messages for non-2xx responses include a snippet of the response body (truncated to 4096
 bytes) for easier diagnosis. Unrecognized enum values from the API (e.g. a new game type NHL adds

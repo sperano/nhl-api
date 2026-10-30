@@ -6,6 +6,7 @@ mod error;
 pub mod fixtures;
 mod http_client;
 mod ids;
+mod team_abbrev;
 mod types;
 
 // Client
@@ -21,7 +22,10 @@ pub use date::{GameDate, Season, SeasonError};
 pub use error::NHLApiError;
 
 // IDs
-pub use ids::{GameId, PlayerId, TeamId};
+pub use ids::{FranchiseId, GameId, PlayerId, TeamId};
+
+// Team abbreviation
+pub use team_abbrev::{TeamAbbrev, TeamAbbrevError};
 
 // Common types
 pub use types::{
@@ -51,7 +55,7 @@ pub use types::{
 };
 
 // Game state types
-pub use types::{GameState, ParseGameStateError};
+pub use types::GameState;
 
 // Game type
 pub use types::GameType;

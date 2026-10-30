@@ -1,5 +1,5 @@
 use super::Client;
-use crate::date::GameDate;
+use crate::date::{GameDate, Season};
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
 use crate::types::{SeasonInfo, SeasonsResponse, Standing, StandingsResponse, Team};
@@ -56,20 +56,20 @@ impl Client {
             .standings)
     }
 
-    /// Returns the league standings at the end of a season, looked up by season id.
+    /// Returns the league standings at the end of a season.
     ///
     /// # Errors
     /// Returns an [`NHLApiError`] if the season manifest cannot be fetched, the
-    /// season id is not found, or the standings request fails.
+    /// season is not in it, or the standings request fails.
     pub async fn league_standings_for_season(
         &self,
-        season_id: i64,
+        season: Season,
     ) -> Result<Vec<Standing>, NHLApiError> {
         let seasons = self.season_standing_manifest().await?;
         let season_data = seasons
             .iter()
-            .find(|season| i64::from(season.id) == season_id)
-            .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season_id)))?;
+            .find(|info| info.id == season)
+            .ok_or_else(|| NHLApiError::Other(format!("Invalid Season Id {}", season.id())))?;
         Ok(self
             .fetch_standings_data(&season_data.standings_end)
             .await?
