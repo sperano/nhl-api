@@ -6,3 +6,6 @@ mod edge_contract;
 
 #[path = "client/methods_contract_test.rs"]
 mod methods_contract;
+
+#[path = "client/stats_contract_test.rs"]
+mod stats_contract;

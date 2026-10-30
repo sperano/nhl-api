@@ -63,6 +63,14 @@ The codebase follows a clean layered architecture:
   - **Game**: `boxscore()`, `play_by_play()`, `landing()`, `game_story()`, `season_series()`, `shift_chart()`
   - **Player**: `player_landing()`, `player_game_log()`, `search_player()`
   - **Team**: `franchises()`, `roster_current()`, `roster_season()`, `club_stats()`, `club_stats_season()`
+  - **Stats** (`stats/rest`, `src/client/stats.rs`): `glossary()`, `stats_config()`, `countries()`,
+    `season_rules()`, `draft_rounds()`, the generic `skater_report::<T>(report, &StatsQuery)` /
+    `goalie_report` / `team_report`, and typed `skater_summary()` / `goalie_summary()` /
+    `team_summary()` (all return `StatsPage<T>` = `{ data, total }`; the list endpoints unwrap
+    `.data`). Report and query are validated first (`NHLApiError::InvalidStatsQuery`, no request).
+    The summary methods apply the nhl-api-py default sort when the query has none (a named
+    constant per method); an aggregate team query breaks ties by `franchiseId`, since `teamId`
+    is a 400 there and `franchiseId` a 400 on non-aggregate queries
   - **Edge stats** (`/v1/edge/...`, 22 methods): per-skater/goalie/team `_detail`, `_speed_detail`,
     `_distance_detail` (skater/team only), `_shot_speed_detail`, `_shot_location_detail`,
     `_zone_time`/`_zone_time_details`, `_comparison`, and a no-id `_landing` leaderboard for each of
@@ -73,6 +81,26 @@ The codebase follows a clean layered architecture:
   endpoint, `edge_id` handles Edge endpoints with a player or team id, and `edge_landing` handles
   id-free Edge leaderboards. Add new Edge endpoints there and add an `EdgeCase` entry in the client
   tests.
+
+**StatsQuery / Cayenne (`stats_query.rs`, `stats_query/cayenne.rs`)**
+- `StatsQuery` is the consuming builder for the stats/rest report query string: typed filter helpers
+  (`season`, `seasons`, `game_type`, `franchise`, `team`, `player`, `game`, `position`,
+  `nationality`, `draft_year`, `rookie`, ... each a `CayenneExpr`), `filter`/`fact_filter` for raw
+  expressions (all ANDed; `factCayenneExp` filters computed columns), `sort_by`, `start`, `limit`,
+  `unlimited()` (`limit=-1`), `aggregate` (`isAggregate`) and `by_game` (`isGame`)
+- `query_pairs()` is the single source of the request parameters (integration tests build their
+  URLs from it): `cayenneExp` is always sent, even empty (the API 500s without it); `limit`,
+  `factCayenneExp` and `sort` (JSON array of `{property, direction}`) only when set. Without a
+  `limit` the API returns 50 rows; `limit(0)` returns everything too, so `validate()` rejects it
+- `position()` maps explicitly to the stats API codes (`C`/`L`/`R`/`D`/`G`; `Position::Forward` is
+  the OR of C/L/R) because `Position::code()` says `LW`/`RW`
+- `CayenneExpr` renders `field<op>value`, `field in (a,b)`, `not (...)`, and/or groups (a child of
+  the other kind is parenthesised; empty groups render as nothing and are skipped). Strings are
+  single-quoted with `\` and `'` backslash-escaped (doubling `''` is a 400). Build with
+  `CayenneExpr::field("x").ge(1).and(...)`; `!expr` negates
+- `validate()` rejects field names (filters, fact filters, sort keys) and report names that are not
+  `[A-Za-z][A-Za-z0-9_]*`, non-finite floats, empty `in` lists and `limit(0)`
+  (`StatsQueryError`, `#[non_exhaustive]`); the client runs it before every report request
 
 **HttpClient (`http_client.rs`)**
 - Wraps `reqwest::Client` with NHL-specific configuration
@@ -115,6 +143,16 @@ The codebase follows a clean layered architecture:
     reserved for genuinely-optional pointers) — see `edge/mod.rs` module docs for the full rule set
     and the field-naming gotchas (`shots` vs `sog`, `savePctgDetails` as an object not an array,
     `shotDifferential` as a single nested object)
+  - `stats_rest.rs` - StatsPage<T>, GlossaryEntry, Country, SeasonRules, DraftRounds, StatsConfig
+    (+ ReportConfig/ReportColumns; the keys of its report maps are the valid report names). The
+    API's 0/1 flags deserialize to `bool` through `int_flag` (booleans accepted too; other ints are
+    an error); tests in sibling `stats_rest_test.rs`, using the recorded fixtures
+  - `stats_summary.rs` - SkaterSummary, GoalieSummary, TeamSummary rows of the `summary` reports.
+    The row shape depends on the query mode (per season: `seasonId` + skater/goalie
+    `teamAbbrevs`; `aggregate`: neither, and team rows carry `franchiseId`/`franchiseName`
+    instead of `teamId`/`teamFullName`; `by_game`: `gameId`, `gameDate`, `homeRoad`,
+    `opponentTeamAbbrev`, `teamAbbrev` instead) and on the era (the API sends `null`), so those
+    fields are `Option`; tests in sibling `stats_summary_test.rs`
   - `enums/` (`mod.rs`, `game_enums.rs`, `player_enums.rs`, `macros.rs`) - Position, PeriodType,
     Handedness, HomeRoad, ZoneCode, DefendingSide, GoalieDecision, GameScheduleState, all generated
     by the `nhl_string_enum!` macro (see Serde Patterns below)
@@ -136,6 +174,8 @@ The codebase follows a clean layered architecture:
   per-enum `ParseXError` types this replaced are gone)
 - `InvalidTeamAbbrev` wraps the `TeamAbbrevError` a client method's team-abbreviation argument
   produced; `status_code()` is `None` for it
+- `InvalidStatsQuery` wraps the `StatsQueryError` a stats method's query or report name produced
+  (no request sent); `status_code()` is `None` for it
 - Uses `thiserror` for automatic Display/Error trait implementations
 
 **Config (`config.rs`)**
@@ -240,7 +280,7 @@ produced yet:
 - Deserialization tests use JSON string literals matching actual API responses; prefer the recorded
   responses below, since hand-written JSON misses whole classes of real payloads
 - **Recorded responses** (`tests/fixtures/<method>/<label>.json`, raw bytes from the live API):
-  `tests/common/matrix.rs` and its `matrix/` submodules (games, league, players, teams, edge) list
+  `tests/common/matrix.rs` and its `matrix/` submodules (games, league, players, teams, edge, stats) list
   one case per `Client` method and argument set (`<method>/<label>`), covering scheduled/final
   games, regular season/playoffs, 1925/1975/1995/2005/2010/current eras, skaters/goalies, empty
   weeks, and all Edge endpoints. `tests/contract.rs`
@@ -265,6 +305,10 @@ produced yet:
   - All live tests except `capture_fixtures` (the `live` nextest profile filters it out), as
     `.github/workflows/live-smoke.yml` runs them daily:
     `cargo nextest run --workspace --profile live --run-ignored only`
+- Stats cases are in `tests/common/matrix/stats.rs`; each report case builds its `StatsQuery` once
+  and derives both the URL (`query.query_pairs()`) and the call from it, so give every report case
+  an explicit sort. Paths/queries of the stats methods are pinned in
+  `src/client/stats_contract_test.rs`
 - **Path contract** (mockito): `src/client/methods_contract_test.rs` has one case per non-Edge
   `Client` method (path, query and endpoint base path, plus 404 propagation), calling the public
   method on a client built by the test-only `Client::with_origin_override(server.url())`, which
@@ -297,7 +341,7 @@ All API response types follow these patterns:
   loudly. The helper lives in `src/types/enums/mod.rs`.
 - **`#[non_exhaustive]` enums**: an enum mirroring an NHL code list the API can extend
   (`GameType`, `GameState`, `GameScheduleState`, `PeriodType`, `Position`, `GoalieDecision`,
-  `PlayEventType`) and the error enums (`NHLApiError`, `SeasonError`) are `#[non_exhaustive]`
+  `PlayEventType`) and the error enums (`NHLApiError`, `SeasonError`, `StatsQueryError`) are `#[non_exhaustive]`
   (for `nhl_string_enum!`, put the attribute after the doc comment). Closed sets (`HomeRoad`,
   `Handedness`, `ZoneCode`, `DefendingSide`) and crate-shaped enums (`GameLog`, `GameDate`) stay
   exhaustive. Give a new enum the attribute when it mirrors API vocabulary.
@@ -376,11 +420,18 @@ percentile-based; team stats are rank-based (1-32).
 - `GET /search/player?culture=en-us&q={query}&limit={limit}` - Player search
 
 **ApiCore** (`https://api.nhle.com/`):
-- Currently unused in codebase
+- Stays unused: `ApiStats` already covers `stats/rest`
 
 **ApiStats** (`https://api.nhle.com/stats/rest/`):
 - `GET /en/franchise` - All NHL franchises
 - `GET /en/shiftcharts?cayenneExp=gameId={id}` - Shift chart data for a game
+- `GET /en/glossary` - `glossary`; `GET /en/config` - `stats_config` (report names and columns);
+  `GET /en/country` - `countries`; `GET /en/season` - `season_rules` (one per season since
+  1917-18); `GET /en/draft` - `draft_rounds`. List endpoints answer `{"data": [...], "total": n}`
+- `GET /en/skater/{report}`, `/en/goalie/{report}`, `/en/team/{report}` + `StatsQuery::query_pairs()`
+  - `skater_report`/`goalie_report`/`team_report`, and the `summary` report via
+  `skater_summary`/`goalie_summary`/`team_summary`. The API needs a browser-ish or non-Python
+  User-Agent (the crate's `nhl-api/x.y` is fine)
 
 ## Requirements
 

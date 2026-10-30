@@ -120,6 +120,25 @@ All notable changes to this project are documented in this file.
   "Unexpected error" message). `NHLApiError::status_code() -> Option<u16>` returns the HTTP status
   code for every status-carrying variant, `None` for `RequestError`/`JsonError`/`Other`. Every
   variant now has rustdoc explaining when it occurs.
+- `stats/rest` endpoints (`src/client/stats.rs`): `glossary()`, `stats_config()`, `countries()`,
+  `season_rules()` and `draft_rounds()`, plus `skater_report()`, `goalie_report()` and
+  `team_report()` for any report name in `stats_config()` (rows deserialize as any `T`,
+  `serde_json::Value` included) and typed `skater_summary()`, `goalie_summary()` and
+  `team_summary()` returning `StatsPage<SkaterSummary | GoalieSummary | TeamSummary>`
+  (`{ data, total }`). The summary methods apply the nhl-api-py default sort when the query has
+  none; an aggregate team query breaks ties by `franchiseId`, because sorting it by `teamId` is a
+  400. New types `GlossaryEntry`, `Country`, `SeasonRules`, `DraftRounds`, `StatsConfig`,
+  `ReportConfig`, `ReportColumns`. The API's `0`/`1` flags deserialize as `bool`.
+- `StatsQuery`, a typed builder for the report query string: season, game type, franchise, team,
+  player, game, position, nationality, draft, rookie and other filters, `fact_filter`, `sort_by`,
+  `start`/`limit`/`unlimited`, `aggregate` (one row per player or team across seasons) and
+  `by_game` (one row per game). Filters are `CayenneExpr` values (`CayenneExpr::field("points")
+  .ge(100).and(...)`, `!expr`, `is_in`, `like`) rendered as the API's Cayenne expressions, with
+  `'` and `\` escaped in strings. `StatsQuery::validate()` (run by every report method) rejects
+  field and report names that are not plain identifiers, non-finite numbers, empty `in` lists and
+  `limit(0)`; `query_pairs()` exposes the request parameters.
+- `NHLApiError::InvalidStatsQuery` wraps the new `StatsQueryError`; no request is sent when a
+  stats query or report name is rejected.
 
 ### Fixed
 
@@ -149,6 +168,10 @@ All notable changes to this project are documented in this file.
   and distances, `PlayerLanding`'s `last5Games`).
 - `tests/live_sweep.rs` (opt-in) calls every `Client` method against the same matrix and reports
   which fail; it also re-records the fixtures (`NHL_API_CAPTURE_FIXTURES=1`).
+- The request matrix covers the new stats endpoints: 19 recorded responses (reference lists, and
+  skater, goalie and team summaries for 1925-26, 1975-76, 1997-98, 2005-06 and 2024-25, regular
+  season and playoffs, per season, aggregated and per game), and `src/client/stats_contract_test.rs`
+  pins each method's path and query against a mock server.
 - Deterministic tests for the `PlayByPlay` helpers and for `GameMatchup`/`MatchupTeam` on recorded
   responses.
 

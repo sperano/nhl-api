@@ -12,6 +12,7 @@ mod game;
 mod player;
 mod schedule;
 mod standings;
+mod stats;
 mod team;
 
 /// High-level client for the NHL API.

@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+use crate::stats_query::StatsQueryError;
 use crate::team_abbrev::TeamAbbrevError;
 
 /// Errors returned by this crate's HTTP calls and response deserialization.
@@ -57,6 +58,11 @@ pub enum NHLApiError {
     #[error(transparent)]
     InvalidTeamAbbrev(#[from] TeamAbbrevError),
 
+    /// A [`StatsQuery`](crate::StatsQuery) or report name passed to a stats
+    /// method is invalid; no request was sent.
+    #[error(transparent)]
+    InvalidStatsQuery(#[from] StatsQueryError),
+
     /// Any other error not tied to an API response, e.g. an invalid season id
     /// passed by the caller or a failure building the HTTP client.
     #[error("{0}")]
@@ -68,7 +74,8 @@ impl NHLApiError {
     /// non-2xx response. `None` for transport-level failures
     /// ([`NHLApiError::RequestError`]), deserialization failures
     /// ([`NHLApiError::JsonError`]), rejected arguments
-    /// ([`NHLApiError::InvalidTeamAbbrev`]), and [`NHLApiError::Other`].
+    /// ([`NHLApiError::InvalidTeamAbbrev`], [`NHLApiError::InvalidStatsQuery`]),
+    /// and [`NHLApiError::Other`].
     pub fn status_code(&self) -> Option<u16> {
         match self {
             NHLApiError::ResourceNotFound { status_code, .. }
@@ -81,6 +88,7 @@ impl NHLApiError {
             NHLApiError::RequestError(_)
             | NHLApiError::JsonError { .. }
             | NHLApiError::InvalidTeamAbbrev(_)
+            | NHLApiError::InvalidStatsQuery(_)
             | NHLApiError::Other(_) => None,
         }
     }
