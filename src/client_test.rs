@@ -3,3 +3,6 @@ mod core;
 
 #[path = "client/edge_contract_test.rs"]
 mod edge_contract;
+
+#[path = "client/methods_contract_test.rs"]
+mod methods_contract;

@@ -65,14 +65,15 @@ fn test_resolve_date_or_with_none_default_today() {
 }
 
 #[tokio::test]
-async fn test_search_player_defaults_limit_to_twenty() {
+async fn test_search_player_sends_culture_query_and_default_limit() {
     let mut server = mockito::Server::new_async().await;
     let mock = server
         .mock("GET", "/search/player")
-        .match_query(mockito::Matcher::UrlEncoded(
-            "limit".into(),
-            DEFAULT_SEARCH_LIMIT.to_string(),
-        ))
+        .match_query(mockito::Matcher::AllOf(vec![
+            mockito::Matcher::UrlEncoded("culture".into(), "en-us".into()),
+            mockito::Matcher::UrlEncoded("q".into(), "gretzky".into()),
+            mockito::Matcher::UrlEncoded("limit".into(), DEFAULT_SEARCH_LIMIT.to_string()),
+        ]))
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("[]")
