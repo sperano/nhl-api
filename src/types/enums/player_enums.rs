@@ -12,6 +12,7 @@ nhl_string_enum! {
     error_name = "position",
     display = code,
     /// NHL player position
+    #[non_exhaustive]
     pub enum Position {
         /// Center
         Center = "C", name = "Center";
@@ -68,6 +69,7 @@ nhl_string_enum! {
     error_name = "goalie decision",
     display = code,
     /// Goalie game decision (win/loss/tie/OT loss)
+    #[non_exhaustive]
     pub enum GoalieDecision {
         /// Win
         Win = "W", name = "Win";

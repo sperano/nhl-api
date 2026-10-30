@@ -12,6 +12,7 @@ nhl_string_enum! {
     error_name = "period type",
     display = code,
     /// NHL period type
+    #[non_exhaustive]
     pub enum PeriodType {
         /// Regulation period
         Regulation = "REG", name = "Regulation";
@@ -87,6 +88,7 @@ nhl_string_enum! {
     error_name = "game schedule state",
     display = code,
     /// Game schedule state (OK, postponed, etc.)
+    #[non_exhaustive]
     pub enum GameScheduleState {
         /// Game is scheduled as planned
         Ok = "OK", name = "OK";

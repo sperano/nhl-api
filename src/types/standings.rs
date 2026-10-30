@@ -84,7 +84,6 @@ impl Standing {
                 abbr: self.division_abbrev().to_string(),
                 name: self.division_name().to_string(),
             },
-            franchise_id: None,
         }
     }
 
@@ -215,7 +214,6 @@ mod tests {
         assert_eq!(team.conference.name, "Western");
         assert_eq!(team.division.abbr, "PAC");
         assert_eq!(team.division.name, "Pacific");
-        assert_eq!(team.franchise_id, None);
     }
 
     #[test]

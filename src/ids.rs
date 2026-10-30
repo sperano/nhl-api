@@ -135,10 +135,28 @@ numeric_id!(
     TeamId, TeamIdVisitor, "team ID"
 );
 
+numeric_id!(
+    /// A unique NHL franchise identifier, as returned by
+    /// [`Client::franchises`](crate::Client::franchises).
+    ///
+    /// Serializes as an integer; deserializes from an integer or a numeric
+    /// string.
+    FranchiseId, FranchiseIdVisitor, "franchise ID"
+);
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::{HashMap, HashSet};
+
+    #[test]
+    fn test_franchise_id_deserialize_int_and_string() {
+        let id: FranchiseId = serde_json::from_str("32").unwrap();
+        assert_eq!(id, FranchiseId::new(32));
+        let id: FranchiseId = serde_json::from_str(r#""32""#).unwrap();
+        assert_eq!(id.as_i64(), 32);
+        assert_eq!(serde_json::to_string(&id).unwrap(), "32");
+    }
 
     #[test]
     fn test_game_id_new() {

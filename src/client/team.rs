@@ -1,6 +1,8 @@
 use super::Client;
+use crate::date::Season;
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
+use crate::team_abbrev::TeamAbbrev;
 use crate::types::{ClubStats, Franchise, FranchisesResponse, GameType, Roster, SeasonGameTypes};
 
 impl Client {
@@ -22,30 +24,38 @@ impl Client {
     /// season and game type.
     ///
     /// # Arguments
-    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
-    /// * `season` - Season in YYYYYYYY format (e.g., 20242025)
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
+    /// * `season` - The season to fetch, e.g. `Season::new(2024)` for 2024-25
     /// * `game_type` - Game type (RegularSeason, Playoffs, etc.)
     ///
     /// # Example
     /// ```no_run
-    /// # use nhl_api::{Client, GameType};
+    /// # use nhl_api::{Client, GameType, Season};
     /// # async fn example() -> Result<(), nhl_api::NHLApiError> {
     /// let client = Client::new()?;
-    /// let stats = client.club_stats("MTL", 20242025, GameType::RegularSeason).await?;
+    /// let stats = client
+    ///     .club_stats("MTL", Season::new(2024), GameType::RegularSeason)
+    ///     .await?;
     /// println!("Skaters: {}, Goalies: {}", stats.skaters.len(), stats.goalies.len());
     /// # Ok(())
     /// # }
     /// ```
     pub async fn club_stats(
         &self,
-        team_abbr: &str,
-        season: i32,
+        team_abbr: impl AsRef<str>,
+        season: Season,
         game_type: GameType,
     ) -> Result<ClubStats, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("club-stats/{}/{}/{}", team_abbr, season, game_type.to_int()),
+                &format!(
+                    "club-stats/{}/{}/{}",
+                    team,
+                    season.to_api_string(),
+                    game_type.to_int()
+                ),
                 None,
             )
             .await
@@ -57,7 +67,7 @@ impl Client {
     /// game types (regular season, playoffs) for each season.
     ///
     /// # Arguments
-    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
     ///
     /// # Example
     /// ```no_run
@@ -73,12 +83,13 @@ impl Client {
     /// ```
     pub async fn club_stats_season(
         &self,
-        team_abbr: &str,
+        team_abbr: impl AsRef<str>,
     ) -> Result<Vec<SeasonGameTypes>, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("club-stats-season/{}", team_abbr),
+                &format!("club-stats-season/{}", team),
                 None,
             )
             .await
@@ -87,12 +98,13 @@ impl Client {
     /// Gets the current roster for a team.
     ///
     /// # Arguments
-    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
-    pub async fn roster_current(&self, team_abbr: &str) -> Result<Roster, NHLApiError> {
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
+    pub async fn roster_current(&self, team_abbr: impl AsRef<str>) -> Result<Roster, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("roster/{}/current", team_abbr),
+                &format!("roster/{}/current", team),
                 None,
             )
             .await
@@ -101,13 +113,18 @@ impl Client {
     /// Gets the roster for a team in a specific season.
     ///
     /// # Arguments
-    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
-    /// * `season` - Season in YYYYYYYY format (e.g., 20242025)
-    pub async fn roster_season(&self, team_abbr: &str, season: i32) -> Result<Roster, NHLApiError> {
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
+    /// * `season` - The season to fetch, e.g. `Season::new(2024)` for 2024-25
+    pub async fn roster_season(
+        &self,
+        team_abbr: impl AsRef<str>,
+        season: Season,
+    ) -> Result<Roster, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("roster/{}/{}", team_abbr, season),
+                &format!("roster/{}/{}", team, season.to_api_string()),
                 None,
             )
             .await

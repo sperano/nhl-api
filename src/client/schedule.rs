@@ -2,6 +2,7 @@ use super::Client;
 use crate::date::GameDate;
 use crate::error::NHLApiError;
 use crate::http_client::Endpoint;
+use crate::team_abbrev::TeamAbbrev;
 use crate::types::{DailySchedule, DailyScores, TeamScheduleResponse, WeeklyScheduleResponse};
 
 impl Client {
@@ -86,18 +87,19 @@ impl Client {
     /// Gets weekly schedule for a specific team.
     ///
     /// # Arguments
-    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF")
+    /// * `team_abbr` - Team abbreviation (e.g., "MTL", "TOR", "BUF"), validated as a [`TeamAbbrev`]
     /// * `date` - Optional GameDate for the week start. If None, defaults to today's date.
     pub async fn team_weekly_schedule(
         &self,
-        team_abbr: &str,
+        team_abbr: impl AsRef<str>,
         date: Option<GameDate>,
     ) -> Result<TeamScheduleResponse, NHLApiError> {
+        let team = TeamAbbrev::new(team_abbr.as_ref())?;
         let date = Self::resolve_date_or(date, GameDate::today());
         self.client
             .get_json(
                 Endpoint::ApiWebV1,
-                &format!("club-schedule/{}/week/{}", team_abbr, date.to_api_string()),
+                &format!("club-schedule/{}/week/{}", team, date.to_api_string()),
                 None,
             )
             .await

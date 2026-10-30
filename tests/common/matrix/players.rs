@@ -1,6 +1,6 @@
 //! Player profiles, game logs and search.
 
-use super::{web, with_query, CONNOR_MCDAVID, SEARCH_BASE};
+use super::{season_from_id, web, with_query, CONNOR_MCDAVID, SEARCH_BASE};
 use crate::common::Case;
 use nhl_api::{GameType, PlayerGameLog, PlayerLanding, PlayerSearchResult};
 
@@ -39,7 +39,7 @@ macro_rules! player_game_log {
                 $season,
                 $game_type.to_int()
             )),
-            |c| c.player_game_log($player, $season, $game_type)
+            |c| c.player_game_log($player, season_from_id($season), $game_type)
         )
     };
 }

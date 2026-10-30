@@ -2,7 +2,7 @@ use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::ids::PlayerId;
+use crate::ids::{FranchiseId, PlayerId};
 
 use super::enums::{empty_string_as_none, Handedness, Position};
 
@@ -53,8 +53,6 @@ pub struct Team {
     pub logo: String,
     pub conference: Conference,
     pub division: Division,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub franchise_id: Option<i64>,
 }
 
 impl fmt::Display for Team {
@@ -66,7 +64,7 @@ impl fmt::Display for Team {
 /// Franchise information
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Franchise {
-    pub id: i32,
+    pub id: FranchiseId,
     #[serde(rename = "fullName")]
     pub full_name: String,
     #[serde(rename = "teamCommonName")]
@@ -226,7 +224,6 @@ mod tests {
                 abbr: "ATL".to_string(),
                 name: "Atlantic".to_string(),
             },
-            franchise_id: Some(19),
         };
 
         let json = serde_json::to_string(&team).unwrap();
@@ -234,7 +231,6 @@ mod tests {
 
         assert_eq!(deserialized.name, "Buffalo Sabres");
         assert_eq!(deserialized.abbr, "BUF");
-        assert_eq!(deserialized.franchise_id, Some(19));
         assert_eq!(deserialized.place_name.default, "Buffalo");
     }
 
@@ -266,7 +262,7 @@ mod tests {
         }"#;
 
         let franchise: Franchise = serde_json::from_str(json).unwrap();
-        assert_eq!(franchise.id, 32);
+        assert_eq!(franchise.id, FranchiseId::new(32));
         assert_eq!(franchise.full_name, "Anaheim Ducks");
         assert_eq!(franchise.team_common_name, "Ducks");
         assert_eq!(franchise.team_place_name, "Anaheim");
@@ -275,7 +271,7 @@ mod tests {
     #[test]
     fn test_franchise_display() {
         let franchise = Franchise {
-            id: 16,
+            id: FranchiseId::new(16),
             full_name: "Philadelphia Flyers".to_string(),
             team_common_name: "Flyers".to_string(),
             team_place_name: "Philadelphia".to_string(),
@@ -305,16 +301,16 @@ mod tests {
 
         let response: FranchisesResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.data.len(), 2);
-        assert_eq!(response.data[0].id, 32);
+        assert_eq!(response.data[0].id, FranchiseId::new(32));
         assert_eq!(response.data[0].full_name, "Anaheim Ducks");
-        assert_eq!(response.data[1].id, 8);
+        assert_eq!(response.data[1].id, FranchiseId::new(8));
         assert_eq!(response.data[1].full_name, "Brooklyn Americans");
     }
 
     #[test]
     fn test_franchise_clone() {
         let franchise = Franchise {
-            id: 1,
+            id: FranchiseId::new(1),
             full_name: "Montreal Canadiens".to_string(),
             team_common_name: "Canadiens".to_string(),
             team_place_name: "Montreal".to_string(),
@@ -327,14 +323,14 @@ mod tests {
     #[test]
     fn test_franchise_equality() {
         let franchise1 = Franchise {
-            id: 1,
+            id: FranchiseId::new(1),
             full_name: "Montreal Canadiens".to_string(),
             team_common_name: "Canadiens".to_string(),
             team_place_name: "Montreal".to_string(),
         };
 
         let franchise2 = Franchise {
-            id: 1,
+            id: FranchiseId::new(1),
             full_name: "Montreal Canadiens".to_string(),
             team_common_name: "Canadiens".to_string(),
             team_place_name: "Montreal".to_string(),
@@ -346,14 +342,14 @@ mod tests {
     #[test]
     fn test_franchise_inequality() {
         let franchise1 = Franchise {
-            id: 1,
+            id: FranchiseId::new(1),
             full_name: "Montreal Canadiens".to_string(),
             team_common_name: "Canadiens".to_string(),
             team_place_name: "Montreal".to_string(),
         };
 
         let franchise2 = Franchise {
-            id: 6,
+            id: FranchiseId::new(6),
             full_name: "Boston Bruins".to_string(),
             team_common_name: "Bruins".to_string(),
             team_place_name: "Boston".to_string(),
@@ -387,7 +383,6 @@ mod tests {
                 abbr: "ATL".to_string(),
                 name: "Atlantic".to_string(),
             },
-            franchise_id: Some(19),
         };
 
         assert_eq!(team.to_string(), "Buffalo Sabres (BUF)");

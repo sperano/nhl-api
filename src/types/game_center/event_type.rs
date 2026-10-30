@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Type of play event in a game.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[non_exhaustive]
 pub enum PlayEventType {
     #[serde(rename = "game-start")]
     GameStart,

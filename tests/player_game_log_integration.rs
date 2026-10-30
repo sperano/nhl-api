@@ -1,4 +1,4 @@
-use nhl_api::{Client, GameLog, GameType};
+use nhl_api::{Client, GameLog, GameType, Season};
 
 /// Carey Price, the goalie whose game logs used to fail with
 /// `missing field 'points'`.
@@ -10,7 +10,7 @@ const CONNOR_MCDAVID: i64 = 8478402;
 async fn test_goalie_game_log_regular_season() {
     let client = Client::new().unwrap();
     let log = client
-        .player_game_log(CAREY_PRICE, 20192020, GameType::RegularSeason)
+        .player_game_log(CAREY_PRICE, Season::new(2019), GameType::RegularSeason)
         .await
         .unwrap();
 
@@ -26,7 +26,7 @@ async fn test_goalie_game_log_regular_season() {
 async fn test_goalie_game_log_playoffs() {
     let client = Client::new().unwrap();
     let log = client
-        .player_game_log(CAREY_PRICE, 20102011, GameType::Playoffs)
+        .player_game_log(CAREY_PRICE, Season::new(2010), GameType::Playoffs)
         .await
         .unwrap();
 
@@ -42,7 +42,7 @@ async fn test_goalie_game_log_playoffs() {
 async fn test_skater_game_log_regular_season() {
     let client = Client::new().unwrap();
     let log = client
-        .player_game_log(CONNOR_MCDAVID, 20232024, GameType::RegularSeason)
+        .player_game_log(CONNOR_MCDAVID, Season::new(2023), GameType::RegularSeason)
         .await
         .unwrap();
 

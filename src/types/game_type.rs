@@ -14,6 +14,7 @@ const ENUM_NAME: &str = "game type";
 /// Olympics, All-Star Weekend variants, etc.) that appear on older schedule
 /// and boxscore data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum GameType {
     /// Preseason games
     Preseason,

@@ -1,6 +1,6 @@
 //! League-wide standings and schedules.
 
-use super::{date, web, CANADIENS};
+use super::{date, season_from_id, web, CANADIENS};
 use crate::common::Case;
 use nhl_api::{
     DailyScores, Season, SeasonsResponse, StandingsResponse, TeamScheduleResponse,
@@ -83,9 +83,9 @@ pub(super) fn standings_cases(out: &mut Vec<Case>) {
         web("standings-season"), |c| c.season_standing_manifest());
     live_case!(out, "current_league_standings" / "now", |c| c.current_league_standings());
     live_case!(out, "league_standings_for_season" / "19751976",
-        |c| c.league_standings_for_season(19751976));
+        |c| c.league_standings_for_season(season_from_id(19751976)));
     live_case!(out, "league_standings_for_season" / "20242025",
-        |c| c.league_standings_for_season(20242025));
+        |c| c.league_standings_for_season(season_from_id(20242025)));
     live_case!(out, "teams" / "now", |c| c.teams(None));
     live_case!(out, "teams" / "1925-03-01", |c| c.teams(Some(date("1925-03-01"))));
 }

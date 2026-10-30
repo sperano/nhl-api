@@ -13,7 +13,7 @@ mod players;
 mod teams;
 
 use super::{Case, CurrentGames};
-use nhl_api::GameDate;
+use nhl_api::{GameDate, Season};
 use reqwest::Url;
 
 const WEB_BASE: &str = "https://api-web.nhle.com/v1/";
@@ -61,4 +61,9 @@ fn with_query(base: &str, path: &str, query: &[(&str, &str)]) -> Url {
 
 fn date(api: &str) -> GameDate {
     api.parse().expect("valid YYYY-MM-DD date")
+}
+
+/// The [`Season`] for a `YYYYYYYY` id, so cases keep the id in their label and URL.
+fn season_from_id(id: i32) -> Season {
+    Season::try_from(id).expect("valid YYYYYYYY season id")
 }
