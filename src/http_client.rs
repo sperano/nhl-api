@@ -2,6 +2,7 @@ use crate::config::{ClientConfig, DEFAULT_USER_AGENT};
 use crate::error::NHLApiError;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, USER_AGENT};
 use reqwest::{Client, Response};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use tracing::debug;
 
@@ -39,6 +40,11 @@ const MAX_REDIRECTS: usize = 10;
 
 pub struct HttpClient {
     client: Client,
+    /// Test-only scheme and host (e.g. a mock server's URL) that replace those
+    /// of every endpoint's base URL, keeping its path so endpoints stay
+    /// distinguishable. Lets mock tests drive the public `Client` methods.
+    #[cfg(test)]
+    origin_override: Option<String>,
 }
 
 impl HttpClient {
@@ -55,7 +61,7 @@ impl HttpClient {
         // transport-shaping options and the default headers below are the
         // caller's responsibility in that case (see `ClientConfig` docs).
         if let Some(client) = client {
-            return Ok(Self { client });
+            return Ok(Self::from_client(client));
         }
 
         let user_agent = user_agent.as_deref().unwrap_or(DEFAULT_USER_AGENT);
@@ -81,7 +87,32 @@ impl HttpClient {
         }
 
         let client = client_builder.build()?;
-        Ok(Self { client })
+        Ok(Self::from_client(client))
+    }
+
+    fn from_client(client: Client) -> Self {
+        Self {
+            client,
+            #[cfg(test)]
+            origin_override: None,
+        }
+    }
+
+    /// Sends every request to `origin` instead of the endpoint's host; see
+    /// `origin_override`.
+    #[cfg(test)]
+    pub(crate) fn with_origin_override(mut self, origin: impl Into<String>) -> Self {
+        self.origin_override = Some(origin.into());
+        self
+    }
+
+    fn base_url<'a>(&self, endpoint: &'a Endpoint) -> Cow<'a, str> {
+        #[cfg(test)]
+        if let Some(origin) = &self.origin_override {
+            let base = reqwest::Url::parse(endpoint.base_url()).expect("endpoint base URL");
+            return Cow::Owned(format!("{}{}", origin.trim_end_matches('/'), base.path()));
+        }
+        Cow::Borrowed(endpoint.base_url())
     }
 
     fn error_from_status(status_code: u16, url: &str, body_snippet: &str) -> NHLApiError {
@@ -153,7 +184,7 @@ impl HttpClient {
         resource: &str,
         query_params: Option<HashMap<String, String>>,
     ) -> Result<T, NHLApiError> {
-        let full_url = Self::build_url(endpoint.base_url(), resource);
+        let full_url = Self::build_url(&self.base_url(&endpoint), resource);
 
         debug!(url = %full_url, "Sending HTTP GET request");
 
@@ -180,6 +211,10 @@ impl HttpClient {
         Ok(json)
     }
 }
+
+#[cfg(test)]
+#[path = "http_client_test.rs"]
+mod transport_tests;
 
 #[cfg(test)]
 mod tests {

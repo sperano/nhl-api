@@ -265,6 +265,11 @@ produced yet:
   - All live tests except `capture_fixtures` (the `live` nextest profile filters it out), as
     `.github/workflows/live-smoke.yml` runs them daily:
     `cargo nextest run --workspace --profile live --run-ignored only`
+- **Path contract** (mockito): `src/client/methods_contract_test.rs` has one case per non-Edge
+  `Client` method (path, query and endpoint base path, plus 404 propagation), calling the public
+  method on a client built by the test-only `Client::with_origin_override(server.url())`, which
+  keeps each endpoint's base path (`/v1/`, `/stats/rest/`, `/api/v1/`). Add a case there for a new
+  method; Edge methods use the `EdgeCase` table in `edge_contract_test.rs`
 - Test naming convention: `test_{component}_{scenario}` (e.g., `test_game_date_from_str_invalid`)
 - `fixtures` cargo feature (off by default): `src/fixtures.rs`, gated behind
   `#[cfg(feature = "fixtures")]`, exposes minimum-valid constructors (`boxscore()`, `play_by_play()`,

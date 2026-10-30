@@ -36,6 +36,17 @@ impl Client {
         })
     }
 
+    /// Create a default-configured client whose requests all go to `origin`
+    /// (a mock server), keeping each endpoint's base path.
+    #[cfg(test)]
+    fn with_origin_override(origin: impl Into<String>) -> Self {
+        Self {
+            client: HttpClient::new(ClientConfig::default())
+                .unwrap()
+                .with_origin_override(origin),
+        }
+    }
+
     /// Resolve an optional date to an owned date with a caller-selected default.
     fn resolve_date_or(date: Option<GameDate>, default: GameDate) -> GameDate {
         date.unwrap_or(default)
