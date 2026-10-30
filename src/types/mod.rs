@@ -11,6 +11,8 @@ pub mod game_type;
 pub mod player;
 pub mod schedule;
 pub mod standings;
+pub mod stats_rest;
+pub mod stats_summary;
 
 pub use boxscore::*;
 pub use club_stats::*;
@@ -30,3 +32,5 @@ pub use game_type::*;
 pub use player::*;
 pub use schedule::*;
 pub use standings::*;
+pub use stats_rest::*;
+pub use stats_summary::*;

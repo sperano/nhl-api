@@ -10,6 +10,7 @@ mod edge;
 mod games;
 mod league;
 mod players;
+mod stats;
 mod teams;
 
 use super::{Case, CurrentGames};
@@ -40,6 +41,10 @@ pub fn cases(current: &CurrentGames) -> Vec<Case> {
     edge::skater_cases(&mut out);
     edge::goalie_cases(&mut out);
     edge::team_cases(&mut out);
+    stats::reference_cases(&mut out);
+    stats::skater_cases(&mut out);
+    stats::goalie_cases(&mut out);
+    stats::team_cases(&mut out);
     out
 }
 

@@ -180,6 +180,45 @@ let team_detail = client.edge_team_detail(10, Season::new(2024), GameType::Regul
 let leaders = client.edge_skater_landing(Season::new(2024), GameType::RegularSeason).await?;
 ```
 
+### League Stats (stats/rest)
+
+Reference data and the skater/goalie/team `summary` reports. Build the filters, sort and paging
+with `StatsQuery`; without `limit()` the API returns 50 rows, `unlimited()` returns every match.
+
+```rust
+use nhl_api::{CayenneExpr, GameType, Position, Season, SortDirection, StatsQuery};
+
+// Top 10 scorers of 2024-25
+let query = StatsQuery::new()
+    .season(Season::new(2024))
+    .game_type(GameType::RegularSeason)
+    .sort_by("points", SortDirection::Desc)
+    .limit(10);
+let page = client.skater_summary(&query).await?; // StatsPage { data, total }
+
+// Swedish forwards with 80+ games across four seasons, one row per player
+let query = StatsQuery::new()
+    .seasons(Season::new(2020), Season::new(2023))
+    .position(Position::Forward)
+    .nationality("SWE")
+    .aggregate(true)
+    .fact_filter(CayenneExpr::field("gamesPlayed").ge(80))
+    .unlimited();
+let swedes = client.skater_summary(&query).await?;
+
+// Other reports: names come from stats_config(); rows deserialize as any type
+let config = client.stats_config().await?;
+let bios = client
+    .skater_report::<serde_json::Value>("bios", &StatsQuery::new().limit(5))
+    .await?;
+
+// Reference lists
+let glossary = client.glossary().await?;
+let countries = client.countries().await?;
+let seasons = client.season_rules().await?;
+let drafts = client.draft_rounds().await?;
+```
+
 ## Configuration
 
 ```rust
@@ -218,6 +257,8 @@ The library provides strongly-typed responses for all API endpoints. Key types i
   special event types); `label()` returns a stable snake_case string (e.g. `"regular_season"`)
 - `GameState` - FUT, PRE, LIVE, CRIT, FINAL, OFF, PPD, SUSP
 - `GameDate` - Either `Now` or `Date(NaiveDate)`
+- `StatsQuery`, `CayenneExpr` - Typed query builder for the stats/rest reports; `StatsPage<T>`,
+  `SkaterSummary`, `GoalieSummary`, `TeamSummary` - their responses
 - Edge stats types (`EdgeSkaterDetail`, `EdgeGoalieDetail`, `EdgeTeamDetail`, and friends) - puck/
   player-tracking data returned by the `edge_*` client methods
 
@@ -236,6 +277,7 @@ All client methods return `Result<T, NHLApiError>`. Error variants include:
 - `JsonError` - Deserialization failures; carries the request URL and the underlying
   `serde_json::Error`
 - `InvalidTeamAbbrev` - A team abbreviation argument is not three ASCII letters; no request is sent
+- `InvalidStatsQuery` - A `StatsQuery` or stats report name is invalid; no request is sent
 
 `NHLApiError` is `#[non_exhaustive]`, so a `match` on it must always carry a wildcard arm; use
 `status_code()` to get the HTTP status code without matching on every variant. The enums that

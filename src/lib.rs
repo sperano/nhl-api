@@ -6,6 +6,7 @@ mod error;
 pub mod fixtures;
 mod http_client;
 mod ids;
+mod stats_query;
 mod team_abbrev;
 mod types;
 
@@ -23,6 +24,12 @@ pub use error::NHLApiError;
 
 // IDs
 pub use ids::{FranchiseId, GameId, PlayerId, TeamId};
+
+// Stats query builder
+pub use stats_query::{
+    CayenneExpr, CayenneField, CayenneValue, CompareOp, SortDirection, SortKey, StatsQuery,
+    StatsQueryError,
+};
 
 // Team abbreviation
 pub use team_abbrev::{TeamAbbrev, TeamAbbrevError};
@@ -80,6 +87,15 @@ pub use types::{
 
 // Standings types
 pub use types::{SeasonInfo, SeasonsResponse, Standing, StandingsResponse};
+
+// Stats REST types (glossary, countries, seasons, drafts, report config)
+pub use types::{
+    Country, DraftRounds, GlossaryEntry, ReportColumns, ReportConfig, SeasonRules, StatsConfig,
+    StatsPage,
+};
+
+// Stats REST summary rows
+pub use types::{GoalieSummary, SkaterSummary, TeamSummary};
 
 // Edge stats shared types
 pub use types::{
