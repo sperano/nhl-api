@@ -93,8 +93,8 @@ fn test_extract_daily_schedule_found() {
     let client = Client::new().unwrap();
 
     let weekly_response = WeeklyScheduleResponse {
-        next_start_date: "2024-01-15".to_string(),
-        previous_start_date: "2024-01-01".to_string(),
+        next_start_date: Some("2024-01-15".to_string()),
+        previous_start_date: Some("2024-01-01".to_string()),
         game_week: vec![crate::types::schedule::GameDay {
             date: "2024-01-08".to_string(),
             games: vec![],
@@ -114,8 +114,8 @@ fn test_extract_daily_schedule_not_found() {
     let client = Client::new().unwrap();
 
     let weekly_response = WeeklyScheduleResponse {
-        next_start_date: "2024-01-15".to_string(),
-        previous_start_date: "2024-01-01".to_string(),
+        next_start_date: Some("2024-01-15".to_string()),
+        previous_start_date: Some("2024-01-01".to_string()),
         game_week: vec![crate::types::schedule::GameDay {
             date: "2024-01-08".to_string(),
             games: vec![],
@@ -131,14 +131,15 @@ fn test_extract_daily_schedule_not_found() {
 
 #[test]
 fn test_extract_daily_schedule_with_games() {
+    use crate::types::enums::GameScheduleState;
     use crate::types::game_state::GameState;
     use crate::types::schedule::{ScheduleGame, ScheduleTeam};
 
     let client = Client::new().unwrap();
 
     let weekly_response = WeeklyScheduleResponse {
-        next_start_date: "2024-01-15".to_string(),
-        previous_start_date: "2024-01-01".to_string(),
+        next_start_date: Some("2024-01-15".to_string()),
+        previous_start_date: Some("2024-01-01".to_string()),
         game_week: vec![crate::types::schedule::GameDay {
             date: "2024-01-08".to_string(),
             games: vec![ScheduleGame {
@@ -161,6 +162,7 @@ fn test_extract_daily_schedule_with_games() {
                     place_name: None,
                 },
                 game_state: GameState::Final,
+                game_schedule_state: GameScheduleState::Ok,
             }],
         }],
     };
@@ -178,8 +180,8 @@ fn test_extract_daily_schedule_empty_game_week() {
     let client = Client::new().unwrap();
 
     let weekly_response = WeeklyScheduleResponse {
-        next_start_date: "2024-01-15".to_string(),
-        previous_start_date: "2024-01-01".to_string(),
+        next_start_date: Some("2024-01-15".to_string()),
+        previous_start_date: Some("2024-01-01".to_string()),
         game_week: vec![],
     };
 
@@ -256,7 +258,8 @@ async fn test_club_schedule_season_deserializes_fixture() {
                         "abbrev": "TOR",
                         "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
                     },
-                    "gameState": "OFF"
+                    "gameState": "OFF",
+                    "gameScheduleState": "OK"
                 },
                 {
                     "id": 2023030111,
@@ -273,7 +276,8 @@ async fn test_club_schedule_season_deserializes_fixture() {
                         "abbrev": "TOR",
                         "logo": "https://assets.nhle.com/logos/nhl/svg/TOR_light.svg"
                     },
-                    "gameState": "OFF"
+                    "gameState": "OFF",
+                    "gameScheduleState": "OK"
                 }
             ]
         }"#;

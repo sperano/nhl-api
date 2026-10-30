@@ -125,7 +125,9 @@ async fn current_games(client: &Client, errors: &mut Vec<String>) -> CurrentGame
             week.game_week
                 .into_iter()
                 .flat_map(|day| day.games)
-                .find(|game| game.game_state.is_scheduled())
+                .find(|game| {
+                    game.game_state.is_scheduled() && game.game_schedule_state.is_playable()
+                })
                 .map(|game| game.id)
         });
     let in_progress = client

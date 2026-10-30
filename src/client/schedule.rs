@@ -32,8 +32,8 @@ impl Client {
             .unwrap_or_default();
 
         DailySchedule {
-            next_start_date: Some(schedule_data.next_start_date),
-            previous_start_date: Some(schedule_data.previous_start_date),
+            next_start_date: schedule_data.next_start_date,
+            previous_start_date: schedule_data.previous_start_date,
             date: date_string,
             number_of_games: games.len(),
             games,
