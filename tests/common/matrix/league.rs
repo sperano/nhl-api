@@ -95,6 +95,8 @@ pub(super) fn schedule_cases(out: &mut Vec<Case>) {
     weekly_schedule!(out, "2026-10-21", "2026-10-21");
     weekly_schedule!(out, "2026-07-15_empty", "2026-07-15");
     weekly_schedule!(out, "1917-12-19", "1917-12-19");
+    weekly_schedule!(out, "2027-07-20_newest", "2027-07-20");
+    weekly_schedule!(out, "2022-09-28_cancelled", "2022-09-28");
     live_case!(out, "weekly_schedule" / "now", |c| c.weekly_schedule(None));
     live_case!(out, "daily_schedule" / "2026-10-21",
         |c| c.daily_schedule(Some(date("2026-10-21"))));
@@ -102,6 +104,7 @@ pub(super) fn schedule_cases(out: &mut Vec<Case>) {
     daily_scores!(out, "2026-10-21", "2026-10-21");
     daily_scores!(out, "2026-07-15_empty", "2026-07-15");
     daily_scores!(out, "1975-10-09", "1975-10-09");
+    daily_scores!(out, "2022-09-28_cancelled", "2022-09-28");
     live_case!(out, "daily_scores" / "now", |c| c.daily_scores(None));
     team_weekly_schedule!(out, "mtl_2026-10-21", "2026-10-21");
     team_weekly_schedule!(out, "mtl_2026-07-15_empty", "2026-07-15");

@@ -86,7 +86,8 @@ The codebase follows a clean layered architecture:
     (`id: FranchiseId`), Roster,
     RosterPlayer (with `full_name()`/`birth_place()`/`height_feet_inches()`/`age()` helpers)
   - `standings.rs` - Standing, StandingsResponse, SeasonInfo, SeasonsResponse
-  - `schedule.rs` - ScheduleGame, GameDay, WeeklyScheduleResponse, DailySchedule, DailyScores, TeamScheduleResponse
+  - `schedule.rs` - ScheduleGame, GameDay, WeeklyScheduleResponse, DailySchedule, DailyScores, TeamScheduleResponse;
+    tests in sibling `schedule_test.rs`, using the recorded schedule/score fixtures
   - `boxscore.rs` - Boxscore, BoxscoreTeam, SkaterStats, GoalieStats, PeriodDescriptor
   - `game_center/` - Game-center response types split by endpoint family: play-by-play,
     matchup/landing, story, season series, shift chart, play-event types, and situation-code
@@ -197,6 +198,11 @@ The NHL API returns different data structures based on context:
 - The response is a `WeeklyScheduleResponse` with a `gameWeek` array
 - Individual game objects do NOT include `gameDate` field (date is at parent `GameDay` level)
 - The `ScheduleGame.game_date` field is `Option<String>` to handle this
+- `WeeklyScheduleResponse.previous_start_date`/`next_start_date` are `Option<String>`: the first
+  week on record (1917-12-19) has no `previousStartDate`, the newest one no `nextStartDate`
+- `ScheduleGame`/`GameScore` carry `game_schedule_state: GameScheduleState`; a cancelled game
+  (e.g. 2022010034, `CNCL`) keeps `gameState: FUT`, so check `is_playable()` before treating a
+  `FUT` game as upcoming
 
 **Standings Endpoint**: Historical standings data (pre-1975) differs from modern data:
 - Old data lacks `conferenceAbbrev`, `conferenceName`, `divisionAbbrev`, and `divisionName`

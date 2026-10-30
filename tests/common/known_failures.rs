@@ -13,11 +13,6 @@ pub struct KnownFailure {
 }
 
 pub const KNOWN_FAILURES: &[KnownFailure] = &[
-    // The first week on record has no previous week.
-    known(
-        "weekly_schedule/1917-12-19",
-        "missing field `previousStartDate`",
-    ),
     // Historical game logs lack modern stats; the 1920s goalie log has no
     // `shotsAgainst`, so it is read as a skater log.
     known(
